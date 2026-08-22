@@ -52,7 +52,7 @@ func _ready() -> void:
 
 	box.add_child(_field_label("Host-Adresse (zum Beitreten)"))
 	_ip_edit = LineEdit.new()
-	_ip_edit.text = "127.0.0.1"
+	_ip_edit.text = Net.DEFAULT_HOST
 	_ip_edit.placeholder_text = "z. B. 192.168.0.42"
 	box.add_child(_ip_edit)
 

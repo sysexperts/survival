@@ -14,6 +14,10 @@ extends Node
 const PORT := 24565
 const MAX_CLIENTS := 7
 const GAME_SCENE := "res://scenes/main.tscn"
+## Vorgabe-Serveradresse im Beitreten-Feld. Spieler muessen so nichts tippen.
+## Als Hostname - so bleiben ausgelieferte Clients gueltig, auch wenn sich die
+## Server-IP mal aendert.
+const DEFAULT_HOST := "survival.vapur-it.de"
 
 ## Wird true, sobald eine echte Verbindung steht. Im Einzelspieler bleibt es
 ## false - NetGame haelt sich dann komplett raus.
@@ -67,7 +71,13 @@ func start_dedicated_server() -> void:
 func join(ip: String) -> String:
 	ip = ip.strip_edges()
 	if ip == "":
-		ip = "127.0.0.1"
+		ip = DEFAULT_HOST
+	# ENet erwartet eine IP - Hostnamen wie "survival.vapur-it.de" erst aufloesen.
+	if not ip.is_valid_ip_address():
+		var resolved := IP.resolve_hostname(ip, IP.TYPE_IPV4)
+		if resolved == "":
+			return "Konnte die Adresse '%s' nicht aufloesen." % ip
+		ip = resolved
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
 	if err != OK:
