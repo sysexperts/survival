@@ -25,11 +25,12 @@ const GRASS: Array[Vector2i] = [Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2)]
 ## Wiese ziehen.
 const DIRT: Array[Vector2i] = [Vector2i(3, 1), Vector2i(3, 3)]
 
-## Die 17 Baumbilder aus Quelle 1 (baeume.png), so wie sie im TileSet
-## texture_origin-Einträge haben.
+## Die Baumbilder aus Quelle 1 (baeume.png), die der Generator verwenden darf.
+## Die zwei Schnee-Bäume (2,0) und (2,1) sind bewusst NICHT dabei - sie passen
+## nicht zur schneefreien Landschaft (waren nur Test-Bäume).
 const TREES: Array[Vector2i] = [
-	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0),
-	Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1),
+	Vector2i(0, 0), Vector2i(1, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0),
+	Vector2i(0, 1), Vector2i(1, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1),
 	Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2),
 ]
 
