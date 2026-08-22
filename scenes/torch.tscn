@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://bm8urhx068tki"]
+
+[ext_resource type="Texture2D" uid="uid://cc8eetqvbvoqc" path="res://resources/light_gradient.tres" id="1_falloff"]
+[ext_resource type="Script" uid="uid://bae6g137m0bp1" path="res://scripts/flicker_light.gd" id="2_flicker"]
+
+[node name="Torch" type="Node2D" unique_id=1161316262]
+
+[node name="Light" type="PointLight2D" parent="." unique_id=1832410766]
+color = Color(1, 0.72, 0.36, 1)
+energy = 0.5148081
+texture = ExtResource("1_falloff")
+texture_scale = 0.81722397
+script = ExtResource("2_flicker")
+base_energy = 0.62
+flicker_amount = 0.22
+flicker_speed = 8.0
+
+[node name="Glow" type="PointLight2D" parent="." unique_id=464668741]
+color = Color(1, 0.85, 0.55, 1)
+energy = 0.5
+texture = ExtResource("1_falloff")
+texture_scale = 0.16

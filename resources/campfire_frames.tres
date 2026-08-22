@@ -1,0 +1,99 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://c04cobyjb2jsk"]
+
+[ext_resource type="Texture2D" uid="uid://cis8ts8l525wr" path="res://assets/props/camp.png" id="1_camp"]
+
+[sub_resource type="AtlasTexture" id="At_aus_0"]
+atlas = ExtResource("1_camp")
+region = Rect2(0, 256, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_0"]
+atlas = ExtResource("1_camp")
+region = Rect2(128, 128, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_1"]
+atlas = ExtResource("1_camp")
+region = Rect2(128, 256, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_2"]
+atlas = ExtResource("1_camp")
+region = Rect2(256, 0, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_3"]
+atlas = ExtResource("1_camp")
+region = Rect2(256, 128, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_4"]
+atlas = ExtResource("1_camp")
+region = Rect2(256, 256, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_brennt_5"]
+atlas = ExtResource("1_camp")
+region = Rect2(384, 0, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_fertig_0"]
+atlas = ExtResource("1_camp")
+region = Rect2(384, 128, 128, 128)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_ohne_fleisch_0"]
+atlas = ExtResource("1_camp")
+region = Rect2(128, 0, 128, 128)
+filter_clip = true
+
+[resource]
+resource_name = "CampfireFrames"
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_aus_0")
+}],
+"loop": 0,
+"name": &"aus",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_brennt_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("At_brennt_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("At_brennt_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("At_brennt_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("At_brennt_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("At_brennt_5")
+}],
+"loop": 1,
+"name": &"brennt",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_fertig_0")
+}],
+"loop": 1,
+"name": &"fertig",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_ohne_fleisch_0")
+}],
+"loop": 1,
+"name": &"ohne_fleisch",
+"speed": 4.0
+}]

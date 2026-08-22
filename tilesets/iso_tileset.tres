@@ -1,0 +1,126 @@
+[gd_resource type="TileSet" format=3 uid="uid://cy352qlfqk00j"]
+
+[ext_resource type="Texture2D" uid="uid://wg652el7s88g" path="res://assets/RPG-isometric-free.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://gu6v1ssagk3q" path="res://assets/props/baeume.png" id="2_baum"]
+[ext_resource type="Texture2D" uid="uid://bywpfirnr1q0w" path="res://assets/props/baumstumpf.png" id="3_stumpf"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_iso"]
+texture = ExtResource("1_tex")
+margins = Vector2i(2, 0)
+separation = Vector2i(2, 0)
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+4:0/0 = 0
+5:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+2:1/0 = 0
+3:1/0 = 0
+4:1/0 = 0
+5:1/0 = 0
+6:1/0 = 0
+0:2/0 = 0
+1:2/0 = 0
+2:2/0 = 0
+3:2/0 = 0
+4:2/0 = 0
+5:2/0 = 0
+6:2/0 = 0
+0:3/0 = 0
+1:3/0 = 0
+2:3/0 = 0
+3:3/0 = 0
+4:3/0 = 0
+5:3/0 = 0
+6:3/0 = 0
+1:4/0 = 0
+2:4/0 = 0
+4:4/0 = 0
+5:4/0 = 0
+6:4/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_props"]
+texture = ExtResource("2_baum")
+texture_region_size = Vector2i(32, 64)
+0:0/0 = 0
+0:0/0/texture_origin = Vector2i(-2, 13)
+0:0/0/z_index = 16
+1:0/0 = 0
+1:0/0/texture_origin = Vector2i(-2, 13)
+1:0/0/z_index = 16
+2:0/0 = 0
+2:0/0/texture_origin = Vector2i(-2, 13)
+2:0/0/z_index = 16
+3:0/0 = 0
+3:0/0/texture_origin = Vector2i(-2, 13)
+3:0/0/z_index = 16
+4:0/0 = 0
+4:0/0/texture_origin = Vector2i(-2, 13)
+4:0/0/z_index = 16
+5:0/0 = 0
+5:0/0/texture_origin = Vector2i(-2, 13)
+5:0/0/z_index = 16
+0:1/0 = 0
+0:1/0/texture_origin = Vector2i(-2, 13)
+0:1/0/z_index = 16
+1:1/0 = 0
+1:1/0/texture_origin = Vector2i(-2, 13)
+1:1/0/z_index = 16
+2:1/0 = 0
+2:1/0/texture_origin = Vector2i(-2, 13)
+2:1/0/z_index = 16
+3:1/0 = 0
+3:1/0/texture_origin = Vector2i(-2, 13)
+3:1/0/z_index = 16
+4:1/0 = 0
+4:1/0/texture_origin = Vector2i(-2, 13)
+4:1/0/z_index = 16
+5:1/0 = 0
+5:1/0/texture_origin = Vector2i(-1, 13)
+5:1/0/z_index = 16
+0:2/0 = 0
+0:2/0/texture_origin = Vector2i(-2, 13)
+0:2/0/z_index = 16
+1:2/0 = 0
+1:2/0/texture_origin = Vector2i(-2, 13)
+1:2/0/z_index = 16
+2:2/0 = 0
+2:2/0/texture_origin = Vector2i(-2, 13)
+2:2/0/z_index = 16
+3:2/0 = 0
+3:2/0/texture_origin = Vector2i(-2, 13)
+3:2/0/z_index = 16
+4:2/0 = 0
+4:2/0/texture_origin = Vector2i(-2, 13)
+4:2/0/z_index = 16
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_stumps"]
+texture = ExtResource("3_stumpf")
+texture_region_size = Vector2i(32, 64)
+0:0/0 = 0
+0:0/0/texture_origin = Vector2i(-2, 13)
+0:0/0/z_index = 16
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_stones"]
+texture = ExtResource("1_tex")
+margins = Vector2i(2, 0)
+separation = Vector2i(2, 0)
+texture_region_size = Vector2i(32, 32)
+3:0/0 = 0
+3:0/0/z_index = 16
+4:0/0 = 0
+4:0/0/z_index = 16
+5:0/0 = 0
+5:0/0/z_index = 16
+
+[resource]
+resource_name = "IsoTileSet"
+tile_shape = 1
+tile_size = Vector2i(32, 16)
+sources/0 = SubResource("TileSetAtlasSource_iso")
+sources/1 = SubResource("TileSetAtlasSource_props")
+sources/2 = SubResource("TileSetAtlasSource_stumps")
+sources/3 = SubResource("TileSetAtlasSource_stones")

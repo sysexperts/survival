@@ -1,0 +1,11 @@
+# Godot 4 – Import-Cache und generierte Dateien
+.godot/
+
+# Godot Export-Ausgaben
+export_presets.cfg
+*.translation
+
+# OS / Editor
+Thumbs.db
+Desktop.ini
+.DS_Store

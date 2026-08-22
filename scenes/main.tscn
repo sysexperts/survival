@@ -1,0 +1,76 @@
+[gd_scene format=3 uid="uid://dcbv3hkwgbe2m"]
+
+[ext_resource type="PackedScene" uid="uid://cnusq5ee87eou" path="res://scenes/world.tscn" id="1_world"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" uid="uid://ceeulcyrss7qf" path="res://scripts/follow_camera.gd" id="3_cam"]
+[ext_resource type="Script" uid="uid://blgm6hugtqdx0" path="res://scripts/day_night.gd" id="4_daynight"]
+[ext_resource type="Shader" uid="uid://sr6it3u28unt" path="res://scripts/vignette.gdshader" id="5_vignette"]
+[ext_resource type="Script" path="res://scripts/interaction.gd" id="6_interaction"]
+[ext_resource type="Script" path="res://scripts/regrowth.gd" id="7_regrowth"]
+[ext_resource type="Script" path="res://scripts/resource_scatter.gd" id="9_scatter"]
+[ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
+
+[sub_resource type="Environment" id="Environment_look"]
+background_mode = 3
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 0.72
+glow_bloom = 0.06
+glow_blend_mode = 2
+glow_hdr_threshold = 0.7
+glow_hdr_scale = 1.2
+adjustment_enabled = true
+adjustment_saturation = 1.05
+
+[sub_resource type="Gradient" id="Gradient_tbgi4"]
+offsets = PackedFloat32Array(0, 0.22, 0.3, 0.4, 0.6, 0.72, 0.84, 1)
+colors = PackedColorArray(0.52, 0.58, 0.85, 1, 0.56, 0.61, 0.86, 1, 0.86, 0.78, 0.8, 1, 1, 0.99, 0.96, 1, 1, 0.97, 0.92, 1, 1, 0.87, 0.74, 1, 0.74, 0.7, 0.86, 1, 0.52, 0.58, 0.85, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("5_vignette")
+shader_parameter/strength = 0.18
+shader_parameter/softness = 0.5
+shader_parameter/tint = Color(0.04, 0.05, 0.1, 1)
+
+[node name="Main" type="Node2D" unique_id=1453782777]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=557743347]
+environment = SubResource("Environment_look")
+
+[node name="DayNight" type="CanvasModulate" parent="." unique_id=1710911532]
+color = Color(1, 0.85901755, 0.7932568, 1)
+script = ExtResource("4_daynight")
+sky_gradient = SubResource("Gradient_tbgi4")
+
+[node name="World" parent="." unique_id=464865076 instance=ExtResource("1_world")]
+
+[node name="Player" parent="." unique_id=175672993 instance=ExtResource("2_player")]
+
+[node name="Interaction" type="Node2D" parent="."]
+script = ExtResource("6_interaction")
+world_path = NodePath("../World")
+
+[node name="ResourceScatter" type="Node" parent="."]
+script = ExtResource("9_scatter")
+world_path = NodePath("../World")
+
+[node name="Regrowth" type="Node" parent="."]
+script = ExtResource("7_regrowth")
+world_path = NodePath("../World")
+
+[node name="Inventory" type="Node" parent="."]
+script = ExtResource("8_inventory")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
+zoom = Vector2(2, 2)
+script = ExtResource("3_cam")
+
+[node name="Overlay" type="CanvasLayer" parent="." unique_id=1668305282]
+layer = 100
+
+[node name="Vignette" type="ColorRect" parent="Overlay" unique_id=626770011]
+material = SubResource("ShaderMaterial_vignette")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2

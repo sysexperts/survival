@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/po.gd" id="1_po"]
+[ext_resource type="Script" path="res://scripts/blob_shadow.gd" id="3_shadow"]
+[ext_resource type="Texture2D" path="res://resources/light_gradient.tres" id="4_falloff"]
+[ext_resource type="Script" path="res://scripts/flicker_light.gd" id="5_flicker"]
+
+[node name="Player" type="Node2D"]
+script = ExtResource("1_po")
+sprite_offset = Vector2(0, -20)
+axe_impact_frame = 3
+
+[node name="Shadow" type="Node2D" parent="."]
+position = Vector2(0, 1)
+script = ExtResource("3_shadow")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+offset = Vector2(0, -20)
+
+[node name="Lantern" type="PointLight2D" parent="."]
+visible = false
+position = Vector2(0, -16)
+color = Color(1, 0.83, 0.58, 1)
+energy = 0.55
+texture = ExtResource("4_falloff")
+texture_scale = 1.05
+script = ExtResource("5_flicker")
+base_energy = 0.55
+flicker_amount = 0.1
+flicker_speed = 5.0

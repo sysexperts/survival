@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="SpriteFrames" path="res://resources/jack_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/blob_shadow.gd" id="3_shadow"]
+[ext_resource type="Texture2D" path="res://resources/light_gradient.tres" id="4_falloff"]
+[ext_resource type="Script" path="res://scripts/flicker_light.gd" id="5_flicker"]
+[ext_resource type="Script" path="res://scripts/name_plate.gd" id="6_name"]
+
+[node name="Player" type="Node2D"]
+script = ExtResource("1_player")
+
+[node name="Shadow" type="Node2D" parent="."]
+position = Vector2(0, 1)
+script = ExtResource("3_shadow")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("2_frames")
+animation = &"idle_south"
+autoplay = "idle_south"
+offset = Vector2(0, -16)
+
+[node name="Lantern" type="PointLight2D" parent="."]
+visible = false
+position = Vector2(0, -14)
+color = Color(1, 0.83, 0.58, 1)
+energy = 0.55
+texture = ExtResource("4_falloff")
+texture_scale = 1.05
+script = ExtResource("5_flicker")
+base_energy = 0.55
+flicker_amount = 0.1
+flicker_speed = 5.0
+
+[node name="NamePlate" type="Node2D" parent="."]
+script = ExtResource("6_name")
