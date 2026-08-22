@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
 [ext_resource type="Script" path="res://scripts/net_game.gd" id="13_net"]
 [ext_resource type="Script" path="res://scripts/chat.gd" id="14_chat"]
+[ext_resource type="Script" path="res://scripts/world_sync.gd" id="15_wsync"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -72,6 +73,9 @@ script = ExtResource("8_inventory")
 
 [node name="NetGame" type="Node" parent="."]
 script = ExtResource("13_net")
+
+[node name="WorldSync" type="Node" parent="."]
+script = ExtResource("15_wsync")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2, 2)

@@ -49,6 +49,20 @@ func _process(delta: float) -> void:
 			_respawn_stone(cell, entry)
 
 
+## Oeffentliche Fassungen fuer den Multiplayer-Sync (world_sync.gd): dieselben
+## Effekte, wenn ein ANDERER Spieler die Aktion ausgeloest hat.
+func replicate_felled(cell: Vector2i, level: int, atlas: Vector2i) -> void:
+	_on_felled(cell, level, atlas)
+
+
+func replicate_stump_cleared(cell: Vector2i) -> void:
+	_on_stump_cleared(cell)
+
+
+func replicate_stone_collected(cell: Vector2i, level: int, gather_id: String) -> void:
+	_on_stone_collected(cell, level, gather_id)
+
+
 func _on_felled(cell: Vector2i, level: int, atlas: Vector2i) -> void:
 	world.set_prop(cell, level, stump_atlas, IsoWorld.STUMP_SOURCE_ID)
 	_pending[cell] = {"level": level, "atlas": atlas, "left": regrow_seconds}
