@@ -11,6 +11,9 @@ class_name WaypointArrow
 const METERS_PER_CELL := 1.0
 const ARROW_R := 36.0
 const C_SIDE := Color(0.82, 0.80, 0.70)
+## Ab hier ist man "da" - der Pfeil blendet weich aus.
+const FADE_RADIUS := 20.0
+const FADE_SPEED := 3.5          ## Alpha-Änderung pro Sekunde (~0.3 s Blende)
 
 @export var minimap_path: NodePath = ^"../Minimap"
 @export var world_path: NodePath = ^"../../World"
@@ -19,6 +22,7 @@ var world: IsoWorld
 var player: Node2D
 var minimap: Node
 var _index := 0
+var _alpha := 1.0
 
 var _prev: Button
 var _next: Button
@@ -65,15 +69,27 @@ func _cycle(dir: int) -> void:
 	queue_redraw()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if player == null:
 		player = get_tree().get_first_node_in_group("player")
-	var n := _waypoints().size()
-	var want := n > 1          # Seitenpfeile nur bei mehreren Wegpunkten
-	_prev.visible = want
-	_next.visible = want
+	var wps := _waypoints()
+	var n := wps.size()
 	if n > 0:
 		_index = clampi(_index, 0, n - 1)
+
+	# Nah am aktiven Wegpunkt -> weich ausblenden.
+	var target := 1.0
+	if n > 0 and player != null and world != null:
+		var lvl: int = int(player.get("level")) if player.get("level") != null else 0
+		var pcell := world.world_to_cell(player.global_position, lvl)
+		if Vector2(wps[_index]["cell"] - pcell).length() <= FADE_RADIUS:
+			target = 0.0
+	_alpha = move_toward(_alpha, target, delta * FADE_SPEED)
+	modulate.a = _alpha
+
+	var want := n > 1 and _alpha > 0.05   # Seitenpfeile nur sichtbar/klickbar, wenn eingeblendet
+	_prev.visible = want
+	_next.visible = want
 	queue_redraw()
 
 
