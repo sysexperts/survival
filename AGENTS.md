@@ -228,8 +228,8 @@ A* rechnet ohnehin pro Anfrage neu.
 
 1. Chunk-Streaming Boden + Höhe (`scripts/world_gen.gd` +
    `scripts/chunk_manager.gd`), Authored-Bereich aussparen. — **erledigt**
-2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — **offen (nächster Schritt)**
-3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — offen
+2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — **erledigt**
+3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — **offen (nächster Schritt)**
 4. Biome: zweiter, großmaßstäbiger Noise + Biom-Datentabellen im
    `*_db.gd`-Stil; Übergänge feinschleifen. — offen
 
@@ -261,6 +261,30 @@ unangetastet. Noch **keine** Props/Rohstoffe (das ist Milestone 2).
   **durchgehenden** Zellkoordinatensystem (Stacked-Parität). Pro Update nur
   wenige Chunks (`LOAD_BUDGET`), der erste Load beim Start ungedrosselt.
   Entladen löscht nur die selbst generierten Blöcke (gemerkt pro Chunk).
+
+### Milestone 2 — erledigt (Boden-Varianz + Props pro Chunk)
+
+- `WorldGen` entscheidet jetzt zusätzlich datengetrieben: `ground_atlas(cell)`
+  wählt aus drei Grüntönen (`GRASS`) bzw. Erdkacheln (`DIRT`) - Erdflächen über
+  eine eigene Noise (`is_dirt`, `DIRT_THRESHOLD`). `prop_at(cell)` liefert pro
+  Zelle nichts, einen Baum (Wald-Noise lässt sie klumpen: `TREE_P_MEADOW` →
+  `TREE_P_FOREST`) oder einen Rohstoff (`holz`/`pflanzenfaser`/`stein`). Alles
+  über einen reinen Koordinaten-Hash (`_hash`/`_rand`), also reihenfolge-
+  unabhängig reproduzierbar.
+- `ChunkManager._gen_cell()` setzt Bodensäule (oberste Ebene = Deckkachel),
+  `_place_prop()` platziert Baum (`set_prop`, eine Ebene über dem Boden) oder
+  Rohstoff (`spawn_gather`, deterministisches Sheet-Bild). Pro Chunk werden
+  Blöcke UND Prop-Zellen gemerkt; `_unload_chunk()` räumt beides weg
+  (`remove_prop` + `erase_block`), sonst wächst der Node-Baum.
+- Lückenlücke am Übergang behoben: statt die ganze Bounding-Box auszusparen,
+  wird nur je gemalte Zelle übersprungen (`is_authored`). Die Randhöhe wird an
+  den **tatsächlichen** Nachbarn angeglichen (`IsoWorld.nearest_authored()` →
+  bündig, keine Stufe/Lücke am konkaven Rand). `authored_cells` speichert dazu
+  jetzt die Höhe je Zelle statt nur `true`.
+- Milestone 3 (Diff) fehlt noch: ein neu geladener Chunk zeigt gefällte Bäume
+  wieder, weil `prop_at` deterministisch neu generiert. Ansatz: pro Chunk die
+  über `Player.felled`/`stump_cleared`/`stone_collected` entfernten Zellen
+  merken und beim Laden auslassen.
 
 **Noch nicht getestet** (kein Godot in der Bau-Umgebung): bitte einmal
 `godot --headless --editor … --quit` (neue `class_name` bekannt machen), dann

@@ -1,53 +1,150 @@
 class_name WorldGen
 extends RefCounted
 
-## Prozedurale Höhenkarte für den chunk-basierten Weltgenerator.
+## Prozeduraler Weltgenerator für das chunk-basierte Streaming.
 ##
-## Reine Logik, kein Node-Zustand: eine Zellkoordinate rein, eine Höhe raus.
-## Damit ist die Erzeugung deterministisch (gleicher Welt-Seed -> gleiche
-## Welt) und lässt sich ohne Szene testen. Gearbeitet wird immer im
-## DURCHGEHENDEN Zellkoordinatensystem - nur so bleibt die Stacked-Parität
-## des Rasters an den Chunk-Grenzen stimmig (siehe README/neighbors).
+## Reine, deterministische Logik: gleiche Zelle + gleicher Welt-Seed -> immer
+## dasselbe Ergebnis. Damit lassen sich Chunks beliebig laden/entladen, ohne
+## dass sich die Welt ändert, und alles ist ohne Szene testbar. Gearbeitet
+## wird im DURCHGEHENDEN Zellkoordinatensystem - nur so bleibt die
+## Stacked-Parität des Rasters an den Chunk-Grenzen stimmig (siehe README).
+##
+## Was hier entschieden wird: Höhe der Säule, Boden-Kachel (grün mit Varianz,
+## stellenweise Erdflächen) und ob ein Prop (Baum) oder Rohstoff (Holz,
+## Pflanzenfaser, Stein) auf der Zelle liegt. Das Setzen in der Welt macht der
+## ChunkManager - diese Klasse fasst die Welt nie an.
 
-## Höher stapeln wir nicht: die Optik ist auf niedrige Hügel ausgelegt, und
-## der Handbau-Bereich reicht selten über Layer 03 hinaus.
-const MAX_LEVEL := 3
+const MAX_LEVEL := 3          ## Höher stapeln wir nicht (niedrige Hügel).
+const EDGE_RING := 3          ## Zellen, über die vom Handbau-Rand geblendet wird.
 
-## Basishöhe direkt am Handbau-Rand. Der authored Bereich liegt auf Level00,
-## deshalb 0 - so entsteht am Übergang keine Kante.
-const BASE_HEIGHT := 0
+## Grüne Bodenkacheln (Quelle 0) für die Varianz. Ein einziges Grün wirkte
+## brettflach - drei leicht verschiedene Töne geben der Wiese Leben.
+const GRASS: Array[Vector2i] = [Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2)]
 
-## Über so viele Zellen wird vom Handbau-Rand (BASE_HEIGHT) in die volle
-## Noise-Höhe überblendet. Ohne diese Rampe stünde direkt neben der gemalten
-## Map eine harte Stufe.
-const EDGE_RING := 3
+## Erd-/Lehmkacheln für die braunen Flecken, die sich stellenweise durch die
+## Wiese ziehen.
+const DIRT: Array[Vector2i] = [Vector2i(3, 1), Vector2i(3, 3)]
 
-var _noise := FastNoiseLite.new()
+## Die 17 Baumbilder aus Quelle 1 (baeume.png), so wie sie im TileSet
+## texture_origin-Einträge haben.
+const TREES: Array[Vector2i] = [
+	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0),
+	Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1),
+	Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2),
+]
+
+## Ab diesem Wert der Erd-Noise wird eine Zelle zu Erde statt Gras. Höher =
+## seltener und kleinere Flecken.
+const DIRT_THRESHOLD := 0.33
+
+## Baum-Wahrscheinlichkeit: in offener Wiese selten, in "Wald"-Zonen dicht.
+## Die Wald-Noise entscheidet, wo Bäume klumpen, statt sie gleichmäßig zu
+## streuen - das sieht nach echten Wäldern und Lichtungen aus.
+const TREE_P_MEADOW := 0.01
+const TREE_P_FOREST := 0.26
+
+## Rohstoff-Wahrscheinlichkeiten pro Zelle (kumulativ ausgewertet).
+const P_HOLZ := 0.020
+const P_FASER := 0.018
+const P_STEIN := 0.015
+
+var _seed: int
+var _height := FastNoiseLite.new()
+var _dirt := FastNoiseLite.new()
+var _forest := FastNoiseLite.new()
 
 
 func _init(world_seed: int = 1337) -> void:
-	_noise.seed = world_seed
-	# Weiches Simplex, damit die Hügel zusammenhängen statt zu rauschen.
-	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	# Grob eine Hügelkuppe alle ~30 Zellen - eng genug, dass man beim Laufen
-	# ständig Neues sieht, weit genug, dass Hügel begehbar bleiben.
-	_noise.frequency = 0.03
+	_seed = world_seed
+	_height.seed = world_seed
+	_height.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_height.frequency = 0.03            # ~Hügelkuppe alle 30 Zellen
+	# Eigene Seeds (Offsets), damit Höhe, Erde und Wald nicht korrelieren.
+	_dirt.seed = world_seed + 1000
+	_dirt.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_dirt.frequency = 0.05              # etwas kleinere Flecken als die Hügel
+	_forest.seed = world_seed + 2000
+	_forest.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_forest.frequency = 0.02            # große, zusammenhängende Waldzonen
 
 
-## Rohe Noise-Höhe einer Zelle, 0..MAX_LEVEL. Ohne Rand-Rücksicht.
+# --- Höhe ---------------------------------------------------------------
+
+## Rohe Noise-Höhe einer Zelle, 0..MAX_LEVEL, ohne Rand-Rücksicht.
 func noise_height(cell: Vector2i) -> int:
-	var t := (_noise.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5   # -1..1 -> 0..1
+	var t := (_height.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5
 	return clampi(int(floor(t * float(MAX_LEVEL + 1))), 0, MAX_LEVEL)
 
 
-## Endgültige Höhe der Säule an dieser Zelle.
+## Endgültige Höhe der Säule.
 ##
-## `dist_to_authored` ist der Zellabstand zum gemalten Bereich (0 = direkt am
-## Rand). Innerhalb von EDGE_RING wird von BASE_HEIGHT in die Noise-Höhe
-## überblendet, damit der Übergang weich bleibt.
-func height_at(cell: Vector2i, dist_to_authored: int) -> int:
+## `edge_dist`/`edge_height` beschreiben den nächsten Handbau-Nachbarn:
+## edge_dist < 0 heißt "kein gemalter Rand in der Nähe" -> volle Noise-Höhe.
+## Sonst wird von der tatsächlichen Randhöhe (edge_height) über EDGE_RING
+## Zellen in die Noise-Höhe geblendet - direkt am Rand (edge_dist 0) exakt
+## bündig, damit dort weder eine Stufe noch eine Lücke entsteht.
+func height_at(cell: Vector2i, edge_dist: int, edge_height: int) -> int:
 	var h := noise_height(cell)
-	if dist_to_authored >= EDGE_RING:
+	if edge_dist < 0 or edge_dist >= EDGE_RING:
 		return h
-	var t := float(dist_to_authored) / float(EDGE_RING)
-	return int(round(lerp(float(BASE_HEIGHT), float(h), t)))
+	var t := float(edge_dist) / float(EDGE_RING)
+	return int(round(lerp(float(edge_height), float(h), t)))
+
+
+# --- Boden --------------------------------------------------------------
+
+## Ist diese Zelle Erde (brauner Fleck) statt Gras?
+func is_dirt(cell: Vector2i) -> bool:
+	return _dirt.get_noise_2d(cell.x, cell.y) > DIRT_THRESHOLD
+
+
+## Bodenkachel (Quelle-0-Atlas) für die oberste Ebene dieser Zelle.
+func ground_atlas(cell: Vector2i) -> Vector2i:
+	if is_dirt(cell):
+		return DIRT[_hash(cell, 7) % DIRT.size()]
+	return GRASS[_hash(cell, 11) % GRASS.size()]
+
+
+# --- Props / Rohstoffe --------------------------------------------------
+
+## Was liegt auf dieser Zelle? Leeres Dictionary = nichts. Sonst:
+##   {"kind": "tree", "atlas": Vector2i}   - blockierender Baum
+##   {"kind": "holz" | "pflanzenfaser" | "stein"}  - Rohstoff zum Aufsammeln
+##
+## Bäume nur auf Gras (auf einer Erdfläche wirkt ein Wald deplatziert),
+## Rohstoffe überall. Pro Zelle höchstens eine Sache.
+func prop_at(cell: Vector2i) -> Dictionary:
+	var dirt := is_dirt(cell)
+
+	if not dirt:
+		var forest := (_forest.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5   # 0..1
+		var tree_p := lerpf(TREE_P_MEADOW, TREE_P_FOREST, forest)
+		if _rand(cell, 1) < tree_p:
+			return {"kind": "tree", "atlas": TREES[_hash(cell, 2) % TREES.size()]}
+
+	var r := _rand(cell, 3)
+	if r < P_HOLZ:
+		return {"kind": "holz"}
+	if r < P_HOLZ + P_FASER:
+		return {"kind": "pflanzenfaser"}
+	if r < P_HOLZ + P_FASER + P_STEIN:
+		return {"kind": "stein"}
+	return {}
+
+
+# --- Deterministischer Zell-Zufall --------------------------------------
+#
+# Kein RandomNumberGenerator, sondern ein reiner Hash aus Koordinate + Seed:
+# so ist jede Zelle für sich reproduzierbar, unabhängig von der Reihenfolge,
+# in der Chunks geladen werden.
+
+func _hash(cell: Vector2i, salt: int) -> int:
+	var n := cell.x * 374761393 + cell.y * 668265263 + salt * 1274126177 + _seed * 2246822519
+	n = (n ^ (n >> 13)) * 1274126177
+	n = n ^ (n >> 16)
+	return n & 0x7fffffff
+
+
+## Hash als Float in [0, 1).
+func _rand(cell: Vector2i, salt: int) -> float:
+	return float(_hash(cell, salt) & 0xffffff) / float(0x1000000)

@@ -8,8 +8,9 @@ class_name ChunkManager
 ## nicht unbegrenzt wächst. Der gemalte Handbau-Bereich bleibt unangetastet -
 ## seine Zellen werden nie generiert und beim Entladen nie gelöscht.
 ##
-## Milestone 1: nur Boden und Höhe. Props und Rohstoffe pro Chunk kommen in
-## Milestone 2, der Änderungs-Diff in Milestone 3 (siehe AGENTS.md).
+## Milestone 1+2: Boden (mit Varianz + Erdflächen), Höhe, Bäume und Rohstoffe
+## pro Chunk. Der Änderungs-Diff (Gefälltes bleibt weg) ist Milestone 3 und
+## fehlt noch - ein neu geladener Chunk zeigt gefällte Bäume wieder.
 
 ## Kantenlänge eines Chunks in Zellen. Gearbeitet wird im DURCHGEHENDEN
 ## Zellkoordinatensystem (nicht in lokalen Chunk-Koords), sonst kippt die
@@ -19,10 +20,6 @@ const CHUNK := 16
 ## Chunks in diesem Radius um den Spieler sind geladen. Ab RADIUS+1 entladen -
 ## der eine Ring Hysterese verhindert Flackern an der Chunk-Grenze.
 const RADIUS := 2
-
-## Gras-Kachel aus Quelle 0 - dieselbe, die auch der Handbau am häufigsten
-## nutzt (in world.tscn nachgezählt). Später ersetzen Biome diesen Festwert.
-const GRASS_ATLAS := Vector2i(2, 2)
 
 ## Höchstens so viele Chunks pro Update generieren. Ein Chunk kann einige
 ## tausend set_block-Aufrufe bedeuten; ohne Deckel ruckelt es beim Laufen.
@@ -44,8 +41,8 @@ var world: IsoWorld
 var player: Node2D
 var gen                          ## WorldGen; untypisiert, siehe WorldGenScript oben
 
-## Chunk-Koordinate -> Array der generierten Blöcke ([cell, level]). Wird
-## beim Entladen gebraucht, um genau diese Blöcke wieder zu löschen.
+## Chunk-Koordinate -> {"blocks": [[cell, level], ...], "props": [cell, ...]}.
+## Beim Entladen wird genau das wieder weggeräumt - sonst wüchse der Node-Baum.
 var _loaded: Dictionary = {}
 var _accum := 0.0
 
@@ -71,10 +68,12 @@ func _first_load() -> void:
 	_update_chunks(true)
 	# Kurzer Beleg im Output, dass generiert wurde - hilft beim Prüfen, ob der
 	# neue Boden wirklich entsteht (er liegt außen um den Handbau-Bereich).
-	var total := 0
+	var blocks := 0
+	var props := 0
 	for c in _loaded:
-		total += _loaded[c].size()
-	print("ChunkManager: %d Chunks geladen, %d Blöcke generiert" % [_loaded.size(), total])
+		blocks += _loaded[c]["blocks"].size()
+		props += _loaded[c]["props"].size()
+	print("ChunkManager: %d Chunks, %d Blöcke, %d Props generiert" % [_loaded.size(), blocks, props])
 
 
 func _physics_process(delta: float) -> void:
@@ -119,29 +118,68 @@ func _update_chunks(force: bool) -> void:
 
 
 func _load_chunk(chunk: Vector2i) -> void:
-	var placed: Array = []
+	var blocks: Array = []      # [cell, level] - generierte Bodenblöcke
+	var props: Array = []       # cell - generierte Bäume/Rohstoffe (Nodes)
 	var base := chunk * CHUNK
 	for oy in CHUNK:
 		for ox in CHUNK:
 			var cell := base + Vector2i(ox, oy)
-			# Die gesamte Handbau-Bounding-Box aussparen - nicht nur bemalte
-			# Zellen, sondern auch bewusste Lücken darin (z. B. den See), die
-			# der Generator sonst mit Gras zuschütten würde.
-			if world.in_authored_bounds(cell):
+			# Nur einzelne gemalte Zellen aussparen (nicht die ganze Box),
+			# sonst klafft am unregelmäßigen Rand eine Lücke.
+			if world.is_authored(cell):
 				continue
-			# Explizit int: gen ist untypisiert (Variant), da ließe := keinen
-			# Typ ableiten.
-			var h: int = gen.height_at(cell, world.dist_to_authored(cell))
-			for lvl in range(0, h + 1):
-				world.set_block(cell, lvl, GRASS_ATLAS)
-				placed.append([cell, lvl])
-	_loaded[chunk] = placed
+			_gen_cell(cell, blocks, props)
+	_loaded[chunk] = {"blocks": blocks, "props": props}
+
+
+## Erzeugt eine einzelne Zelle: Bodensäule (mit Varianz + bündigem Rand) und
+## optional ein Prop. Trägt Erzeugtes in blocks/props ein, damit das Entladen
+## es exakt wieder wegräumen kann.
+func _gen_cell(cell: Vector2i, blocks: Array, props: Array) -> void:
+	# Nur nahe der gemalten Map die genaue Randhöhe suchen - das ist teuer,
+	# weit draußen zählt ohnehin nur die Noise-Höhe.
+	var edge := Vector2i(-1, 0)
+	if world.dist_to_authored(cell) <= WorldGenScript.EDGE_RING:
+		edge = world.nearest_authored(cell, WorldGenScript.EDGE_RING)
+	# Explizit int: gen ist untypisiert (Variant), da ließe := keinen Typ ab.
+	var h: int = gen.height_at(cell, edge.x, edge.y)
+
+	var atlas: Vector2i = gen.ground_atlas(cell)
+	for lvl in range(0, h + 1):
+		# Oberste Ebene bekommt die (evtl. braune) Deckkachel, darunter immer
+		# Gras - man sieht die Seitenflächen der Blöcke ohnehin nur als Rand.
+		world.set_block(cell, lvl, atlas if lvl == h else WorldGenScript.GRASS[0])
+		blocks.append([cell, lvl])
+
+	_place_prop(cell, h, props)
+
+
+func _place_prop(cell: Vector2i, h: int, props: Array) -> void:
+	var p: Dictionary = gen.prop_at(cell)
+	if p.is_empty() or world.prop_node(cell) != null:
+		return
+	if p["kind"] == "tree":
+		# Props sitzen eine Ebene ÜBER ihrem Bodenblock (siehe README).
+		if h + 1 >= world.level_count():
+			return
+		world.set_prop(cell, h + 1, p["atlas"], IsoWorld.PROP_SOURCE_ID)
+		props.append(cell)
+	else:
+		# Rohstoff: deterministisches Sheet-Bild, damit Reload dasselbe zeigt.
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(cell) ^ world_seed
+		var sheet_cell := GatherDB.random_prop(p["kind"], rng)
+		if world.spawn_gather(cell, h, p["kind"], sheet_cell):
+			props.append(cell)
 
 
 func _unload_chunk(chunk: Vector2i) -> void:
-	for entry in _loaded[chunk]:
-		# Nur generierte Blöcke löschen. Authored-Zellen sind hier ohnehin nie
-		# eingetragen worden, weil _load_chunk sie überspringt.
+	var data: Dictionary = _loaded[chunk]
+	# Erst die Prop-Nodes weg, dann die Blöcke. Authored-Zellen stehen hier nie
+	# drin, weil _load_chunk sie überspringt.
+	for cell in data["props"]:
+		world.remove_prop(cell)
+	for entry in data["blocks"]:
 		world.erase_block(entry[0], entry[1])
 	_loaded.erase(chunk)
 

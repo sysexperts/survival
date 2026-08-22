@@ -295,13 +295,14 @@ func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 # chunk-basierte Generator (siehe scripts/chunk_manager.gd) baut nur außen
 # herum und darf diese Zellen weder erzeugen noch beim Entladen löschen.
 
-## Alle von Hand gemalten Zellen (über alle Ebenen zusammengefasst).
-## Als Dictionary statt bloßer Bounding-Box, weil die gemalte Map nicht
-## rechteckig ist - so wird nur wirklich Belegtes ausgespart.
+## Alle von Hand gemalten Zellen -> ihre oberste Ebene. Als Dictionary (nicht
+## bloße Bounding-Box), weil die gemalte Map unregelmäßig ist: nur wirklich
+## Belegtes wird ausgespart, sonst klafft am konkaven Rand eine Lücke. Die
+## gespeicherte Höhe braucht der Generator, um außen bündig anzuschließen.
 var authored_cells: Dictionary = {}
 
-## Grobe Umschließung des Handbau-Bereichs. Nur für die Abstandsberechnung
-## der weichen Höhen-Rampe am Rand gedacht, nicht für die Skip-Prüfung.
+## Grobe Umschließung des Handbau-Bereichs - nur als billiger Vorfilter, um
+## die Rand-Suche (nearest_authored) auf Zellen nahe der Map zu beschränken.
 var authored_bounds: Rect2i = Rect2i()
 
 
@@ -310,9 +311,12 @@ func _record_authored() -> void:
 	var has_any := false
 	var min_c := Vector2i.ZERO
 	var max_c := Vector2i.ZERO
+	# Erst alle Zellen sammeln, dann die Höhe bestimmen - top_level_at braucht
+	# die fertig eingelesenen Ebenen.
+	var seen := {}
 	for l in levels:
 		for cell in l.get_used_cells():
-			authored_cells[cell] = true
+			seen[cell] = true
 			if not has_any:
 				min_c = cell
 				max_c = cell
@@ -322,6 +326,8 @@ func _record_authored() -> void:
 				min_c.y = mini(min_c.y, cell.y)
 				max_c.x = maxi(max_c.x, cell.x)
 				max_c.y = maxi(max_c.y, cell.y)
+	for cell in seen:
+		authored_cells[cell] = maxi(top_level_at(cell), 0)
 	authored_bounds = Rect2i(min_c, max_c - min_c + Vector2i.ONE) if has_any else Rect2i()
 
 
@@ -330,27 +336,33 @@ func is_authored(cell: Vector2i) -> bool:
 	return authored_cells.has(cell)
 
 
-## Liegt die Zelle innerhalb der Handbau-Bounding-Box? Dort wird nichts
-## generiert - auch nicht in unbemalte Lücken (z. B. den See), die sonst
-## fälschlich mit Gras zugeschüttet würden.
-func in_authored_bounds(cell: Vector2i) -> bool:
-	return not authored_cells.is_empty() and authored_bounds.has_point(cell)
-
-
-## Zellabstand (Chebyshev) zur Handbau-Bounding-Box; 0 innerhalb oder direkt
-## daneben. Steuert die weiche Höhen-Rampe des Generators am Rand.
+## Zellabstand (Chebyshev) zur Handbau-Bounding-Box; groß, wenn weit weg.
+## Billiger Vorfilter: nur nahe der Box lohnt die genaue Rand-Suche.
 func dist_to_authored(cell: Vector2i) -> int:
 	if authored_cells.is_empty():
-		return EDGE_RING_FALLBACK
+		return 9999
 	var b := authored_bounds
 	var dx := maxi(maxi(b.position.x - cell.x, cell.x - (b.position.x + b.size.x - 1)), 0)
 	var dy := maxi(maxi(b.position.y - cell.y, cell.y - (b.position.y + b.size.y - 1)), 0)
 	return maxi(dx, dy)
 
 
-## Ohne Handbau-Bereich gibt es keinen Rand zum Anblenden - dann überall die
-## volle Noise-Höhe (großer Abstand erzwingt das in WorldGen.height_at).
-const EDGE_RING_FALLBACK := 9999
+## Nächster gemalter Nachbar einer (nicht gemalten) Zelle innerhalb `radius`.
+## Rückgabe: Vector2i(abstand, randhöhe); abstand -1, wenn keiner in Reichweite.
+## Damit blendet der Generator die Höhe bündig an den echten Rand an - nicht
+## an die grobe Bounding-Box, sonst entstünde am konkaven Rand eine Stufe.
+func nearest_authored(cell: Vector2i, radius: int) -> Vector2i:
+	var best_d := radius + 1
+	var best_h := 0
+	for dy in range(-radius, radius + 1):
+		for dx in range(-radius, radius + 1):
+			var c := Vector2i(cell.x + dx, cell.y + dy)
+			if authored_cells.has(c):
+				var d := maxi(absi(dx), absi(dy))
+				if d < best_d:
+					best_d = d
+					best_h = authored_cells[c]
+	return Vector2i(best_d, best_h) if best_d <= radius else Vector2i(-1, 0)
 
 
 # --- Props als Nodes ----------------------------------------------------
