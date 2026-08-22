@@ -17,7 +17,9 @@ class_name Minimap
 
 const WorldGenScript := preload("res://scripts/world_gen.gd")
 
-const CELL_SMALL := 2.6
+# Ganzzahlig halten: die Terrain-Textur wird mit NEAREST hochskaliert; bei
+# einem krummen Faktor (z. B. 2.6) flimmern die Texel beim Scrollen.
+const CELL_SMALL := 3.0
 const CELL_FULL := 6.0
 const SMALL_SIZE := 200.0
 const SMALL_MARGIN := 14.0
@@ -264,9 +266,10 @@ func _on_terrain_draw() -> void:
 	if _terrain_tex == null:
 		return
 	var cell_px := _cell_px()
-	var origin := _map_center() - _scroll
 	var sz := Vector2(_tex_cols, _tex_rows) * cell_px
-	_terrain.draw_texture_rect(_terrain_tex, Rect2(origin - sz * 0.5, sz), false)
+	# Auf ganze Pixel runden: NEAREST + Sub-Pixel-Position = Texel-Flimmern.
+	var tl := (_map_center() - _scroll - sz * 0.5).round()
+	_terrain.draw_texture_rect(_terrain_tex, Rect2(tl, sz), false)
 
 
 func _on_hud_draw() -> void:
