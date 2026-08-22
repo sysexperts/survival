@@ -1,57 +1,71 @@
 extends Control
 
-## Einfacher Multiplayer-Chat.
+## Multiplayer-Chat, unten links ueber der Item-Leiste.
 ##
-## Enter oeffnet die Eingabe, Enter sendet, Esc bricht ab. Nachrichten laufen
-## - wie die Spielerpositionen - ueber den dedizierten Server: der Absender
-## schickt an den Server, der Server verteilt an alle anderen (Relay). Die
-## eigene Nachricht wird lokal sofort angezeigt.
+## Mit T oeffnet sich die Eingabe, Enter sendet, Esc/T schliesst. Der Verlauf
+## bleibt sichtbar (scrollbar, wenn offen) und wird gedimmt, wenn die Eingabe
+## zu ist.
 ##
-## Solange die Eingabe offen ist, wird die Spielsteuerung ueber Net.chat_open
-## pausiert (siehe player.gd).
+## Server-autoritativ, damit nichts doppelt ankommt: der Client schickt die
+## Nachricht NUR an den Server (_submit_chat), der Server schickt sie an ALLE
+## Clients zurueck (_show_chat) - auch an den Absender. So gibt es genau einen
+## Anzeigeweg.
+##
+## Solange die Eingabe offen ist, pausiert die Spielsteuerung (Net.chat_open).
 
-## So viele Zeilen bleiben sichtbar.
-const MAX_LINES := 8
-## Nach so vielen Sekunden verschwindet eine Zeile wieder.
-const FADE_AFTER := 12.0
+const MAX_HISTORY := 100
 
-var _log: VBoxContainer
+var _scroll: ScrollContainer
+var _history: VBoxContainer
 var _entry: LineEdit
 var _hint: Label
+var _open := false
 
 
 func _ready() -> void:
-	# Der dedizierte Server braucht keine Oberflaeche - er verteilt nur.
+	# Der dedizierte Server verteilt nur - keine Oberflaeche.
 	if Net.is_dedicated:
 		return
 
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	_log = VBoxContainer.new()
-	_log.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	_log.position = Vector2(12, 12)
-	_log.add_theme_constant_override("separation", 2)
-	_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_log)
+	var col := VBoxContainer.new()
+	col.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	col.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	col.offset_left = 12
+	col.offset_bottom = -70          # ueber der Hotbar
+	col.custom_minimum_size = Vector2(460, 0)
+	col.add_theme_constant_override("separation", 4)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(col)
+
+	_scroll = ScrollContainer.new()
+	_scroll.custom_minimum_size = Vector2(460, 150)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(_scroll)
+
+	_history = VBoxContainer.new()
+	_history.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_history.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scroll.add_child(_history)
 
 	_entry = LineEdit.new()
-	_entry.placeholder_text = "Nachricht ... (Enter senden, Esc abbrechen)"
+	_entry.placeholder_text = "Nachricht ... (Enter senden, Esc schliessen)"
 	_entry.max_length = 120
-	_entry.custom_minimum_size = Vector2(420, 0)
-	_entry.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_entry.position = Vector2(12, -40)
+	_entry.custom_minimum_size = Vector2(460, 0)
 	_entry.visible = false
 	_entry.text_submitted.connect(_on_submit)
-	add_child(_entry)
+	_entry.focus_exited.connect(_on_focus_lost)
+	col.add_child(_entry)
 
 	_hint = Label.new()
-	_hint.text = "Enter: Chat"
-	_hint.modulate = Color(1, 1, 1, 0.45)
-	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_hint.position = Vector2(12, -22)
-	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_hint)
+	_hint.text = "T: Chat"
+	_hint.modulate = Color(1, 1, 1, 0.4)
+	col.add_child(_hint)
+
+	_apply_open_state()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -59,67 +73,83 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	if not _entry.visible:
-		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
-			_open()
+	if not _open:
+		if event.keycode == KEY_T:
+			_set_open(true)
 			get_viewport().set_input_as_handled()
 	else:
 		if event.keycode == KEY_ESCAPE:
-			_close()
+			_set_open(false)
 			get_viewport().set_input_as_handled()
 
 
-func _open() -> void:
-	_entry.visible = true
-	_entry.grab_focus()
-	Net.chat_open = true
+func _set_open(open: bool) -> void:
+	_open = open
+	Net.chat_open = open
+	_apply_open_state()
+	if open:
+		_entry.grab_focus()
 
 
-func _close() -> void:
-	_entry.text = ""
-	_entry.visible = false
-	_entry.release_focus()
-	Net.chat_open = false
+func _apply_open_state() -> void:
+	if _entry == null:
+		return
+	_entry.visible = _open
+	_hint.visible = not _open
+	# Offen: voll sichtbar und scrollbar. Zu: gedimmter Verlauf, kein Fokusklau.
+	_scroll.modulate.a = 1.0 if _open else 0.55
+	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS if _open else Control.MOUSE_FILTER_IGNORE
+	if not _open:
+		_entry.text = ""
+
+
+func _on_focus_lost() -> void:
+	# Verhindert, dass die Steuerung blockiert bleibt, wenn der Fokus weggeht.
+	if _open:
+		_set_open(false)
 
 
 func _on_submit(text: String) -> void:
 	text = text.strip_edges()
 	if text != "":
-		_recv_chat.rpc(multiplayer.get_unique_id(), Net.player_name, text)
-		_add_line(Net.player_name, text)
-	_close()
+		# Nur an den Server - der verteilt an alle (auch an uns).
+		_submit_chat.rpc_id(1, Net.player_name, text)
+	_set_open(false)
 
 
-## Nachricht empfangen. Reliable, damit keine Chatzeile verloren geht.
+## Client -> Server. Laeuft ausschliesslich auf dem Server.
 @rpc("any_peer", "reliable")
-func _recv_chat(owner_id: int, sender: String, text: String) -> void:
-	# Server: an alle anderen weiterreichen, selbst nichts anzeigen.
-	if Net.is_dedicated:
-		for pid in multiplayer.get_peers():
-			if pid != owner_id:
-				_recv_chat.rpc_id(pid, owner_id, sender, text)
+func _submit_chat(sender: String, text: String) -> void:
+	if not multiplayer.is_server():
 		return
-	if owner_id == multiplayer.get_unique_id():
-		return                       # eigenes Echo (schon lokal angezeigt)
+	_show_chat.rpc(sender, text)
+
+
+## Server -> alle Clients. Nur der Server (Autoritaet) darf senden.
+@rpc("authority", "call_remote", "reliable")
+func _show_chat(sender: String, text: String) -> void:
 	_add_line(sender, text)
 
 
 func _add_line(sender: String, text: String) -> void:
-	if _log == null:
+	if _history == null:
 		return
 	var line := Label.new()
 	line.text = "%s: %s" % [sender, text]
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.custom_minimum_size = Vector2(452, 0)
 	line.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
 	line.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	line.add_theme_constant_override("outline_size", 4)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_log.add_child(line)
-	while _log.get_child_count() > MAX_LINES:
-		_log.get_child(0).free()
-	# Zeile nach einer Weile ausblenden und entfernen.
-	var tw := create_tween()
-	tw.tween_interval(FADE_AFTER)
-	tw.tween_property(line, "modulate:a", 0.0, 1.0)
-	tw.tween_callback(func():
-		if is_instance_valid(line):
-			line.queue_free())
+	_history.add_child(line)
+	while _history.get_child_count() > MAX_HISTORY:
+		_history.get_child(0).free()
+	_scroll_to_bottom()
+
+
+func _scroll_to_bottom() -> void:
+	await get_tree().process_frame
+	if is_instance_valid(_scroll):
+		var sb := _scroll.get_v_scroll_bar()
+		_scroll.scroll_vertical = int(sb.max_value)
