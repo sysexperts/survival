@@ -529,15 +529,15 @@ func set_prop(cell: Vector2i, level: int, atlas: Vector2i, source_id: int = PROP
 ## benutzt, damit der Baum noch in Ruhe ausblenden kann.
 func remove_prop(cell: Vector2i, level: int = -1) -> void:
 	var n := prop_node(cell)
-	# Eingestreute Rohstoffe wurden nie aus einer Ebene geholt - sie liegen
-	# OBEN AUF dem Boden. Wer hier die Zelle loescht, reisst dem Spieler das
-	# Gras unter den Fuessen weg.
-	var painted := n == null or n.gather_id == ""
 	if n:
 		n.queue_free()
 	_prop_nodes.erase(cell)
-	if painted and level >= 0 and level < levels.size():
-		levels[level].erase_cell(cell)                   # Editor-Fall
+	# Die Kachel nur loeschen, wenn das Prop KEIN Node war (also eine gemalte
+	# Kachel wie ein Stein). War es ein Node (Baumstumpf, Baum, eingestreuter
+	# Rohstoff), ist die Kachel an der Stelle der BODEN - den anzufassen reisst
+	# ein Loch, z. B. wenn ein Baumstumpf entfernt wird.
+	if n == null and level >= 0 and level < levels.size():
+		levels[level].erase_cell(cell)
 	invalidate_props()
 
 

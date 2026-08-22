@@ -37,6 +37,11 @@ signal stone_collected(cell: Vector2i, level: int, gather_id: String)
 ## Inventar oeffnet daraufhin ihr Fenster - der Player kennt kein HUD.
 signal reached_station(station: String)
 
+## Ein Objekt wurde gesetzt - fuer den Multiplayer-Sync (world_sync.gd), damit
+## Lagerfeuer und Moebel bei allen erscheinen.
+signal placed_campfire(top: Vector2i)
+signal placed_furniture(id: String, cell: Vector2i, flipped: bool)
+
 @export var world_path: NodePath = ^"../World"
 @export var walk_speed := 60.0
 @export var run_speed := 110.0
@@ -120,8 +125,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if world == null:
 		return
-	# Waehrend die Chat-Eingabe offen ist, keine Steuerung annehmen.
-	if Net.chat_open:
+	# Waehrend ein Textfeld (z. B. die Chat-Eingabe) den Fokus hat, keine
+	# Steuerung annehmen. Ueber den Fokus statt ein Flag - so kann nichts
+	# "haengen bleiben" und die Steuerung dauerhaft blockieren.
+	if get_viewport().gui_get_focus_owner() is LineEdit:
 		return
 	var input := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
@@ -496,6 +503,7 @@ func place_campfire_at(top: Vector2i) -> bool:
 	fire.tree_exiting.connect(func():
 		for c in taken:
 			world.unblock_cell(c))
+	placed_campfire.emit(top)
 	return true
 
 
@@ -523,6 +531,7 @@ func place_furniture_at(id: String, cell: Vector2i, flipped: bool) -> bool:
 	f.tree_exiting.connect(func():
 		for c in taken:
 			world.unblock_cell(c))
+	placed_furniture.emit(id, cell, flipped)
 	return true
 
 
