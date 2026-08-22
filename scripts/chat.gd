@@ -35,37 +35,68 @@ func _ready() -> void:
 	col.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	col.offset_left = 12
 	col.offset_bottom = -70          # ueber der Hotbar
-	col.custom_minimum_size = Vector2(460, 0)
+	col.custom_minimum_size = Vector2(480, 0)
 	col.add_theme_constant_override("separation", 4)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(col)
 
+	# Dunkler, halbtransparenter Kasten hinter dem Verlauf - sonst verschwindet
+	# heller Text im hellen Gras.
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _bg_style(Color(0, 0, 0, 0.55)))
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(panel)
+
 	_scroll = ScrollContainer.new()
-	_scroll.custom_minimum_size = Vector2(460, 150)
+	_scroll.custom_minimum_size = Vector2(480, 156)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(_scroll)
+	panel.add_child(_scroll)
 
 	_history = VBoxContainer.new()
 	_history.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_history.add_theme_constant_override("separation", 4)
 	_history.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scroll.add_child(_history)
 
 	_entry = LineEdit.new()
 	_entry.placeholder_text = "Nachricht ... (Enter senden, Esc schliessen)"
 	_entry.max_length = 120
-	_entry.custom_minimum_size = Vector2(460, 0)
+	_entry.custom_minimum_size = Vector2(480, 0)
 	_entry.visible = false
+	_entry.add_theme_font_size_override("font_size", 18)
+	_entry.add_theme_stylebox_override("normal", _bg_style(Color(0, 0, 0, 0.7)))
+	_entry.add_theme_stylebox_override("focus", _bg_style(Color(0.05, 0.07, 0.12, 0.85)))
+	_entry.add_theme_color_override("font_color", Color(1, 1, 1))
 	_entry.text_submitted.connect(_on_submit)
 	_entry.focus_exited.connect(_on_focus_lost)
 	col.add_child(_entry)
 
 	_hint = Label.new()
 	_hint.text = "T: Chat"
-	_hint.modulate = Color(1, 1, 1, 0.4)
+	_hint.add_theme_font_size_override("font_size", 15)
+	_hint.add_theme_color_override("font_color", Color(1, 1, 1))
+	_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_hint.add_theme_constant_override("outline_size", 5)
+	_hint.modulate = Color(1, 1, 1, 0.7)
 	col.add_child(_hint)
 
 	_apply_open_state()
+
+
+## Abgerundeter, halbtransparenter Hintergrund.
+func _bg_style(c: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = c
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_left = 6
+	sb.corner_radius_bottom_right = 6
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 8
+	sb.content_margin_bottom = 8
+	return sb
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -97,7 +128,7 @@ func _apply_open_state() -> void:
 	_entry.visible = _open
 	_hint.visible = not _open
 	# Offen: voll sichtbar und scrollbar. Zu: gedimmter Verlauf, kein Fokusklau.
-	_scroll.modulate.a = 1.0 if _open else 0.55
+	_scroll.modulate.a = 1.0 if _open else 0.85
 	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS if _open else Control.MOUSE_FILTER_IGNORE
 	if not _open:
 		_entry.text = ""
@@ -134,18 +165,28 @@ func _show_chat(sender: String, text: String) -> void:
 func _add_line(sender: String, text: String) -> void:
 	if _history == null:
 		return
-	var line := Label.new()
-	line.text = "%s: %s" % [sender, text]
-	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	line.custom_minimum_size = Vector2(452, 0)
-	line.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
+	var line := RichTextLabel.new()
+	line.bbcode_enabled = true
+	line.fit_content = true
+	line.scroll_active = false
+	line.custom_minimum_size = Vector2(456, 0)
+	line.add_theme_font_size_override("normal_font_size", 17)
+	line.add_theme_font_size_override("bold_font_size", 17)
+	line.add_theme_color_override("default_color", Color(1, 1, 1))
 	line.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	line.add_theme_constant_override("outline_size", 4)
+	line.add_theme_constant_override("outline_size", 5)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Name farbig hervorheben, Nachricht in Weiss. Eckige Klammern in der
+	# Nutzereingabe escapen, sonst frisst der BBCode-Parser sie.
+	line.text = "[color=#8fd0ff][b]%s[/b][/color]  %s" % [_esc(sender), _esc(text)]
 	_history.add_child(line)
 	while _history.get_child_count() > MAX_HISTORY:
 		_history.get_child(0).free()
 	_scroll_to_bottom()
+
+
+func _esc(s: String) -> String:
+	return s.replace("[", "[lb]")
 
 
 func _scroll_to_bottom() -> void:
