@@ -521,7 +521,13 @@ func set_prop(cell: Vector2i, level: int, atlas: Vector2i, source_id: int = PROP
 		levels[level].set_cell(cell, source_id, atlas)   # Editor-Fall
 		invalidate_props()
 		return
-	remove_prop(cell, level)
+	# Nur ein evtl. vorhandenes Prop-NODE entfernen - den Boden NICHT anfassen.
+	# (remove_prop wuerde bei fehlendem Node die Bodenkachel loeschen und ein
+	# Loch reissen, z. B. wenn nach dem Faellen der Stumpf gesetzt wird.)
+	var existing := prop_node(cell)
+	if existing:
+		existing.queue_free()
+		_prop_nodes.erase(cell)
 	_make_prop_node(cell, level, atlas, source_id)
 
 
