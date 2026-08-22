@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/regrowth.gd" id="7_regrowth"]
 [ext_resource type="Script" path="res://scripts/resource_scatter.gd" id="9_scatter"]
 [ext_resource type="Script" path="res://scripts/chunk_manager.gd" id="10_chunks"]
+[ext_resource type="Script" path="res://scripts/minimap.gd" id="11_minimap"]
 [ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
 
 [sub_resource type="Environment" id="Environment_look"]
@@ -79,3 +80,6 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+
+[node name="Minimap" type="Control" parent="Overlay"]
+script = ExtResource("11_minimap")

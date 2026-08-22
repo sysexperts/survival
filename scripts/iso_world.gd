@@ -663,6 +663,47 @@ var _content_rects: Dictionary = {}   ## "src:x:y" -> Rect2 (lokal zur Region)
 var _source_images: Dictionary = {}
 
 
+# --- Farben für die Minimap ---------------------------------------------
+#
+# Die Minimap zeichnet pro Zelle einen Punkt in der Durchschnittsfarbe der
+# obersten Kachel. Einmal pro Atlas-Kachel berechnet und gemerkt.
+
+var _atlas_colors: Dictionary = {}
+
+
+## Durchschnittsfarbe einer Atlas-Kachel (nur undurchsichtige Pixel).
+func atlas_color(source_id: int, atlas: Vector2i) -> Color:
+	var key := "%d:%d:%d" % [source_id, atlas.x, atlas.y]
+	if _atlas_colors.has(key):
+		return _atlas_colors[key]
+	var src := tile_set_res.get_source(source_id) as TileSetAtlasSource
+	var region := src.get_tile_texture_region(atlas)
+	var img := _source_image(source_id)
+	var r := 0.0
+	var g := 0.0
+	var b := 0.0
+	var n := 0
+	for y in range(region.position.y, region.position.y + region.size.y):
+		for x in range(region.position.x, region.position.x + region.size.x):
+			var px := img.get_pixel(x, y)
+			if px.a > 0.5:
+				r += px.r
+				g += px.g
+				b += px.b
+				n += 1
+	var col := Color(r / n, g / n, b / n) if n > 0 else Color(0, 0, 0, 0)
+	_atlas_colors[key] = col
+	return col
+
+
+## Farbe der obersten Bodenkachel einer (gemalten) Zelle, transparent wenn leer.
+func ground_color(cell: Vector2i) -> Color:
+	var lvl := top_level_at(cell)
+	if lvl < 0:
+		return Color(0, 0, 0, 0)
+	return atlas_color(SOURCE_ID, levels[lvl].get_cell_atlas_coords(cell))
+
+
 func _source_image(source_id: int) -> Image:
 	if not _source_images.has(source_id):
 		var src := tile_set_res.get_source(source_id) as TileSetAtlasSource
