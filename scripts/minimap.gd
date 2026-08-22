@@ -126,9 +126,18 @@ func _draw_small() -> void:
 	draw_circle(c + Vector2(2, 3), rad, C_SHADOW)
 	draw_circle(c, rad, C_FRAME_DARK)
 
-	# Terrain als runde Textur (Alpha außerhalb des Kreises = 0).
-	var tex := _build_texture(int(d / CELL_SMALL) | 1, int(d / CELL_SMALL) | 1, true)
-	draw_texture_rect(tex, Rect2(Vector2.ZERO, Vector2(d, d)), false)
+	# Terrain Zelle für Zelle, kreisförmig beschnitten.
+	var steps := int(rad / CELL_SMALL) + 1
+	var cs := Vector2(CELL_SMALL + 1.0, CELL_SMALL + 1.0)   # leicht überlappen -> keine Fugen
+	for dy in range(-steps, steps + 1):
+		for dx in range(-steps, steps + 1):
+			var off := Vector2(dx, dy) * CELL_SMALL
+			if off.length() > rad - CELL_SMALL:
+				continue
+			var col := _cell_color(_pcell + Vector2i(dx, dy))
+			if col.a <= 0.0:
+				continue
+			draw_rect(Rect2(c + off - cs * 0.5, cs), col)
 
 	# Doppelter Ring als Fassung.
 	draw_arc(c, rad - 1.0, 0, TAU, 64, C_FRAME, 3.0, true)
@@ -149,10 +158,17 @@ func _draw_full() -> void:
 	draw_rect(Rect2(panel.position + Vector2(0, 4), panel.size), C_SHADOW)
 	draw_rect(panel, C_FRAME_DARK)
 
-	var cols := int(panel.size.x / CELL_FULL) | 1
-	var rows := int(panel.size.y / CELL_FULL) | 1
-	var tex := _build_texture(cols, rows, false)
-	draw_texture_rect(tex, panel, false)
+	# Terrain Zelle für Zelle, auf das Panel begrenzt.
+	var pc := panel.position + panel.size * 0.5
+	var sx := int(panel.size.x / CELL_FULL / 2.0) + 1
+	var sy := int(panel.size.y / CELL_FULL / 2.0) + 1
+	var cs := Vector2(CELL_FULL + 1.0, CELL_FULL + 1.0)
+	for dy in range(-sy, sy + 1):
+		for dx in range(-sx, sx + 1):
+			var col := _cell_color(_pcell + Vector2i(dx, dy))
+			if col.a <= 0.0:
+				continue
+			draw_rect(Rect2(pc + Vector2(dx, dy) * CELL_FULL - cs * 0.5, cs), col)
 	draw_rect(panel, C_FRAME, false, 3.0)
 
 	_draw_player(panel.position + panel.size * 0.5, 9.0)
@@ -163,24 +179,6 @@ func _draw_full() -> void:
 		var hint := "M schliessen    x %d  y %d" % [_pcell.x, _pcell.y]
 		draw_string(font, Vector2(rect.x - FULL_PAD.x - 320.0, FULL_PAD.y - 16.0), hint, HORIZONTAL_ALIGNMENT_LEFT, 320, 18, Color(0.7, 0.72, 0.66))
 	_draw_north(Vector2(panel.position.x + panel.size.x - 22.0, panel.position.y + 22.0))
-
-
-# --- Terrain-Textur -----------------------------------------------------
-
-## Baut ein Bild mit einem Pixel je Zelle rund um den Spieler. `circular`
-## schneidet es zu einem Kreis (Alpha 0 außerhalb).
-func _build_texture(cols: int, rows: int, circular: bool) -> ImageTexture:
-	var img := Image.create(cols, rows, false, Image.FORMAT_RGBA8)
-	var hx := cols >> 1
-	var hy := rows >> 1
-	var rad := float(mini(hx, hy)) + 0.5
-	for iy in rows:
-		for ix in cols:
-			var col := _cell_color(_pcell + Vector2i(ix - hx, iy - hy))
-			if circular and Vector2(ix - hx, iy - hy).length() > rad:
-				col = Color(0, 0, 0, 0)
-			img.set_pixel(ix, iy, col)
-	return ImageTexture.create_from_image(img)
 
 
 ## Farbe einer Zelle, transparent wenn dort nichts ist.
