@@ -27,6 +27,8 @@ var active := false
 ## Clients untereinander weiter.
 var is_dedicated := false
 var player_name := "Spieler"
+## true, solange die Chat-Eingabe offen ist - der Player pausiert dann.
+var chat_open := false
 
 ## Fuer das Menue: die Verbindung ist gescheitert (falsche IP / kein Server).
 signal connection_failed()

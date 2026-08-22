@@ -120,6 +120,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if world == null:
 		return
+	# Waehrend die Chat-Eingabe offen ist, keine Steuerung annehmen.
+	if Net.chat_open:
+		return
 	var input := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
 		Input.get_axis("ui_up", "ui_down")
@@ -140,7 +143,8 @@ func _physics_process(delta: float) -> void:
 	if busy:
 		return
 
-	if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_SPACE):
+	# Axt auf Leertaste. (Enter ist jetzt fuer den Chat reserviert.)
+	if Input.is_key_pressed(KEY_SPACE):
 		_start_axe()
 		return
 

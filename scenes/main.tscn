@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/waypoint_arrow.gd" id="12_wparrow"]
 [ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
 [ext_resource type="Script" path="res://scripts/net_game.gd" id="13_net"]
+[ext_resource type="Script" path="res://scripts/chat.gd" id="14_chat"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -91,3 +92,6 @@ script = ExtResource("11_minimap")
 
 [node name="WaypointArrow" type="Control" parent="Overlay"]
 script = ExtResource("12_wparrow")
+
+[node name="Chat" type="Control" parent="Overlay"]
+script = ExtResource("14_chat")
