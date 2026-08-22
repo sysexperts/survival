@@ -1,9 +1,0 @@
-[gd_scene format=3 uid="uid://bwfxnomiwgs70"]
-
-[ext_resource type="Script" path="res://_gen.gd" id="1"]
-
-[node name="Gen" type="Node2D" unique_id=1131058348]
-script = ExtResource("1")
-
-[node name="Camera2D" type="Camera2D" parent="." unique_id=413088179]
-zoom = Vector2(3, 3)
