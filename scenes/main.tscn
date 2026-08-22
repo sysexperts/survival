@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/minimap.gd" id="11_minimap"]
 [ext_resource type="Script" path="res://scripts/waypoint_arrow.gd" id="12_wparrow"]
 [ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
+[ext_resource type="Script" path="res://scripts/net_game.gd" id="13_net"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -67,6 +68,9 @@ world_path = NodePath("../World")
 
 [node name="Inventory" type="Node" parent="."]
 script = ExtResource("8_inventory")
+
+[node name="NetGame" type="Node" parent="."]
+script = ExtResource("13_net")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2, 2)

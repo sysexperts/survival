@@ -5,6 +5,9 @@
 export_presets.cfg
 *.translation
 
+# Fertig exportierte Builds (.exe/.pck) gehoeren nicht ins Repo
+build/
+
 # OS / Editor
 Thumbs.db
 Desktop.ini
