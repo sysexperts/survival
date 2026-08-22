@@ -190,6 +190,53 @@ Alle 17 Möbel sind als Items registriert (`ItemDB.FURNITURE`). Werkbank
 
 ---
 
+## Laufendes Vorhaben: chunk-basierter World-Generator
+
+Ziel des Nutzers: ein Minecraft-artiger Weltgenerator — neue Kartenteile
+entstehen, während man in eine Richtung läuft. Optik/Aufbau wie bisher,
+**Höhe maximal bis Layer 03**. Wenn das steht, kommen **Biome** dazu.
+
+**Entscheidungen (mit dem Nutzer abgestimmt):**
+
+- **Handbau + Prozedural drumherum.** Die gemalte Beispielmap in
+  `world.tscn` bleibt als fester Startbereich stehen; generiert wird nur
+  außenrum. Der Authored-Bereich wird nie überschrieben. Heikel ist der
+  Grenzabgleich: geplant ist flacher Boden auf Basishöhe der Handbau-Ränder
+  direkt außen, Hügel (Noise, Level 01–03) erst ein paar Zellen weiter.
+- **Persistenz:** deterministische Chunk-Erzeugung (Chunk-Seed aus
+  Welt-Seed + Chunk-Koordinate) **plus leichter Änderungs-Diff pro Chunk**,
+  damit Aufgesammeltes/Gefälltes wegbleibt (passt zum „kein Nachwachsen"-
+  Prinzip von `resource_scatter.gd` und zu `regrowth.gd`).
+
+**Warum das Fundament passt:** `IsoWorld.set_block/erase_block` erlauben
+Laufzeit-Terrain, `spawn_gather()` und die Prop-als-Node-Umwandlung sind
+schon dynamisch, `GatherDB`/`ItemDB` sind datengetrieben (ideal für Biome),
+A* rechnet ohnehin pro Anfrage neu.
+
+**Umbau-Brennpunkte:**
+
+- `IsoWorld._spawn_prop_nodes()` läuft **einmal** über alle Zellen → muss
+  pro-Chunk werden (laden/entladen), sonst wächst der Node-Baum unbegrenzt.
+- `ResourceScatter._scatter()` streut **einmal global** über
+  `free_ground_cells()` → chunk-lokal + deterministischer Chunk-Seed.
+- Das halbversetzte **Stacked-Raster** (Parität in `neighbors()`): Chunks im
+  **durchgehenden** Zellkoordinatensystem generieren, nicht in lokalen
+  Chunk-Koordinaten — dann bleibt die Parität an Grenzen stimmig.
+- Höhe aus `FastNoiseLite`: pro Zelle Level00…03 stapeln.
+
+**Milestones (Reihenfolge):**
+
+1. Chunk-Streaming Boden + Höhe (`scripts/world_gen.gd` +
+   `scripts/chunk_manager.gd`), Authored-Bereich aussparen. — **offen**
+2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — offen
+3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — offen
+4. Biome: zweiter, großmaßstäbiger Noise + Biom-Datentabellen im
+   `*_db.gd`-Stil; Übergänge feinschleifen. — offen
+
+**Git:** Das Projekt ist jetzt ein Git-Repo (Branch `main`), Remote
+`origin` = https://github.com/sysexperts/survival (public). Erster Commit
+„Stand vor World-Generator" ist der Ausgangspunkt vor dem Umbau.
+
 ## Offene Enden
 
 1. **Die Axt hat kein Rezept.** Sie existiert als Item und `Player.chop()`
