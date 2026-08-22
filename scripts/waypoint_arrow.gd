@@ -9,8 +9,18 @@ class_name WaypointArrow
 ## Name. Die Wegpunkte kommen aus der Vollbildkarte (M).
 
 const METERS_PER_CELL := 1.0
-const ARROW_R := 36.0
 const C_SIDE := Color(0.82, 0.80, 0.70)
+
+## Pfeil-Grafiken aus einem Sheet (beide weiß -> per modulate einfärbbar,
+## zeigen nach rechts). Regionen im Sheet:
+const ARROWS := preload("res://assets/props/arrows.png")
+const BIG_REGION := Rect2(35, 5, 26, 22)
+const SMALL_REGION := Rect2(74, 3, 14, 27)
+const BIG_W := 66.0        ## Zielbreite des großen Pfeils in Pixeln
+const SMALL_H := 28.0      ## Zielhöhe der kleinen Pfeile
+
+var _big_tex: AtlasTexture
+var _small_tex: AtlasTexture
 ## Ab hier ist man "da" - der Pfeil blendet weich aus.
 const FADE_RADIUS := 20.0
 const FADE_SPEED := 3.5          ## Alpha-Änderung pro Sekunde (~0.3 s Blende)
@@ -35,6 +45,13 @@ func _ready() -> void:
 	minimap = get_node_or_null(minimap_path)
 	if minimap == null:
 		minimap = get_tree().root.find_child("Minimap", true, false)
+
+	_big_tex = AtlasTexture.new()
+	_big_tex.atlas = ARROWS
+	_big_tex.region = BIG_REGION
+	_small_tex = AtlasTexture.new()
+	_small_tex.atlas = ARROWS
+	_small_tex.region = SMALL_REGION
 
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor_left = 1.0; anchor_right = 1.0; anchor_top = 0.0; anchor_bottom = 0.0
@@ -102,7 +119,7 @@ func _draw() -> void:
 
 	if wps.is_empty():
 		if font != null:
-			_center_text(font, "keine Wegpunkte", 14.0, 40.0, C_SIDE)
+			_center_text(font, "keine Wegpunkte", 14, 40.0, C_SIDE)
 		return
 
 	_index = clampi(_index, 0, wps.size() - 1)
@@ -114,13 +131,14 @@ func _draw() -> void:
 	var d := world.cell_to_world(wp["cell"], lvl) - ppos
 	var ang := atan2(d.y, d.x) if d.length() > 0.5 else 0.0
 
-	# Großer Zielpfeil.
-	_draw_arrow(Vector2(w * 0.5, 40.0), ang, ARROW_R, col)
+	# Großer Zielpfeil, gedreht in Richtung Wegpunkt, in dessen Farbe.
+	_draw_tex(_big_tex, Vector2(w * 0.5, 42.0), ang, BIG_W / BIG_REGION.size.x, col)
 
 	# Seitenpfeile (nur wenn mehrere), passend zu den Buttons.
 	if wps.size() > 1:
-		_side_arrow(Vector2(16, 46), false)
-		_side_arrow(Vector2(w - 16, 46), true)
+		var ss := SMALL_H / SMALL_REGION.size.y
+		_draw_tex(_small_tex, Vector2(16, 46), PI, ss, col)      # links (gespiegelt)
+		_draw_tex(_small_tex, Vector2(w - 16, 46), 0.0, ss, col) # rechts
 
 	# Text: Entfernung + Name.
 	if font != null:
@@ -130,28 +148,12 @@ func _draw() -> void:
 		_center_text(font, str(wp["name"]), 15, 120.0, Color(0.92, 0.92, 0.88))
 
 
-func _draw_arrow(c: Vector2, ang: float, r: float, col: Color) -> void:
-	var pts := PackedVector2Array([
-		Vector2(r, 0), Vector2(-r * 0.55, -r * 0.7),
-		Vector2(-r * 0.2, 0), Vector2(-r * 0.55, r * 0.7),
-	])
-	for i in pts.size():
-		pts[i] = c + pts[i].rotated(ang)
-	draw_colored_polygon(pts, col)
-	var outline := PackedVector2Array(pts)
-	outline.append(pts[0])
-	draw_polyline(outline, Color(0, 0, 0, 0.85), 2.0, true)
-
-
-func _side_arrow(c: Vector2, right: bool) -> void:
-	var s := 9.0
-	var dir := 1.0 if right else -1.0
-	var pts := PackedVector2Array([
-		Vector2(s * dir, 0), Vector2(-s * dir, -s), Vector2(-s * dir, s),
-	])
-	for i in pts.size():
-		pts[i] = c + pts[i]
-	draw_colored_polygon(pts, C_SIDE)
+## Zeichnet eine Textur um `c` gedreht (`ang`), skaliert und in `col` getönt.
+func _draw_tex(tex: AtlasTexture, c: Vector2, ang: float, scale: float, col: Color) -> void:
+	draw_set_transform(c, ang, Vector2.ONE)
+	var sz := tex.get_size() * scale
+	draw_texture_rect(tex, Rect2(-sz * 0.5, sz), false, col)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _center_text(font: Font, text: String, fs: int, y: float, col: Color) -> void:
