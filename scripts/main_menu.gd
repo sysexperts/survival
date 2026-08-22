@@ -37,7 +37,7 @@ func _ready() -> void:
 	box.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Multiplayer-Test"
+	subtitle.text = "Multiplayer  ·  v%d" % _read_version()
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(subtitle)
 
@@ -81,6 +81,14 @@ func _ready() -> void:
 	box.add_child(_status)
 
 	Net.connection_failed.connect(_on_connection_failed)
+
+
+func _read_version() -> int:
+	if FileAccess.file_exists("res://version.txt"):
+		var f := FileAccess.open("res://version.txt", FileAccess.READ)
+		if f:
+			return int(f.get_as_text().strip_edges())
+	return 0
 
 
 func _field_label(text: String) -> Label:
