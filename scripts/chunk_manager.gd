@@ -129,7 +129,9 @@ func _load_chunk(chunk: Vector2i) -> void:
 			# der Generator sonst mit Gras zuschütten würde.
 			if world.in_authored_bounds(cell):
 				continue
-			var h := gen.height_at(cell, world.dist_to_authored(cell))
+			# Explizit int: gen ist untypisiert (Variant), da ließe := keinen
+			# Typ ableiten.
+			var h: int = gen.height_at(cell, world.dist_to_authored(cell))
 			for lvl in range(0, h + 1):
 				world.set_block(cell, lvl, GRASS_ATLAS)
 				placed.append([cell, lvl])
