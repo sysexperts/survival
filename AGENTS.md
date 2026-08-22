@@ -237,6 +237,66 @@ A* rechnet ohnehin pro Anfrage neu.
 `origin` = https://github.com/sysexperts/survival (public). Erster Commit
 „Stand vor World-Generator" ist der Ausgangspunkt vor dem Umbau.
 
+### So setzt du Milestone 1 konkret um (nächste KI: hier starten)
+
+Ziel: Boden + Höhe entstehen chunk-weise um den Spieler, der Handbau-Bereich
+bleibt unangetastet. **Noch keine** Props/Rohstoffe (das ist Milestone 2).
+
+1. **Authored-Bereich merken.** In `IsoWorld` beim Spielstart die Grenzen
+   der gemalten Map festhalten, *bevor* generiert wird: über alle Level
+   `get_used_cells()` sammeln und Bounding-Box (min/max x/y) speichern, z. B.
+   `authored_bounds: Rect2i`. Zellen innerhalb dieser Box nie generieren.
+   Wichtig: das passiert vor `_spawn_prop_nodes()` bzw. dessen Nachfolger.
+
+2. **`scripts/world_gen.gd` (neu, `class_name WorldGen`).** Reine Logik,
+   kein Node-Zustand nötig. `FastNoiseLite` mit festem Welt-Seed
+   (`@export var world_seed`). Funktion `height_at(cell: Vector2i) -> int`:
+   Noise → `clampi(floor(n_normiert * 3), 0, 3)` (max Layer 03!). Direkt am
+   Authored-Rand (Ring von ~3 Zellen) Höhe auf die Basishöhe der Handbau-
+   Kante zwingen, damit keine harte Stufe entsteht — nach außen per `lerp`
+   in die Noise-Höhe überblenden. Boden-Atlas vorerst fest die
+   Gras-Kachel(n), die auch der Handbau nutzt (in `world.tscn` nachsehen;
+   Atlas-Koords stehen in den `tile_map_data`-Blöcken, Quelle 0).
+
+3. **Chunk generieren.** Ein Chunk = quadratischer Block von N×N Zellen
+   (Start: N=16) im **durchgehenden** Zellkoordinatensystem (NICHT lokale
+   Chunk-Koords — sonst kippt die Stacked-Parität, siehe README/neighbors).
+   Für jede Zelle des Chunks, die außerhalb `authored_bounds` liegt: über
+   `IsoWorld.set_block(cell, lvl, atlas)` die Säule Level00..height_at(cell)
+   füllen. Chunk-Koordinate ↔ Zellbereich sauber umrechnen und testen.
+
+4. **`scripts/chunk_manager.gd` (neu, Node in `main.tscn`).** Hält
+   Referenz auf `IsoWorld` und den Spieler (Gruppe `player`, NICHT über
+   festen Pfad — er wechselt den Parent, siehe README). In
+   `_physics_process` (gedrosselt, z. B. alle ~0.2 s) die Spieler-Zelle →
+   Chunk bestimmen. Chunks im Radius R (Start: 2) laden, die außerhalb
+   R+1 wieder entladen. `loaded_chunks: Dictionary` (Chunk-Koord → true).
+   Entladen = die generierten (nicht-authored) Blöcke des Chunks wieder
+   `erase_block`en. Achtung: Authored-Zellen dabei niemals löschen.
+
+5. **Verdrahtung.** `chunk_manager` nach `World` und `Player` initialisieren
+   lassen (Reihenfolge in `main.tscn` prüfen; `World._ready` läuft zuerst).
+   Den ersten Chunk-Load einmal beim Start erzwingen, damit der Spieler
+   nicht ins Leere fällt, falls er am Kartenrand steht.
+
+**Testen (Pflicht, siehe „Testen ohne Editor" oben):**
+Erst `godot --headless --editor ... --quit` (neue `class_name` bekannt
+machen), dann headless laufen lassen und per temporärem `tools/_shot.gd`
+ein PNG machen: Spieler ein Stück nach außen bewegen und prüfen, dass (a)
+neuer Boden erscheint, (b) der Handbau-Bereich unverändert ist, (c) keine
+harte Höhenkante am Übergang steht. `tools/_shot.gd` danach wieder
+entfernen.
+
+**Fallstricke:**
+- Stacked-Parität: nur im durchgehenden Koordinatensystem arbeiten.
+- `authored_bounds` als **Bounding-Box** ist grob (rechteckig); falls die
+  gemalte Map nicht rechteckig ist, lieber ein `Dictionary` der tatsächlich
+  belegten Authored-Zellen führen und darüber prüfen.
+- Performance: pro Frame nur wenige Chunks laden/entladen, sonst ruckelt es.
+
+**Nach Milestone 1:** diesen Abschnitt auf „erledigt" setzen, Milestone-2-
+Anleitung analog ergänzen, committen + pushen.
+
 ## Offene Enden
 
 1. **Die Axt hat kein Rezept.** Sie existiert als Item und `Player.chop()`
