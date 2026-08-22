@@ -167,7 +167,7 @@ Eltern-Node.
 | **F** | Kontextaktion (aufheben, benutzen, platzieren) |
 | Esc | oberstes Fenster schliessen |
 | L | Laterne |
-| **M** | Minimap Vollbild an/aus (dort Links-/Rechtsklick = Wegpunkt setzen/löschen) |
+| **M** | Vollbildkarte an/aus (Links-/Rechtsklick = Wegpunkt setzen/löschen); die Kompassleiste über der Hotbar zeigt die Wegpunkt-Richtungen |
 
 `F` war früher `E`. Die Hinweistexte in `GatherDB` nennen die Taste im
 Klartext — beim Umbelegen mit ändern.

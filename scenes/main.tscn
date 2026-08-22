@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/resource_scatter.gd" id="9_scatter"]
 [ext_resource type="Script" path="res://scripts/chunk_manager.gd" id="10_chunks"]
 [ext_resource type="Script" path="res://scripts/minimap.gd" id="11_minimap"]
+[ext_resource type="Script" path="res://scripts/compass.gd" id="12_compass"]
 [ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
 
 [sub_resource type="Environment" id="Environment_look"]
@@ -83,3 +84,6 @@ mouse_filter = 2
 
 [node name="Minimap" type="Control" parent="Overlay"]
 script = ExtResource("11_minimap")
+
+[node name="Compass" type="Control" parent="Overlay"]
+script = ExtResource("12_compass")

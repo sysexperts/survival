@@ -146,6 +146,9 @@ func _process(delta: float) -> void:
 		if player == null:
 			return
 		_connect_player()
+	# Nur arbeiten, wenn die Vollbildkarte offen ist.
+	if not _full:
+		return
 	var lvl: int = int(player.get("level")) if player.get("level") != null else 0
 	var cell := world.world_to_cell(player.global_position, lvl)
 	if cell != _pcell or _dirty:
@@ -191,7 +194,15 @@ func _apply_layout() -> void:
 		offset_right = -SMALL_MARGIN
 		offset_bottom = SMALL_MARGIN + SMALL_SIZE
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Die Karte gibt es nur noch als Vollbild (mit M). Das kleine Eck-Widget
+	# ist raus - dafür zeigt die Kompassleiste die Wegpunkt-Richtungen.
+	visible = _full
 	_map.queue_redraw()
+
+
+## Für die Kompassleiste: die aktuelle Wegpunkt-Liste.
+func get_waypoints() -> Array:
+	return _waypoints
 
 
 func _cell_px() -> float:
