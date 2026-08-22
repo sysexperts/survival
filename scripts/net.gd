@@ -18,6 +18,10 @@ const GAME_SCENE := "res://scenes/main.tscn"
 ## Wird true, sobald eine echte Verbindung steht. Im Einzelspieler bleibt es
 ## false - NetGame haelt sich dann komplett raus.
 var active := false
+## true nur, wenn dieser Prozess ein DEDIZIERTER Server ist (headless auf dem
+## Linux-Server). Dann spielt er nicht mit, sondern leitet nur die Pakete der
+## Clients untereinander weiter.
+var is_dedicated := false
 var player_name := "Spieler"
 
 ## Fuer das Menue: die Verbindung ist gescheitert (falsche IP / kein Server).
@@ -35,6 +39,27 @@ func host() -> String:
 	active = true
 	get_tree().change_scene_to_file(GAME_SCENE)
 	return ""
+
+
+## Startet einen headless-Dauerbetrieb-Server (Linux). Vermittelt nur, spielt
+## nicht mit. Wird vom Menue aufgerufen, wenn das Spiel mit "--server" bzw. als
+## dedizierter Server-Build gestartet wurde.
+func start_dedicated_server() -> void:
+	is_dedicated = true
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_server(PORT, MAX_CLIENTS)
+	if err != OK:
+		push_error("Server-Start fehlgeschlagen (Fehler %d)." % err)
+		get_tree().quit(1)
+		return
+	multiplayer.multiplayer_peer = peer
+	active = true
+	multiplayer.peer_connected.connect(func(id): print("Spieler verbunden: %d" % id))
+	multiplayer.peer_disconnected.connect(func(id): print("Spieler getrennt: %d" % id))
+	print("=== Dedizierter Server laeuft auf UDP-Port %d ===" % PORT)
+	# Verzoegern: start_dedicated_server() laeuft aus dem _ready des Menues, in
+	# dem der Szenenbaum gerade Kinder umbaut - ein direkter Wechsel wirft sonst.
+	get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 
 
 ## Verbindet sich mit einem Host. Die Spielszene wird erst geladen, wenn die

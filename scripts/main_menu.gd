@@ -12,6 +12,15 @@ var _status: Label
 
 
 func _ready() -> void:
+	# Als dedizierter Server gestartet? Dann kein Menue, sondern sofort hosten.
+	# Erkennung ueber das dedizierte Server-Build-Feature ODER die Flag
+	# "--server" / "server" (egal ob als Engine- oder Nutzer-Argument).
+	var args := OS.get_cmdline_args()
+	args.append_array(OS.get_cmdline_user_args())
+	if OS.has_feature("dedicated_server") or args.has("--server") or args.has("server"):
+		Net.start_dedicated_server()
+		return
+
 	# Volle Flaeche, Inhalt zentriert.
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
