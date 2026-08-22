@@ -106,10 +106,11 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 
 ## Entfernt einen Baum wie beim lokalen Faellen - mit Umkipp-Animation, wenn
 ## der Node noch da ist, sonst hart entfernen.
-func _remove_tree(cell: Vector2i, level: int) -> void:
+func _remove_tree(cell: Vector2i, _level: int) -> void:
 	var node: TreeActor = _world.prop_node(cell)
 	if node:
 		_world.detach_prop(cell)
 		node.fell(Vector2(0, 1))
-	else:
-		_world.remove_prop(cell, level)
+	# Kein else mit remove_prop! Ist kein Baum-Node da, gibt es nichts zu
+	# entfernen. remove_prop wuerde bei fehlendem Node die Bodenkachel loeschen
+	# (n == null) und beim Zuschauer ein Loch reissen.

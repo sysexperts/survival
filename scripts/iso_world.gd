@@ -539,11 +539,13 @@ func remove_prop(cell: Vector2i, level: int = -1) -> void:
 		n.queue_free()
 	_prop_nodes.erase(cell)
 	# Die Kachel nur loeschen, wenn das Prop KEIN Node war (also eine gemalte
-	# Kachel wie ein Stein). War es ein Node (Baumstumpf, Baum, eingestreuter
-	# Rohstoff), ist die Kachel an der Stelle der BODEN - den anzufassen reisst
-	# ein Loch, z. B. wenn ein Baumstumpf entfernt wird.
+	# Kachel wie ein Stein). Zusaetzlich absichern: NIE eine Bodenkachel
+	# (SOURCE_ID) loeschen - egal welcher Level uebergeben wird -, sonst
+	# entsteht ein Loch (z. B. wenn beim Faellen der Stumpf gesetzt wird und
+	# der Zuschauer keinen Baum-Node hat).
 	if n == null and level >= 0 and level < levels.size():
-		levels[level].erase_cell(cell)
+		if levels[level].get_cell_source_id(cell) != SOURCE_ID:
+			levels[level].erase_cell(cell)
 	invalidate_props()
 
 
