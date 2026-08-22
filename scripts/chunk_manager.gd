@@ -29,6 +29,11 @@ const GRASS_ATLAS := Vector2i(2, 2)
 ## Der erzwungene erste Load ignoriert den Deckel bewusst.
 const LOAD_BUDGET := 1
 
+## Per preload eingebunden statt über den class_name `WorldGen`: so läuft der
+## Generator auch dann, wenn das Spiel direkt mit F5 gestartet wird, ohne dass
+## der Editor die neue Klasse vorher registriert hat.
+const WorldGenScript := preload("res://scripts/world_gen.gd")
+
 @export var world_path: NodePath = ^"../World"
 @export var world_seed: int = 1337
 ## Wie oft die Spielerposition geprüft wird. Jeden Frame wäre Verschwendung -
@@ -37,7 +42,7 @@ const LOAD_BUDGET := 1
 
 var world: IsoWorld
 var player: Node2D
-var gen: WorldGen
+var gen                          ## WorldGen; untypisiert, siehe WorldGenScript oben
 
 ## Chunk-Koordinate -> Array der generierten Blöcke ([cell, level]). Wird
 ## beim Entladen gebraucht, um genau diese Blöcke wieder zu löschen.
@@ -50,7 +55,7 @@ func _ready() -> void:
 	if world == null:
 		push_warning("ChunkManager: keine Welt unter %s" % world_path)
 		return
-	gen = WorldGen.new(world_seed)
+	gen = WorldGenScript.new(world_seed)
 	# Der Spieler landet erst nach seinem eigenen _ready in der Gruppe, und er
 	# hängt sich zur Laufzeit um (siehe README) - deshalb über die Gruppe und
 	# einen Frame später.
@@ -64,6 +69,12 @@ func _first_load() -> void:
 	if player == null:
 		return
 	_update_chunks(true)
+	# Kurzer Beleg im Output, dass generiert wurde - hilft beim Prüfen, ob der
+	# neue Boden wirklich entsteht (er liegt außen um den Handbau-Bereich).
+	var total := 0
+	for c in _loaded:
+		total += _loaded[c].size()
+	print("ChunkManager: %d Chunks geladen, %d Blöcke generiert" % [_loaded.size(), total])
 
 
 func _physics_process(delta: float) -> void:
