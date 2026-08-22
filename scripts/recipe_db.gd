@@ -124,7 +124,7 @@ static func craft(inv: Inventory, recipe: Dictionary) -> bool:
 static func blocker(inv: Inventory, recipe: Dictionary) -> String:
 	for id in recipe["cost"]:
 		if inv.count_of(id) < int(recipe["cost"][id]):
-			return "Zutaten fehlen"
+			return "Malzeme eksik"
 	if not inv.room_for(recipe["out"], int(recipe["count"])):
-		return "Inventar voll"
+		return "Envanter dolu"
 	return ""

@@ -67,7 +67,7 @@ func _load_cached_update() -> void:
 
 
 func _check_server() -> void:
-	_set_status("Suche nach Updates ...")
+	_set_status("Güncellemeler araniyor ...")
 	_http.request_completed.connect(_on_version_response, CONNECT_ONE_SHOT)
 	if _http.request(VERSION_URL) != OK:
 		_start_game()               # kein Netz -> einfach starten
@@ -86,12 +86,12 @@ func _on_version_response(result: int, code: int, _headers: PackedStringArray, b
 	if _server_version > _active_version and _pck_url != "":
 		_download_update()
 	else:
-		_set_status("Aktuell (v%d)" % _active_version)
+		_set_status("Güncel (v%d)" % _active_version)
 		_start_game()
 
 
 func _download_update() -> void:
-	_set_status("Lade Update v%d ..." % _server_version)
+	_set_status("Güncelleme yükleniyor v%d ..." % _server_version)
 	DirAccess.make_dir_recursive_absolute(UPDATE_DIR)
 	var tmp := UPDATE_PCK + ".tmp"
 	if FileAccess.file_exists(tmp):
@@ -117,7 +117,7 @@ func _on_pck_downloaded(result: int, code: int, _headers: PackedStringArray, _bo
 			vf.close()
 		if ProjectSettings.load_resource_pack(UPDATE_PCK, true):
 			_active_version = _server_version
-			_set_status("Update installiert (v%d)" % _active_version)
+			_set_status("Güncelleme kuruldu (v%d)" % _active_version)
 	_start_game()
 
 
@@ -141,7 +141,7 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	_label = Label.new()
-	_label.text = "Starte ..."
+	_label.text = "Baslatiliyor ..."
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_label)
 

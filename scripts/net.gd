@@ -26,7 +26,7 @@ var active := false
 ## Linux-Server). Dann spielt er nicht mit, sondern leitet nur die Pakete der
 ## Clients untereinander weiter.
 var is_dedicated := false
-var player_name := "Spieler"
+var player_name := "Oyuncu"
 ## true, solange die Chat-Eingabe offen ist - der Player pausiert dann.
 var chat_open := false
 
@@ -40,7 +40,7 @@ func host() -> String:
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_server(PORT, MAX_CLIENTS)
 	if err != OK:
-		return "Konnte den Server nicht starten (Fehler %d).\nLaeuft evtl. schon eine Instanz?" % err
+		return "Sunucu baslatilamadi (Hata %d).\nZaten calisiyor olabilir mi?" % err
 	multiplayer.multiplayer_peer = peer
 	active = true
 	get_tree().change_scene_to_file(GAME_SCENE)
@@ -78,12 +78,12 @@ func join(ip: String) -> String:
 	if not ip.is_valid_ip_address():
 		var resolved := IP.resolve_hostname(ip, IP.TYPE_IPV4)
 		if resolved == "":
-			return "Konnte die Adresse '%s' nicht aufloesen." % ip
+			return "'%s' adresi cözümlenemedi." % ip
 		ip = resolved
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, PORT)
 	if err != OK:
-		return "Konnte nicht verbinden (Fehler %d)." % err
+		return "Baglanilamadi (Hata %d)." % err
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(_on_connected, CONNECT_ONE_SHOT)
 	multiplayer.connection_failed.connect(_on_failed, CONNECT_ONE_SHOT)

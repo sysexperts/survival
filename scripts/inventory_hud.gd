@@ -156,7 +156,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 8)
 	_bag.add_child(column)
 	var title := Label.new()
-	title.text = "Tasche"
+	title.text = "Canta"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 

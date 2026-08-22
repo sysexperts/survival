@@ -301,7 +301,7 @@ func _on_hud_draw() -> void:
 		_player_arrow(_hud, center, 9.0)
 		if font != null:
 			_label(_hud, font, Vector2(FULL_PAD.x, FULL_PAD.y - 16.0), "Karte", 28, C_FRAME)
-			var hint := "Linksklick: Wegpunkt   Rechtsklick: löschen   M: schliessen    x %d  y %d" % [_pcell.x, _pcell.y]
+			var hint := "Sol tik: Isaret   Sag tik: sil   M: kapat    x %d  y %d" % [_pcell.x, _pcell.y]
 			_label(_hud, font, Vector2(FULL_PAD.x, size.y - FULL_PAD.y + 26.0), hint, 16, Color(0.72, 0.74, 0.68))
 		_north(_hud, font, Vector2(panel.position.x + panel.size.x - 22.0, panel.position.y + 22.0))
 	else:
@@ -421,7 +421,7 @@ func _remove_waypoint_near(pos: Vector2) -> void:
 
 func _open_editor(cell: Vector2i) -> void:
 	_pending_cell = cell
-	_name_edit.text = "Wegpunkt %d" % (_waypoints.size() + 1)
+	_name_edit.text = "Isaret %d" % (_waypoints.size() + 1)
 	_select_color(SWATCHES[0], _swatches[0][0])
 	_editor.position = (size - _editor.size) * 0.5
 	_editor.visible = true
@@ -432,7 +432,7 @@ func _open_editor(cell: Vector2i) -> void:
 func _confirm_wp() -> void:
 	var nm := _name_edit.text.strip_edges()
 	if nm == "":
-		nm = "Wegpunkt"
+		nm = "Isaret"
 	_waypoints.append({"cell": _pending_cell, "name": nm, "color": _edit_color})
 	_editor.visible = false
 	_save_waypoints()
@@ -461,7 +461,7 @@ func _build_editor() -> void:
 	_editor.add_child(vb)
 
 	var title := Label.new()
-	title.text = "Wegpunkt setzen"
+	title.text = "Isaret koy"
 	vb.add_child(title)
 
 	_name_edit = LineEdit.new()
@@ -531,6 +531,6 @@ func _load_waypoints() -> void:
 		var col: Array = e.get("color", [1, 1, 1])
 		_waypoints.append({
 			"cell": Vector2i(int(e["x"]), int(e["y"])),
-			"name": str(e.get("name", "Wegpunkt")),
+			"name": str(e.get("name", "Isaret")),
 			"color": Color(col[0], col[1], col[2]),
 		})

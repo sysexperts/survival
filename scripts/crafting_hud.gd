@@ -8,7 +8,7 @@ class_name CraftingHUD
 ## nur mit einer anderen Station.
 ##
 ## Gebaut wird nicht sofort, sondern über die Bauliste (`CraftQueue`): pro
-## Zeile stellt man eine Stückzahl ein, "Bauen" gibt sie in Auftrag, und
+## Zeile stellt man eine Stückzahl ein, "Insa" gibt sie in Auftrag, und
 ## unten läuft ab, was daraus wird. Die Liste arbeitet weiter, auch wenn
 ## dieses Fenster zu ist.
 ##
@@ -25,7 +25,7 @@ const MAX_BATCH := 99
 var inventory: Inventory
 var queue: CraftQueue
 var station := RecipeDB.HAND
-var title := "Handwerk"
+var title := "Üretim"
 
 var _dim: ColorRect
 var _panel: PanelContainer
@@ -37,7 +37,7 @@ var _bar_label: Label
 
 
 func setup(p_inventory: Inventory, p_queue: CraftQueue,
-		p_station := RecipeDB.HAND, p_title := "Handwerk") -> void:
+		p_station := RecipeDB.HAND, p_title := "Üretim") -> void:
 	inventory = p_inventory
 	queue = p_queue
 	station = p_station
@@ -211,7 +211,7 @@ func _make_row(recipe: Dictionary) -> Control:
 	stepper.add_child(plus)
 
 	var button := Button.new()
-	button.text = "Bauen"
+	button.text = "Insa"
 	button.custom_minimum_size = Vector2(96, SLOT)
 	box.add_child(button)
 
@@ -246,7 +246,7 @@ func _make_queue() -> Control:
 	box.custom_minimum_size = Vector2(480, 0)
 
 	var head := Label.new()
-	head.text = "Bauliste"
+	head.text = "Insa Listesi"
 	head.add_theme_font_size_override("font_size", SMALL)
 	box.add_child(head)
 
@@ -314,7 +314,7 @@ func _refresh() -> void:
 			label.add_theme_color_override("font_color",
 				Color(0.65, 0.9, 0.6) if have >= need else Color(0.9, 0.55, 0.5))
 
-		var why := "" if possible >= int(row["amount"]) else "Zutaten fehlen"
+		var why := "" if possible >= int(row["amount"]) else "Malzeme eksik"
 		row["note"].text = why
 		row["button"].disabled = why != ""
 
@@ -350,7 +350,7 @@ func _refresh_queue() -> void:
 		line.add_child(label)
 
 		var stop := Button.new()
-		stop.text = "Abbrechen"
+		stop.text = "Iptal"
 		stop.add_theme_font_size_override("font_size", SMALL)
 		stop.pressed.connect(_on_cancel.bind(job))
 		line.add_child(stop)

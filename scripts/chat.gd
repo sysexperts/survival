@@ -60,7 +60,7 @@ func _ready() -> void:
 	_scroll.add_child(_history)
 
 	_entry = LineEdit.new()
-	_entry.placeholder_text = "Nachricht ... (Enter senden, Esc schliessen)"
+	_entry.placeholder_text = "Mesaj ... (Enter gönder, Esc kapat)"
 	_entry.max_length = 120
 	_entry.custom_minimum_size = Vector2(480, 0)
 	_entry.visible = false
@@ -73,7 +73,7 @@ func _ready() -> void:
 	col.add_child(_entry)
 
 	_hint = Label.new()
-	_hint.text = "T: Chat"
+	_hint.text = "T: Sohbet"
 	_hint.add_theme_font_size_override("font_size", 15)
 	_hint.add_theme_color_override("font_color", Color(1, 1, 1))
 	_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0))

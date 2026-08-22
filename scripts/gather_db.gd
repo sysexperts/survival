@@ -47,34 +47,34 @@ const BLOCKED_GROUND: Array[Vector2i] = [
 ##              der untere Rand auf der Mitte, wie bei einem Baum.
 const KINDS := {
 	"holz": {
-		"name": "Holz",
+		"name": "Odun",
 		"props": [Vector2i(9, 9), Vector2i(9, 11)],
 		"icon": Vector2i(9, 13),
 		"yield": [1, 8],
 		"density": 0.02,
 		"scale": 0.5,
 		"anchor": "center",
-		"hint": "F  Holz aufsammeln",
+		"hint": "F  Odun topla",
 	},
 	"pflanzenfaser": {
-		"name": "Pflanzenfaser",
+		"name": "Bitki Lifi",
 		"props": [Vector2i(3, 0)],
 		"icon": Vector2i(5, 1),
 		"yield": [1, 8],
 		"density": 0.025,
 		"scale": 0.45,
 		"anchor": "foot",
-		"hint": "F  Pflanzenfaser sammeln",
+		"hint": "F  Bitki lifi topla",
 	},
 	"stein": {
-		"name": "Stein",
+		"name": "Tas",
 		"props": [Vector2i(10, 0), Vector2i(10, 1), Vector2i(10, 3), Vector2i(10, 5)],
 		"icon": Vector2i(10, 2),
 		"yield": 1,
 		"density": 0.018,
 		"scale": 0.5,
 		"anchor": "center",
-		"hint": "F  Stein aufheben",
+		"hint": "F  Tas al",
 	},
 }
 

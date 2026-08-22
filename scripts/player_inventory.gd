@@ -64,7 +64,7 @@ func _ready() -> void:
 
 	crafting = CraftingHUD.new()
 	add_child(crafting)
-	crafting.setup(inventory, queue, RecipeDB.HAND, "Handwerk")
+	crafting.setup(inventory, queue, RecipeDB.HAND, "Üretim")
 
 	for id in starting_items:
 		inventory.add(id, int(starting_items[id]))
@@ -118,11 +118,11 @@ func _process(delta: float) -> void:
 	var cell := player.stone_in_reach()
 	if cell != Player.INVALID_CELL:
 		var what := player.world.gather_id_at(cell)
-		want = GatherDB.hint(what) if GatherDB.has(what) else "F  Stein aufheben"
+		want = GatherDB.hint(what) if GatherDB.has(what) else "F  Tas al"
 	else:
 		var st := player.station_in_reach()
 		if st != "":
-			want = "F  %s öffnen" % ItemDB.display_name(st)
+			want = "F  %s ac" % ItemDB.display_name(st)
 	_set_ctx_hint(want)
 
 
@@ -227,7 +227,7 @@ func _notice(text: String) -> void:
 
 
 func _on_chop_refused() -> void:
-	_notice("Dafür brauchst du eine Axt in der Hand")
+	_notice("Bunun icin elinde bir balta olmali")
 
 
 func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> void:
@@ -300,10 +300,10 @@ func _use_selected() -> void:
 		return
 	if slot["id"] == "lagerfeuer":
 		preview.begin_campfire()
-		hud.set_hint("Linksklick setzen  ·  Rechtsklick oder Esc abbrechen")
+		hud.set_hint("Sol tik koy  ·  Sag tik veya Esc iptal")
 	elif ItemDB.is_furniture(slot["id"]):
 		preview.begin_furniture(slot["id"])
-		hud.set_hint("Linksklick setzen  ·  R drehen  ·  Rechtsklick oder Esc abbrechen")
+		hud.set_hint("Sol tik koy  ·  R döndür  ·  Sag tik veya Esc iptal")
 
 
 func _on_placement_confirmed(top_cell: Vector2i) -> void:

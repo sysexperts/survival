@@ -119,7 +119,7 @@ func _draw() -> void:
 
 	if wps.is_empty():
 		if font != null:
-			_center_text(font, "keine Wegpunkte", 14, 40.0, C_SIDE)
+			_center_text(font, "isaret yok", 14, 40.0, C_SIDE)
 		return
 
 	_index = clampi(_index, 0, wps.size() - 1)

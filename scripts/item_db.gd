@@ -27,63 +27,63 @@ const TILE_SIZE := Vector2i(32, 32)
 ## `region` sticht `cell` aus, wenn ein Sheet ein anderes Raster hat.
 static var ITEMS := {
 	"gebratenes_fleisch": {
-		"name": "Gebratenes Fleisch",
+		"name": "Kizarmis Et",
 		"max_stack": 16,
 		"sheet": SHEET_CAMP,
 		"cell": Vector2i(0, 0),
 		"region": Rect2i(428, 154, 34, 26),   # Fleisch aus Frame 11
 	},
 	"lagerfeuer": {
-		"name": "Lagerfeuer",
+		"name": "Kamp Atesi",
 		"max_stack": 16,
 		"sheet": SHEET_CAMP,
 		"cell": Vector2i(0, 0),
 		"region": Rect2i(128, 0, 128, 128),   # brennendes Feuer ohne Fleisch
 	},
 	"stein": {
-		"name": "Stein",
+		"name": "Tas",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(10, 2),
 	},
 	"holz": {
-		"name": "Holz",
+		"name": "Odun",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(9, 13),   # gebuendelte Aeste
 	},
 	"pflanzenfaser": {
-		"name": "Pflanzenfaser",
+		"name": "Bitki Lifi",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(5, 1),
 	},
 	"seil": {
-		"name": "Seil",
+		"name": "Halat",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(1, 4),
 	},
 	"schnur": {
-		"name": "Schnur",
+		"name": "Ip",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(7, 11),   # Garnknaeuel mit Faden
 	},
 	"stoff": {
-		"name": "Stoff",
+		"name": "Kumas",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(15, 3),   # gerollter Stoffballen
 	},
 	"axt": {
-		"name": "Axt",
+		"name": "Balta",
 		"max_stack": 1,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(15, 5),
 	},
 	"holzbrett": {
-		"name": "Holzbrett",
+		"name": "Tahta",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(9, 14),
@@ -94,23 +94,23 @@ static var ITEMS := {
 ## Steht getrennt, weil alle dasselbe Sheet und dasselbe 64er-Raster
 ## benutzen - so muss das nicht siebzehnmal danebenstehen.
 const FURNITURE := {
-	"hobelbank": ["Hobelbank", Vector2i(0, 0)],
-	"kiste": ["Kiste", Vector2i(1, 0)],
-	"generator": ["Generator", Vector2i(2, 0)],
-	"werkzeugstaender": ["Werkzeugständer", Vector2i(3, 0)],
-	"gerbgestell": ["Gerbgestell", Vector2i(4, 0)],
-	"spind": ["Spind", Vector2i(5, 0)],
-	"werkbank": ["Werkbank", Vector2i(0, 1)],
-	"kochstelle": ["Kochstelle", Vector2i(1, 1)],
-	"amboss": ["Amboss", Vector2i(2, 1)],
-	"webetisch": ["Webetisch", Vector2i(3, 1)],
-	"schmelzofen": ["Schmelzofen", Vector2i(4, 1)],
-	"bett": ["Bett", Vector2i(5, 1)],
-	"feldbett": ["Feldbett", Vector2i(0, 2)],
-	"alchemietisch": ["Alchemietisch", Vector2i(1, 2)],
-	"wasserfass": ["Wasserfass", Vector2i(2, 2)],
-	"hocker": ["Hocker", Vector2i(3, 2)],
-	"hochbeet": ["Hochbeet", Vector2i(4, 2)],
+	"hobelbank": ["Planya Tezgahi", Vector2i(0, 0)],
+	"kiste": ["Sandik", Vector2i(1, 0)],
+	"generator": ["Jeneratör", Vector2i(2, 0)],
+	"werkzeugstaender": ["Alet Standi", Vector2i(3, 0)],
+	"gerbgestell": ["Tabaklama Sehpasi", Vector2i(4, 0)],
+	"spind": ["Dolap", Vector2i(5, 0)],
+	"werkbank": ["Calisma Tezgahi", Vector2i(0, 1)],
+	"kochstelle": ["Ocak", Vector2i(1, 1)],
+	"amboss": ["Örs", Vector2i(2, 1)],
+	"webetisch": ["Dokuma Tezgahi", Vector2i(3, 1)],
+	"schmelzofen": ["Eritme Firini", Vector2i(4, 1)],
+	"bett": ["Yatak", Vector2i(5, 1)],
+	"feldbett": ["Portatif Yatak", Vector2i(0, 2)],
+	"alchemietisch": ["Simya Masasi", Vector2i(1, 2)],
+	"wasserfass": ["Su Ficisi", Vector2i(2, 2)],
+	"hocker": ["Tabure", Vector2i(3, 2)],
+	"hochbeet": ["Yükseltilmis Tarha", Vector2i(4, 2)],
 }
 
 
