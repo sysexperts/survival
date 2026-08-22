@@ -1,19 +1,19 @@
 extends Control
 class_name Minimap
 
-## Übersichtskarte oben rechts, mit M auf Vollbild umschaltbar, mit Wegpunkten.
+## Übersichtskarte oben rechts, mit M auf Vollbild, mit Wegpunkten.
 ##
-## Draufsicht, der Spieler immer in der Mitte, ein Pfeil zeigt die Blickrichtung.
-## Weil die Welt deterministisch generiert wird (WorldGen), zeigt die Karte auch
-## noch nicht geladene Gebiete.
+## Aufbau in drei Ebenen, damit das Terrain WEICH scrollt und trotzdem sauber
+## im Kreis (bzw. Panel) beschnitten bleibt:
+##   1. dieses Control  - Hintergrund (Schatten, dunkler Grund / Abdunklung)
+##   2. _map (clip_children) - zeichnet die Maske (Kreis/Panel); sein Kind
+##      _terrain zeichnet die Terrain-Textur und wird auf die Maske beschnitten
+##   3. _hud            - Rahmen, Wegpunkte, Spielerpfeil, Norden (immer obenauf)
 ##
-## Das Terrain wird als Textur zwischengespeichert und nur bei einem Zellwechsel
-## neu gebaut - sonst würde jeder Frame tausende Einzelkacheln zeichnen und beim
-## Laufen ruckeln. Zellfarben sind zusätzlich gecacht.
-##
-## Wegpunkte: im Vollbild Linksklick setzen (Name + Farbe), Rechtsklick löschen.
-## Sie bleiben am Kartenrand kleben, wenn sie außerhalb liegen (zeigen also die
-## Richtung), mit Entfernungsangabe. Gespeichert in user://.
+## Die Terrain-Textur wird nur bei einem Zellwechsel neu gebaut (sonst ruckelt
+## es). Verschoben wird sie jeden Frame um die Sub-Zellen-Position des Spielers,
+## die aus seiner echten Weltposition gelöst wird - dadurch gleitet die Karte
+## flüssig statt in Zellsprüngen.
 
 const WorldGenScript := preload("res://scripts/world_gen.gd")
 
@@ -22,10 +22,11 @@ const CELL_FULL := 6.0
 const SMALL_SIZE := 200.0
 const SMALL_MARGIN := 14.0
 const FULL_PAD := Vector2(70, 90)
+const PAD_CELLS := 4              ## Zusatzrand der Textur, damit beim Scrollen keine Lücke am Rand entsteht
 
 const IDLE_REFRESH := 0.6
 const WP_FILE := "user://waypoints.json"
-const METERS_PER_CELL := 1.0     ## Umrechnung Zellen -> "Meter" für die Anzeige
+const METERS_PER_CELL := 1.0
 
 const C_FRAME := Color(0.85, 0.83, 0.72)
 const C_FRAME_DARK := Color(0.10, 0.11, 0.14)
@@ -56,6 +57,7 @@ var gen
 var _full := false
 var _accum := 0.0
 var _pcell := Vector2i(2147483647, 0)
+var _scroll := Vector2.ZERO
 var _color_cache: Dictionary = {}
 
 var _terrain_tex: ImageTexture
@@ -64,6 +66,10 @@ var _tex_rows := 0
 var _dirty := true
 
 var _waypoints: Array = []
+
+var _map: Control
+var _terrain: Control
+var _hud: Control
 
 var _editor: Panel
 var _name_edit: LineEdit
@@ -82,7 +88,26 @@ func _ready() -> void:
 	var seed_value: int = int(cm.get("world_seed")) if cm != null and cm.get("world_seed") != null else 1337
 	gen = WorldGenScript.new(seed_value)
 
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_map = Control.new()
+	_map.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_map.draw.connect(_on_map_draw)
+	add_child(_map)
+
+	_terrain = Control.new()
+	_terrain.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_terrain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_terrain.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_terrain.draw.connect(_on_terrain_draw)
+	_map.add_child(_terrain)
+
+	_hud = Control.new()
+	_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_hud.draw.connect(_on_hud_draw)
+	add_child(_hud)
+
 	_build_editor()
 	_load_waypoints()
 	_apply_layout()
@@ -95,7 +120,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_editor.visible = false
 		_dirty = true
 		_apply_layout()
-		queue_redraw()
+		_redraw_all()
 		get_viewport().set_input_as_handled()
 
 
@@ -125,13 +150,10 @@ func _process(delta: float) -> void:
 		_pcell = cell
 		_dirty = false
 		_rebuild_terrain()
-		_accum = 0.0
-		queue_redraw()
-		return
-	_accum += delta
-	if _accum >= IDLE_REFRESH:
-		_accum = 0.0
-		queue_redraw()
+	# Sub-Zellen-Verschiebung: jeden Frame, damit die Karte weich gleitet.
+	_scroll = _compute_scroll(lvl)
+	_terrain.queue_redraw()
+	_hud.queue_redraw()
 
 
 func _connect_player() -> void:
@@ -148,6 +170,13 @@ func _invalidate(cell: Vector2i) -> void:
 	_dirty = true
 
 
+func _redraw_all() -> void:
+	queue_redraw()
+	_map.queue_redraw()
+	_terrain.queue_redraw()
+	_hud.queue_redraw()
+
+
 func _apply_layout() -> void:
 	if _full:
 		anchor_left = 0.0; anchor_top = 0.0; anchor_right = 1.0; anchor_bottom = 1.0
@@ -160,130 +189,151 @@ func _apply_layout() -> void:
 		offset_right = -SMALL_MARGIN
 		offset_bottom = SMALL_MARGIN + SMALL_SIZE
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map.queue_redraw()
 
-
-# --- Terrain-Textur (nur bei Zellwechsel neu) ---------------------------
 
 func _cell_px() -> float:
 	return CELL_FULL if _full else CELL_SMALL
 
 
+## Player-Position -> Verschiebung in Minimap-Pixeln relativ zum Mittelpunkt.
+## Gelöst über die lokale Zellbasis (ex, ey), damit es auch im halbversetzten
+## Stacked-Raster stimmt.
+func _compute_scroll(lvl: int) -> Vector2:
+	var base := world.cell_to_world(_pcell, lvl)
+	var ex := world.cell_to_world(_pcell + Vector2i(1, 0), lvl) - base
+	var ey := world.cell_to_world(_pcell + Vector2i(0, 1), lvl) - base
+	var det := ex.x * ey.y - ex.y * ey.x
+	if absf(det) < 0.0001:
+		return Vector2.ZERO
+	var dw := player.global_position - base
+	var a := (dw.x * ey.y - dw.y * ey.x) / det
+	var b := (ex.x * dw.y - ex.y * dw.x) / det
+	return Vector2(a, b) * _cell_px()
+
+
+# --- Terrain-Textur (nur bei Zellwechsel neu) ---------------------------
+
 func _rebuild_terrain() -> void:
 	var cell_px := _cell_px()
 	var cols: int
 	var rows: int
-	var circular := not _full
 	if _full:
 		var panel := _panel_rect()
-		cols = maxi(1, int(panel.size.x / cell_px)) | 1
-		rows = maxi(1, int(panel.size.y / cell_px)) | 1
+		cols = maxi(1, int(panel.size.x / cell_px) + PAD_CELLS * 2) | 1
+		rows = maxi(1, int(panel.size.y / cell_px) + PAD_CELLS * 2) | 1
 	else:
-		cols = maxi(1, int(SMALL_SIZE / cell_px)) | 1
+		cols = maxi(1, int(SMALL_SIZE / cell_px) + PAD_CELLS * 2) | 1
 		rows = cols
 	var img := Image.create_empty(cols, rows, false, Image.FORMAT_RGBA8)
 	var hx := cols >> 1
 	var hy := rows >> 1
-	var rad := float(mini(hx, hy))
 	for iy in rows:
 		for ix in cols:
-			var col := _cell_color(_pcell + Vector2i(ix - hx, iy - hy))
-			if circular and Vector2(ix - hx, iy - hy).length() > rad:
-				col = Color(0, 0, 0, 0)
-			img.set_pixel(ix, iy, col)
+			img.set_pixel(ix, iy, _cell_color(_pcell + Vector2i(ix - hx, iy - hy)))
 	_terrain_tex = ImageTexture.create_from_image(img)
 	_tex_cols = cols
 	_tex_rows = rows
 
 
-# --- Zeichnen -----------------------------------------------------------
+# --- Zeichnen der drei Ebenen -------------------------------------------
 
 func _draw() -> void:
-	if world == null:
-		return
+	# Ebene 1: Hintergrund.
 	if _full:
-		_draw_full()
+		draw_rect(Rect2(Vector2.ZERO, size), C_BACKDROP)
+		var panel := _panel_rect()
+		draw_rect(Rect2(panel.position + Vector2(0, 4), panel.size), C_SHADOW)
+		draw_rect(panel, C_FRAME_DARK)
 	else:
-		_draw_small()
+		var c := Vector2(SMALL_SIZE, SMALL_SIZE) * 0.5
+		draw_circle(c + Vector2(2, 3), SMALL_SIZE * 0.5, C_SHADOW)
+		draw_circle(c, SMALL_SIZE * 0.5, C_FRAME_DARK)
 
 
-func _draw_small() -> void:
-	var d := SMALL_SIZE
-	var c := Vector2(d, d) * 0.5
-	var rad := d * 0.5
-
-	draw_circle(c + Vector2(2, 3), rad, C_SHADOW)
-	draw_circle(c, rad, C_FRAME_DARK)
-
-	if _terrain_tex != null:
-		var sz := Vector2(_tex_cols, _tex_rows) * CELL_SMALL
-		draw_texture_rect(_terrain_tex, Rect2(c - sz * 0.5, sz), false)
-
-	var font := get_theme_default_font()
-	for w in _waypoints:
-		var off: Vector2 = Vector2(w["cell"] - _pcell) * CELL_SMALL
-		var maxr := rad - 8.0
-		var clamped := off.length() > maxr
-		if clamped:
-			off = off.normalized() * maxr
-		_draw_pin(c + off, 4.0, w["color"])
-		if clamped and font != null:
-			var m := int(round(Vector2(w["cell"] - _pcell).length() * METERS_PER_CELL))
-			_label(font, c + off + Vector2(6, 4), "%dm" % m, 11, w["color"])
-
-	draw_arc(c, rad - 1.0, 0, TAU, 64, C_FRAME, 3.0, true)
-	draw_arc(c, rad - 4.0, 0, TAU, 64, Color(0, 0, 0, 0.5), 1.0, true)
-
-	_draw_player(c, 6.0)
-	_draw_north(c + Vector2(0, -rad + 11.0))
+func _on_map_draw() -> void:
+	# Ebene 2 (Maske): die weiße Form beschneidet das Terrain-Kind.
+	if _full:
+		_map.draw_rect(_panel_rect(), Color(1, 1, 1))
+	else:
+		var c := Vector2(SMALL_SIZE, SMALL_SIZE) * 0.5
+		_map.draw_circle(c, SMALL_SIZE * 0.5 - 2.0, Color(1, 1, 1))
 
 
-func _draw_full() -> void:
-	var rect := size
-	draw_rect(Rect2(Vector2.ZERO, rect), C_BACKDROP)
+func _on_terrain_draw() -> void:
+	if _terrain_tex == null:
+		return
+	var cell_px := _cell_px()
+	var origin := _map_center() - _scroll
+	var sz := Vector2(_tex_cols, _tex_rows) * cell_px
+	_terrain.draw_texture_rect(_terrain_tex, Rect2(origin - sz * 0.5, sz), false)
 
-	var panel := _panel_rect()
-	draw_rect(Rect2(panel.position + Vector2(0, 4), panel.size), C_SHADOW)
-	draw_rect(panel, C_FRAME_DARK)
 
-	var pc := panel.position + panel.size * 0.5
-	if _terrain_tex != null:
-		var sz := Vector2(_tex_cols, _tex_rows) * CELL_FULL
-		draw_texture_rect(_terrain_tex, Rect2(pc - sz * 0.5, sz), false)
-
-	var font := get_theme_default_font()
-	var margin := 12.0
-	for w in _waypoints:
-		var p: Vector2 = pc + Vector2(w["cell"] - _pcell) * CELL_FULL
-		var inside := panel.has_point(p)
-		if not inside:
-			p.x = clampf(p.x, panel.position.x + margin, panel.position.x + panel.size.x - margin)
-			p.y = clampf(p.y, panel.position.y + margin, panel.position.y + panel.size.y - margin)
-		_draw_pin(p, 6.0, w["color"])
+func _on_hud_draw() -> void:
+	var font := _hud.get_theme_default_font()
+	var center := _map_center()
+	if _full:
+		var panel := _panel_rect()
+		var margin := 12.0
+		_hud.draw_rect(panel, C_FRAME, false, 3.0)
+		for w in _waypoints:
+			var p: Vector2 = center - _scroll + Vector2(w["cell"] - _pcell) * CELL_FULL
+			if not panel.has_point(p):
+				p.x = clampf(p.x, panel.position.x + margin, panel.position.x + panel.size.x - margin)
+				p.y = clampf(p.y, panel.position.y + margin, panel.position.y + panel.size.y - margin)
+			_pin(_hud, p, 6.0, w["color"])
+			if font != null:
+				_label(_hud, font, p + Vector2(9, 5), "%s  %dm" % [w["name"], _meters(w["cell"])], 16, w["color"])
+		_player_arrow(_hud, center, 9.0)
 		if font != null:
-			var m := int(round(Vector2(w["cell"] - _pcell).length() * METERS_PER_CELL))
-			_label(font, p + Vector2(9, 5), "%s  %dm" % [w["name"], m], 16, w["color"])
+			_label(_hud, font, Vector2(FULL_PAD.x, FULL_PAD.y - 16.0), "Karte", 28, C_FRAME)
+			var hint := "Linksklick: Wegpunkt   Rechtsklick: löschen   M: schliessen    x %d  y %d" % [_pcell.x, _pcell.y]
+			_label(_hud, font, Vector2(FULL_PAD.x, size.y - FULL_PAD.y + 26.0), hint, 16, Color(0.72, 0.74, 0.68))
+		_north(_hud, font, Vector2(panel.position.x + panel.size.x - 22.0, panel.position.y + 22.0))
+	else:
+		var rad := SMALL_SIZE * 0.5
+		# Rahmen zuerst, damit die Pins darüber liegen.
+		_hud.draw_arc(center, rad - 1.0, 0, TAU, 64, C_FRAME, 3.0, true)
+		_hud.draw_arc(center, rad - 4.0, 0, TAU, 64, Color(0, 0, 0, 0.5), 1.0, true)
+		for w in _waypoints:
+			var off: Vector2 = -_scroll + Vector2(w["cell"] - _pcell) * CELL_SMALL
+			var on_ring := off.length() > rad - 6.0
+			if on_ring:
+				off = off.normalized() * (rad - 2.0)   # genau auf dem Rahmen
+			_pin(_hud, center + off, 4.5, w["color"])
+			if on_ring and font != null:
+				# Text nach außen versetzt, damit er neben dem Rahmen lesbar ist.
+				var dir := off.normalized()
+				var lp := center + dir * (rad + 6.0)
+				if dir.x < -0.3:
+					lp.x -= 34.0
+				_label(_hud, font, lp + Vector2(0, 4), "%dm" % _meters(w["cell"]), 11, w["color"])
+		_player_arrow(_hud, center, 6.0)
+		_north(_hud, font, center + Vector2(0, -rad + 11.0))
 
-	draw_rect(panel, C_FRAME, false, 3.0)
-	_draw_player(pc, 9.0)
 
-	if font != null:
-		_label(font, Vector2(FULL_PAD.x, FULL_PAD.y - 16.0), "Karte", 28, C_FRAME)
-		var hint := "Linksklick: Wegpunkt   Rechtsklick: löschen   M: schliessen    x %d  y %d" % [_pcell.x, _pcell.y]
-		_label(font, Vector2(FULL_PAD.x, rect.y - FULL_PAD.y + 26.0), hint, 16, Color(0.72, 0.74, 0.68))
-	_draw_north(Vector2(panel.position.x + panel.size.x - 22.0, panel.position.y + 22.0))
+func _map_center() -> Vector2:
+	if _full:
+		var panel := _panel_rect()
+		return panel.position + panel.size * 0.5
+	return Vector2(SMALL_SIZE, SMALL_SIZE) * 0.5
 
 
-func _label(font: Font, pos: Vector2, text: String, fs: int, col: Color) -> void:
-	draw_string(font, pos + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.8))
-	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+func _meters(cell: Vector2i) -> int:
+	return int(round(Vector2(cell - _pcell).length() * METERS_PER_CELL))
 
 
-func _draw_pin(p: Vector2, r: float, col: Color) -> void:
-	draw_circle(p, r + 1.5, Color(0, 0, 0, 0.85))
-	draw_circle(p, r, col)
+func _label(ci: CanvasItem, font: Font, pos: Vector2, text: String, fs: int, col: Color) -> void:
+	ci.draw_string(font, pos + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.85))
+	ci.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 
-func _draw_player(c: Vector2, s: float) -> void:
+func _pin(ci: CanvasItem, p: Vector2, r: float, col: Color) -> void:
+	ci.draw_circle(p, r + 1.5, Color(0, 0, 0, 0.85))
+	ci.draw_circle(p, r, col)
+
+
+func _player_arrow(ci: CanvasItem, c: Vector2, s: float) -> void:
 	if player == null:
 		return
 	var dir: Vector2 = FACE.get(str(player.get("facing")), Vector2(0, 1))
@@ -293,14 +343,13 @@ func _draw_player(c: Vector2, s: float) -> void:
 		c + Vector2(-s * 0.7, s * 0.7).rotated(ang),
 		c + Vector2(-s * 0.7, -s * 0.7).rotated(ang),
 	])
-	draw_colored_polygon(pts, C_PLAYER)
-	draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(0, 0, 0, 0.85), 1.5, true)
+	ci.draw_colored_polygon(pts, C_PLAYER)
+	ci.draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(0, 0, 0, 0.85), 1.5, true)
 
 
-func _draw_north(pos: Vector2) -> void:
-	var font := get_theme_default_font()
+func _north(ci: CanvasItem, font: Font, pos: Vector2) -> void:
 	if font != null:
-		_label(font, pos - Vector2(5, -5), "N", 16, C_FRAME)
+		_label(ci, font, pos - Vector2(5, -5), "N", 16, C_FRAME)
 
 
 # --- Zellfarben (gecacht) -----------------------------------------------
@@ -311,7 +360,6 @@ func _cell_color(cell: Vector2i) -> Color:
 		if n != null and n.source_id == IsoWorld.PROP_SOURCE_ID:
 			return C_TREE
 		return world.ground_color(cell)
-
 	var cached = _color_cache.get(cell)
 	if cached != null:
 		return cached
@@ -339,22 +387,21 @@ func _panel_rect() -> Rect2:
 
 
 func _cell_at(pos: Vector2) -> Vector2i:
-	var panel := _panel_rect()
-	var pc := panel.position + panel.size * 0.5
-	return _pcell + Vector2i(roundi((pos.x - pc.x) / CELL_FULL), roundi((pos.y - pc.y) / CELL_FULL))
+	var center := _map_center() - _scroll
+	return _pcell + Vector2i(roundi((pos.x - center.x) / CELL_FULL), roundi((pos.y - center.y) / CELL_FULL))
 
 
 func _remove_waypoint_near(pos: Vector2) -> void:
 	var panel := _panel_rect()
-	var pc := panel.position + panel.size * 0.5
+	var center := _map_center() - _scroll
 	for i in range(_waypoints.size() - 1, -1, -1):
-		var p: Vector2 = pc + Vector2(_waypoints[i]["cell"] - _pcell) * CELL_FULL
+		var p: Vector2 = center + Vector2(_waypoints[i]["cell"] - _pcell) * CELL_FULL
 		p.x = clampf(p.x, panel.position.x + 12.0, panel.position.x + panel.size.x - 12.0)
 		p.y = clampf(p.y, panel.position.y + 12.0, panel.position.y + panel.size.y - 12.0)
 		if p.distance_to(pos) <= 12.0:
 			_waypoints.remove_at(i)
 			_save_waypoints()
-			queue_redraw()
+			_hud.queue_redraw()
 			return
 
 
@@ -375,7 +422,7 @@ func _confirm_wp() -> void:
 	_waypoints.append({"cell": _pending_cell, "name": nm, "color": _edit_color})
 	_editor.visible = false
 	_save_waypoints()
-	queue_redraw()
+	_hud.queue_redraw()
 
 
 func _select_color(col: Color, btn: Button) -> void:
