@@ -227,8 +227,8 @@ A* rechnet ohnehin pro Anfrage neu.
 **Milestones (Reihenfolge):**
 
 1. Chunk-Streaming Boden + Höhe (`scripts/world_gen.gd` +
-   `scripts/chunk_manager.gd`), Authored-Bereich aussparen. — **offen**
-2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — offen
+   `scripts/chunk_manager.gd`), Authored-Bereich aussparen. — **erledigt**
+2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — **offen (nächster Schritt)**
 3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — offen
 4. Biome: zweiter, großmaßstäbiger Noise + Biom-Datentabellen im
    `*_db.gd`-Stil; Übergänge feinschleifen. — offen
@@ -237,7 +237,39 @@ A* rechnet ohnehin pro Anfrage neu.
 `origin` = https://github.com/sysexperts/survival (public). Erster Commit
 „Stand vor World-Generator" ist der Ausgangspunkt vor dem Umbau.
 
-### So setzt du Milestone 1 konkret um (nächste KI: hier starten)
+### Milestone 1 — erledigt (so wurde es umgesetzt)
+
+Boden + Höhe entstehen chunk-weise um den Spieler, der Handbau-Bereich bleibt
+unangetastet. Noch **keine** Props/Rohstoffe (das ist Milestone 2).
+
+**Was dazugekommen ist:**
+
+- `scripts/world_gen.gd` (`class_name WorldGen`, reine Logik): `FastNoiseLite`
+  mit festem Welt-Seed. `noise_height(cell)` → 0..3, `height_at(cell, dist)`
+  blendet über `EDGE_RING` (3) Zellen vom Handbau-Rand (`BASE_HEIGHT` 0) in
+  die Noise-Höhe, damit keine harte Stufe entsteht.
+- `IsoWorld` merkt sich beim Spielstart **vor** `_spawn_prop_nodes()` in
+  `_record_authored()` alle gemalten Zellen (`authored_cells`) plus eine
+  Bounding-Box (`authored_bounds`). `is_authored()`, `in_authored_bounds()`
+  und `dist_to_authored()` steuern, was generiert wird. Der Generator spart
+  die **ganze Bounding-Box** aus, nicht nur bemalte Zellen — sonst würde der
+  See (unbemalte Lücke) mit Gras zugeschüttet.
+- `scripts/chunk_manager.gd` (`class_name ChunkManager`, Node in `main.tscn`):
+  findet Welt + Spieler (Gruppe `player`, deferred, weil der Spieler den
+  Parent wechselt), bestimmt gedrosselt (alle 0,2 s) den Spieler-Chunk, lädt
+  Chunks im `RADIUS` (2) und entlädt jenseits `RADIUS+1`. Chunkgröße 16 im
+  **durchgehenden** Zellkoordinatensystem (Stacked-Parität). Pro Update nur
+  wenige Chunks (`LOAD_BUDGET`), der erste Load beim Start ungedrosselt.
+  Entladen löscht nur die selbst generierten Blöcke (gemerkt pro Chunk).
+
+**Noch nicht getestet** (kein Godot in der Bau-Umgebung): bitte einmal
+`godot --headless --editor … --quit` (neue `class_name` bekannt machen), dann
+headless laufen lassen und per temporärem `tools/_shot.gd` prüfen, dass (a)
+außen neuer Boden erscheint, (b) der Handbau-Bereich inkl. See unverändert
+ist, (c) am Übergang keine harte Höhenkante steht. Feintuning ggf. an
+`WorldGen.frequency`/`EDGE_RING` und `ChunkManager.RADIUS`/`LOAD_BUDGET`.
+
+<details><summary>Ursprüngliche Milestone-1-Anleitung (zur Referenz)</summary>
 
 Ziel: Boden + Höhe entstehen chunk-weise um den Spieler, der Handbau-Bereich
 bleibt unangetastet. **Noch keine** Props/Rohstoffe (das ist Milestone 2).
@@ -296,6 +328,8 @@ entfernen.
 
 **Nach Milestone 1:** diesen Abschnitt auf „erledigt" setzen, Milestone-2-
 Anleitung analog ergänzen, committen + pushen.
+
+</details>
 
 ## Offene Enden
 

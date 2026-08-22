@@ -58,6 +58,11 @@ func _ready() -> void:
 		# Im Spiel ist der Editor-Fokus irrelevant.
 		for l in levels:
 			l.visible = true
+		# Vor dem Umwandeln der Props merken, was von Hand gemalt wurde -
+		# der Weltgenerator baut nur außen herum und darf diesen Bereich nie
+		# anfassen. _spawn_prop_nodes() entfernt Prop-/Stein-Kacheln aus den
+		# Ebenen, deshalb MUSS das Erfassen davor laufen.
+		_record_authored()
 		_spawn_prop_nodes()
 
 
@@ -282,6 +287,70 @@ func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 	var a := top_level_at(from)
 	var b := top_level_at(to)
 	return a >= 0 and b >= 0 and absi(b - a) <= max_step
+
+
+# --- Handbau-Bereich (für den Weltgenerator) ---------------------------
+#
+# Der gemalte Startbereich bleibt fester Bestandteil der Welt; der
+# chunk-basierte Generator (siehe scripts/chunk_manager.gd) baut nur außen
+# herum und darf diese Zellen weder erzeugen noch beim Entladen löschen.
+
+## Alle von Hand gemalten Zellen (über alle Ebenen zusammengefasst).
+## Als Dictionary statt bloßer Bounding-Box, weil die gemalte Map nicht
+## rechteckig ist - so wird nur wirklich Belegtes ausgespart.
+var authored_cells: Dictionary = {}
+
+## Grobe Umschließung des Handbau-Bereichs. Nur für die Abstandsberechnung
+## der weichen Höhen-Rampe am Rand gedacht, nicht für die Skip-Prüfung.
+var authored_bounds: Rect2i = Rect2i()
+
+
+func _record_authored() -> void:
+	authored_cells.clear()
+	var has_any := false
+	var min_c := Vector2i.ZERO
+	var max_c := Vector2i.ZERO
+	for l in levels:
+		for cell in l.get_used_cells():
+			authored_cells[cell] = true
+			if not has_any:
+				min_c = cell
+				max_c = cell
+				has_any = true
+			else:
+				min_c.x = mini(min_c.x, cell.x)
+				min_c.y = mini(min_c.y, cell.y)
+				max_c.x = maxi(max_c.x, cell.x)
+				max_c.y = maxi(max_c.y, cell.y)
+	authored_bounds = Rect2i(min_c, max_c - min_c + Vector2i.ONE) if has_any else Rect2i()
+
+
+## Wurde diese Zelle von Hand gemalt? Dann nie generieren.
+func is_authored(cell: Vector2i) -> bool:
+	return authored_cells.has(cell)
+
+
+## Liegt die Zelle innerhalb der Handbau-Bounding-Box? Dort wird nichts
+## generiert - auch nicht in unbemalte Lücken (z. B. den See), die sonst
+## fälschlich mit Gras zugeschüttet würden.
+func in_authored_bounds(cell: Vector2i) -> bool:
+	return not authored_cells.is_empty() and authored_bounds.has_point(cell)
+
+
+## Zellabstand (Chebyshev) zur Handbau-Bounding-Box; 0 innerhalb oder direkt
+## daneben. Steuert die weiche Höhen-Rampe des Generators am Rand.
+func dist_to_authored(cell: Vector2i) -> int:
+	if authored_cells.is_empty():
+		return EDGE_RING_FALLBACK
+	var b := authored_bounds
+	var dx := maxi(maxi(b.position.x - cell.x, cell.x - (b.position.x + b.size.x - 1)), 0)
+	var dy := maxi(maxi(b.position.y - cell.y, cell.y - (b.position.y + b.size.y - 1)), 0)
+	return maxi(dx, dy)
+
+
+## Ohne Handbau-Bereich gibt es keinen Rand zum Anblenden - dann überall die
+## volle Noise-Höhe (großer Abstand erzwingt das in WorldGen.height_at).
+const EDGE_RING_FALLBACK := 9999
 
 
 # --- Props als Nodes ----------------------------------------------------
