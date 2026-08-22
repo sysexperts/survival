@@ -204,6 +204,8 @@ func _cell_color(cell: Vector2i) -> Color:
 # --- Marker -------------------------------------------------------------
 
 func _draw_player(c: Vector2, s: float) -> void:
+	if player == null:
+		return
 	var dir: Vector2 = FACE.get(str(player.get("facing")), Vector2(0, 1))
 	var ang := dir.normalized().angle()
 	var pts := PackedVector2Array([
