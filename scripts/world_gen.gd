@@ -110,7 +110,7 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 
 ## Was liegt auf dieser Zelle? Leeres Dictionary = nichts. Sonst:
 ##   {"kind": "tree", "atlas": Vector2i}   - blockierender Baum
-##   {"kind": "holz" | "pflanzenfaser" | "stein"}  - Rohstoff zum Aufsammeln
+##   {"kind": "odun" | "bitki_lifi" | "tas"}  - Rohstoff zum Aufsammeln
 ##
 ## Bäume nur auf Gras (auf einer Erdfläche wirkt ein Wald deplatziert),
 ## Rohstoffe überall. Pro Zelle höchstens eine Sache.
@@ -125,11 +125,11 @@ func prop_at(cell: Vector2i) -> Dictionary:
 
 	var r := _rand(cell, 3)
 	if r < P_HOLZ:
-		return {"kind": "holz"}
+		return {"kind": "odun"}
 	if r < P_HOLZ + P_FASER:
-		return {"kind": "pflanzenfaser"}
+		return {"kind": "bitki_lifi"}
 	if r < P_HOLZ + P_FASER + P_STEIN:
-		return {"kind": "stein"}
+		return {"kind": "tas"}
 	return {}
 
 

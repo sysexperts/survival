@@ -60,7 +60,7 @@ func _ready() -> void:
 ## Startet die Vorschau fuer ein Lagerfeuer (2x2).
 func begin_campfire() -> void:
 	kind = Kind.CAMPFIRE
-	item_id = "lagerfeuer"
+	item_id = "kamp_atesi"
 	_anim.sprite_frames = preload("res://resources/campfire_frames.tres")
 	_anim.animation = "brennt"
 	_anim.play("brennt")

@@ -118,13 +118,14 @@ func from_save(data: Dictionary) -> void:
 	var saved: Array = data["slots"]
 	for i in inventory.slots.size():
 		var entry: Variant = saved[i] if i < saved.size() else null
-		if typeof(entry) == TYPE_DICTIONARY and entry.has("id") and ItemDB.has(entry["id"]) \
-				and int(entry.get("count", 0)) > 0:
-			var rebuilt := {"id": String(entry["id"]), "count": int(entry["count"])}
+		# Alte deutsche Id auf den aktuellen tuerkischen Namen heben.
+		var cid := ItemDB.canonical(String(entry["id"])) if typeof(entry) == TYPE_DICTIONARY and entry.has("id") else ""
+		if cid != "" and ItemDB.has(cid) and int(entry.get("count", 0)) > 0:
+			var rebuilt := {"id": cid, "count": int(entry["count"])}
 			# Dayaniklilik mitnehmen, damit eine halb verbrauchte Axt nach dem
 			# Neuladen nicht wieder voll ist. Auf den gueltigen Bereich klemmen.
-			if entry.has("dur") and ItemDB.has_durability(entry["id"]):
-				rebuilt["dur"] = clampi(int(entry["dur"]), 1, ItemDB.max_durability(entry["id"]))
+			if entry.has("dur") and ItemDB.has_durability(cid):
+				rebuilt["dur"] = clampi(int(entry["dur"]), 1, ItemDB.max_durability(cid))
 			inventory.slots[i] = rebuilt
 		else:
 			inventory.slots[i] = {}
@@ -140,7 +141,7 @@ func _process(delta: float) -> void:
 	# das sind Tastendruck, Klick und jedes Umlegen im Inventar.
 	if player != null:
 		var held: Dictionary = inventory.slots[hud.selected]
-		player.has_axe = not held.is_empty() and held["id"] == "axt"
+		player.has_axe = not held.is_empty() and held["id"] == "balta"
 
 	if _notice_left > 0.0:
 		_notice_left -= delta
@@ -326,23 +327,23 @@ func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> voi
 	if GatherDB.has(gather_id):
 		_grant(gather_id, GatherDB.amount(gather_id))
 	else:
-		_grant("stein", stone_per_pickup)
+		_grant("tas", stone_per_pickup)
 	_set_ctx_hint("")
 
 
 func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:
-	_grant("holz", wood_per_tree)
+	_grant("odun", wood_per_tree)
 
 
 ## Holz fuer einen im Multiplayer (server-autoritativ) gefaellten Baum - wird
 ## von world_sync beim toedlichen Schlaeger aufgerufen (dort laeuft kein
 ## felled-Signal, um Doppel-Verteilung zu vermeiden).
 func grant_wood_for_tree() -> void:
-	_grant("holz", wood_per_tree)
+	_grant("odun", wood_per_tree)
 
 
 func _on_stump_cleared(_cell: Vector2i) -> void:
-	_grant("holz", wood_per_stump)
+	_grant("odun", wood_per_stump)
 
 
 func _grant(id: String, amount: int) -> void:
@@ -386,7 +387,7 @@ func _use_selected() -> void:
 		return
 	var fire := player.campfire_in_reach(true)
 	if fire != null and fire.collect():
-		_grant("gebratenes_fleisch", meat_per_fire)
+		_grant("kizarmis_et", meat_per_fire)
 		return
 	# Steht eine Handwerks-Station in Reichweite, ihr Fenster oeffnen. Vor
 	# dem Platzieren, damit man an der Bank ihr Menue bekommt statt eine
@@ -403,7 +404,7 @@ func _use_selected() -> void:
 		return
 	if preview == null:
 		return
-	if slot["id"] == "lagerfeuer":
+	if slot["id"] == "kamp_atesi":
 		preview.begin_campfire()
 		hud.set_hint("Sol tik koy  ·  Sag tik veya Esc iptal")
 	elif ItemDB.is_furniture(slot["id"]):
@@ -416,7 +417,7 @@ func _on_placement_confirmed(top_cell: Vector2i) -> void:
 	# egal ob Lagerfeuer oder Moebel.
 	if preview.kind == PlacementPreview.Kind.CAMPFIRE:
 		if player.place_campfire_at(top_cell):
-			inventory.remove("lagerfeuer", 1)
+			inventory.remove("kamp_atesi", 1)
 	elif player.place_furniture_at(preview.item_id, top_cell, preview.flipped):
 		inventory.remove(preview.item_id, 1)
 

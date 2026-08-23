@@ -25,8 +25,8 @@ const ART_OFFSET := Vector2(-32, -56)
 ## Bildschirm-Diagonale), `scale`/`offset` stechen die Standardwerte aus,
 ## damit das groessere Bild die zwei Zellen ausfuellt.
 const CONFIG := {
-	"bett": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
-	"feldbett": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
+	"yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
+	"portatif_yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
 }
 
 

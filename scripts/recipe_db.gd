@@ -16,11 +16,11 @@ class_name RecipeDB
 ## Daten und die Prüfungen.
 
 const HAND := ""                     ## überall, ohne Station
-const WERKBANK := "werkbank"
-const WEBETISCH := "webetisch"
+const WERKBANK := "calisma_tezgahi"
+const WEBETISCH := "dokuma_tezgahi"
 
 ## Die Stationen, an denen man craften kann. Die Ids sind bewusst dieselben
-## wie die Moebel-Ids (ItemDB.FURNITURE) - ein gesetztes Moebel "werkbank"
+## wie die Moebel-Ids (ItemDB.FURNITURE) - ein gesetztes Moebel "calisma_tezgahi"
 ## IST damit die Station WERKBANK, ohne dass es eine zweite Zuordnung braucht.
 const STATIONS := [WERKBANK, WEBETISCH]
 
@@ -31,49 +31,49 @@ static func is_station(id: String) -> bool:
 
 const RECIPES := [
 	{
-		"out": "holzbrett", "count": 1, "station": HAND, "seconds": 1.0,
-		"cost": {"holz": 8},
+		"out": "tahta", "count": 1, "station": HAND, "seconds": 1.0,
+		"cost": {"odun": 8},
 	},
 	{
-		"out": "seil", "count": 1, "station": HAND, "seconds": 1.0,
-		"cost": {"pflanzenfaser": 8},
+		"out": "halat", "count": 1, "station": HAND, "seconds": 1.0,
+		"cost": {"bitki_lifi": 8},
 	},
 	{
-		"out": "werkbank", "count": 1, "station": HAND, "seconds": 5.0,
-		"cost": {"holzbrett": 16},
+		"out": "calisma_tezgahi", "count": 1, "station": HAND, "seconds": 5.0,
+		"cost": {"tahta": 16},
 	},
 	{
-		"out": "webetisch", "count": 1, "station": HAND, "seconds": 8.0,
-		"cost": {"holzbrett": 16, "seil": 16},
+		"out": "dokuma_tezgahi", "count": 1, "station": HAND, "seconds": 8.0,
+		"cost": {"tahta": 16, "halat": 16},
 	},
 	# An der Werkbank: die Steinaxt. Griff (Brett), Kopf (Stein), Bindung
 	# (Seil). Erst damit lassen sich Baeume faellen - Player.chop() verlangt
 	# eine Axt in der Hand. Kosten sind ein erster Vorschlag, leicht zu
 	# aendern.
 	{
-		"out": "axt", "count": 1, "station": WERKBANK, "seconds": 4.0,
-		"cost": {"holzbrett": 2, "stein": 3, "seil": 1},
+		"out": "balta", "count": 1, "station": WERKBANK, "seconds": 4.0,
+		"cost": {"tahta": 2, "tas": 3, "halat": 1},
 	},
 	# Weberei: aus Pflanzenfaser wird Schnur, aus Schnur wird Stoff. Der
 	# Stoff ist die Grundlage fuer Betten und spaeter Kleidung.
 	{
-		"out": "schnur", "count": 1, "station": WEBETISCH, "seconds": 1.5,
-		"cost": {"pflanzenfaser": 4},
+		"out": "ip", "count": 1, "station": WEBETISCH, "seconds": 1.5,
+		"cost": {"bitki_lifi": 4},
 	},
 	{
-		"out": "stoff", "count": 1, "station": WEBETISCH, "seconds": 2.5,
-		"cost": {"schnur": 4},
+		"out": "kumas", "count": 1, "station": WEBETISCH, "seconds": 2.5,
+		"cost": {"ip": 4},
 	},
 	# Zwei Betten an der Werkbank. Das Feldbett ist das einfache (weniger
 	# Zutaten), das Bett das bequeme. Beide sind Moebel und lassen sich wie
 	# jedes platzierbare Item drehen.
 	{
-		"out": "feldbett", "count": 1, "station": WERKBANK, "seconds": 6.0,
-		"cost": {"holzbrett": 4, "stoff": 2},
+		"out": "portatif_yatak", "count": 1, "station": WERKBANK, "seconds": 6.0,
+		"cost": {"tahta": 4, "kumas": 2},
 	},
 	{
-		"out": "bett", "count": 1, "station": WERKBANK, "seconds": 12.0,
-		"cost": {"holzbrett": 10, "stoff": 5},
+		"out": "yatak", "count": 1, "station": WERKBANK, "seconds": 12.0,
+		"cost": {"tahta": 10, "kumas": 5},
 	},
 ]
 

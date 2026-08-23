@@ -118,6 +118,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not hit.is_empty():
 			player.walk_to(hit[0])
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		# Shift+Rechtsklick auf ein platziertes Objekt (Möbel/Lagerfeuer) reißt
+		# es ab. Es kommt NICHT ins Inventar zurück.
+		if event.shift_pressed:
+			var target := _placed_under_mouse()
+			if target != Player.INVALID_CELL:
+				player.walk_to_destroy(target)
+			get_viewport().set_input_as_handled()
+			return
 		if _hovered.is_empty():
 			# Kein Prop, aber vielleicht ein Moebel: hinlaufen (und wenn es
 			# eine Station ist, oeffnet sie sich bei Ankunft von selbst).
@@ -136,6 +144,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			player.clear_stump(_hovered[0], _hovered[1])
 		else:
 			player.chop(_hovered[0], _hovered[1])
+
+
+## Ankerzelle des platzierten Objekts unter der Maus (Möbel pixelgenau,
+## Lagerfeuer über die getroffene Bodenzelle), oder INVALID_CELL.
+func _placed_under_mouse() -> Vector2i:
+	var furn := _furniture_under_mouse()
+	if not furn.is_empty():
+		return (furn[1] as Furniture).cell
+	var hit := world.pick_block(get_global_mouse_position())
+	if not hit.is_empty():
+		var node := world.blocker_at(hit[0])
+		if node is Campfire:
+			return node.cell
+	return Player.INVALID_CELL
 
 
 ## Vorderstes Moebel unter dem Mauszeiger, pixelgenau. [cell, Furniture] oder [].

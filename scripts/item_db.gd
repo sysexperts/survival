@@ -26,57 +26,57 @@ const TILE_SIZE := Vector2i(32, 32)
 
 ## `region` sticht `cell` aus, wenn ein Sheet ein anderes Raster hat.
 static var ITEMS := {
-	"gebratenes_fleisch": {
+	"kizarmis_et": {
 		"name": "Kizarmis Et",
 		"max_stack": 16,
 		"sheet": SHEET_CAMP,
 		"cell": Vector2i(0, 0),
 		"region": Rect2i(428, 154, 34, 26),   # Fleisch aus Frame 11
 	},
-	"lagerfeuer": {
+	"kamp_atesi": {
 		"name": "Kamp Atesi",
 		"max_stack": 16,
 		"sheet": SHEET_CAMP,
 		"cell": Vector2i(0, 0),
 		"region": Rect2i(128, 0, 128, 128),   # brennendes Feuer ohne Fleisch
 	},
-	"stein": {
+	"tas": {
 		"name": "Tas",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(10, 2),
 	},
-	"holz": {
+	"odun": {
 		"name": "Odun",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(9, 13),   # gebuendelte Aeste
 	},
-	"pflanzenfaser": {
+	"bitki_lifi": {
 		"name": "Bitki Lifi",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(5, 1),
 	},
-	"seil": {
+	"halat": {
 		"name": "Halat",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(1, 4),
 	},
-	"schnur": {
+	"ip": {
 		"name": "Ip",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(7, 11),   # Garnknaeuel mit Faden
 	},
-	"stoff": {
+	"kumas": {
 		"name": "Kumas",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(15, 3),   # gerollter Stoffballen
 	},
-	"axt": {
+	"balta": {
 		"name": "Balta",
 		"max_stack": 1,
 		"sheet": SHEET_ITEMS,
@@ -86,7 +86,7 @@ static var ITEMS := {
 		# demir/celik baltalar geldiginde bu deger artacak.
 		"durability": 200,
 	},
-	"holzbrett": {
+	"tahta": {
 		"name": "Tahta",
 		"max_stack": 64,
 		"sheet": SHEET_ITEMS,
@@ -98,23 +98,23 @@ static var ITEMS := {
 ## Steht getrennt, weil alle dasselbe Sheet und dasselbe 64er-Raster
 ## benutzen - so muss das nicht siebzehnmal danebenstehen.
 const FURNITURE := {
-	"hobelbank": ["Planya Tezgahi", Vector2i(0, 0)],
-	"kiste": ["Sandik", Vector2i(1, 0)],
-	"generator": ["Jeneratör", Vector2i(2, 0)],
-	"werkzeugstaender": ["Alet Standi", Vector2i(3, 0)],
-	"gerbgestell": ["Tabaklama Sehpasi", Vector2i(4, 0)],
-	"spind": ["Dolap", Vector2i(5, 0)],
-	"werkbank": ["Calisma Tezgahi", Vector2i(0, 1)],
-	"kochstelle": ["Ocak", Vector2i(1, 1)],
-	"amboss": ["Örs", Vector2i(2, 1)],
-	"webetisch": ["Dokuma Tezgahi", Vector2i(3, 1)],
-	"schmelzofen": ["Eritme Firini", Vector2i(4, 1)],
-	"bett": ["Yatak", Vector2i(5, 1)],
-	"feldbett": ["Portatif Yatak", Vector2i(0, 2)],
-	"alchemietisch": ["Simya Masasi", Vector2i(1, 2)],
-	"wasserfass": ["Su Ficisi", Vector2i(2, 2)],
-	"hocker": ["Tabure", Vector2i(3, 2)],
-	"hochbeet": ["Yükseltilmis Tarha", Vector2i(4, 2)],
+	"planya_tezgahi": ["Planya Tezgahi", Vector2i(0, 0)],
+	"sandik": ["Sandik", Vector2i(1, 0)],
+	"jenerator": ["Jeneratör", Vector2i(2, 0)],
+	"alet_standi": ["Alet Standi", Vector2i(3, 0)],
+	"tabaklama_sehpasi": ["Tabaklama Sehpasi", Vector2i(4, 0)],
+	"dolap": ["Dolap", Vector2i(5, 0)],
+	"calisma_tezgahi": ["Calisma Tezgahi", Vector2i(0, 1)],
+	"ocak": ["Ocak", Vector2i(1, 1)],
+	"ors": ["Örs", Vector2i(2, 1)],
+	"dokuma_tezgahi": ["Dokuma Tezgahi", Vector2i(3, 1)],
+	"eritme_firini": ["Eritme Firini", Vector2i(4, 1)],
+	"yatak": ["Yatak", Vector2i(5, 1)],
+	"portatif_yatak": ["Portatif Yatak", Vector2i(0, 2)],
+	"simya_masasi": ["Simya Masasi", Vector2i(1, 2)],
+	"su_ficisi": ["Su Ficisi", Vector2i(2, 2)],
+	"tabure": ["Tabure", Vector2i(3, 2)],
+	"yukseltilmis_tarha": ["Yükseltilmis Tarha", Vector2i(4, 2)],
 }
 
 
@@ -144,6 +144,31 @@ static func _ensure() -> void:
 		_fold_in_furniture()
 
 static var _icons: Dictionary = {}
+
+
+## Alte deutsche Ids -> neue tuerkische. Gespeicherte Spielstaende, build.json
+## usw. tragen noch die alten Namen; `canonical()` hebt sie beim Laden an, und
+## beim naechsten Speichern stehen die neuen drin. Nach ein paar Wochen kann
+## diese Tabelle raus (dann gibt es keine alten Daten mehr).
+const MIGRATE := {
+	"gebratenes_fleisch": "kizarmis_et", "lagerfeuer": "kamp_atesi",
+	"stein": "tas", "holz": "odun", "pflanzenfaser": "bitki_lifi",
+	"seil": "halat", "schnur": "ip", "stoff": "kumas", "axt": "balta",
+	"holzbrett": "tahta", "hobelbank": "planya_tezgahi", "kiste": "sandik",
+	"generator": "jenerator", "werkzeugstaender": "alet_standi",
+	"gerbgestell": "tabaklama_sehpasi", "spind": "dolap",
+	"werkbank": "calisma_tezgahi", "kochstelle": "ocak", "amboss": "ors",
+	"webetisch": "dokuma_tezgahi", "schmelzofen": "eritme_firini",
+	"bett": "yatak", "feldbett": "portatif_yatak",
+	"alchemietisch": "simya_masasi", "wasserfass": "su_ficisi",
+	"hocker": "tabure", "hochbeet": "yukseltilmis_tarha",
+}
+
+
+## Bringt eine (evtl. alte) Id auf ihren aktuellen Namen. Unbekannte/schon
+## aktuelle Ids kommen unveraendert zurueck.
+static func canonical(id: String) -> String:
+	return MIGRATE.get(id, id)
 
 
 static func has(id: String) -> bool:

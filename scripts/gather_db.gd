@@ -46,7 +46,7 @@ const BLOCKED_GROUND: Array[Vector2i] = [
 ##              "foot" für alles, was aufrecht STEHT (Pflanze) - dann sitzt
 ##              der untere Rand auf der Mitte, wie bei einem Baum.
 const KINDS := {
-	"holz": {
+	"odun": {
 		"name": "Odun",
 		"props": [Vector2i(9, 9), Vector2i(9, 11)],
 		"icon": Vector2i(9, 13),
@@ -56,7 +56,7 @@ const KINDS := {
 		"anchor": "center",
 		"hint": "F  Odun topla",
 	},
-	"pflanzenfaser": {
+	"bitki_lifi": {
 		"name": "Bitki Lifi",
 		"props": [Vector2i(3, 0)],
 		"icon": Vector2i(5, 1),
@@ -66,7 +66,7 @@ const KINDS := {
 		"anchor": "foot",
 		"hint": "F  Bitki lifi topla",
 	},
-	"stein": {
+	"tas": {
 		"name": "Tas",
 		"props": [Vector2i(10, 0), Vector2i(10, 1), Vector2i(10, 3), Vector2i(10, 5)],
 		"icon": Vector2i(10, 2),

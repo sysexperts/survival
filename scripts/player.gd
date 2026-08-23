@@ -44,6 +44,10 @@ signal reached_station(station: String)
 ## Lagerfeuer und Moebel bei allen erscheinen.
 signal placed_campfire(top: Vector2i)
 signal placed_furniture(id: String, cell: Vector2i, flipped: bool)
+## Ein platziertes Objekt (Moebel/Lagerfeuer) wurde zerstoert. `cell` ist die
+## Ankerzelle. world_sync entfernt es aus der Persistenz und bei allen anderen.
+## Es kommt bewusst NICHT ins Inventar zurueck - Zerstoeren heisst weg.
+signal destroyed_placed(cell: Vector2i)
 
 @export var world_path: NodePath = ^"../World"
 @export var walk_speed := 60.0
@@ -99,6 +103,7 @@ var _chops_left := 0
 var _clearing_stump := false     ## Auftrag ist "Stumpf weg", nicht "Baum faellen"
 var _pickup_cell := Vector2i(2147483647, 2147483647)  ## Stein, der nach dem Laufen dran ist
 var _reach_station := ""          ## Station, die nach dem Laufen geoeffnet wird
+var _reach_destroy := Vector2i(2147483647, 2147483647)  ## Objekt, das nach dem Laufen zerstoert wird
 var _tree: TreeActor = null      ## Baum als Node, solange gefällt wird
 var _camera: Camera2D = null
 ## WorldSync-Node (Multiplayer): geteilte Baum-HP. Im Einzelspieler null bzw.
@@ -215,7 +220,8 @@ func _physics_process(delta: float) -> void:
 	# busy-Guard, sonst käme man während der Axt-Animation nie durch und
 	# der gefällte Baum bliebe als Node hängen.
 	if input != Vector2.ZERO and (busy or not path.is_empty() or _chop_level >= 0
-			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed):
+			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed
+			or _reach_destroy != INVALID_CELL):
 		_cancel_task()
 
 	if busy:
@@ -247,6 +253,12 @@ func _physics_process(delta: float) -> void:
 		if _reach_bed:
 			_reach_bed = false
 			_lie_down(_bed_cell)
+			return
+		if _reach_destroy != INVALID_CELL:
+			var dcell := _reach_destroy
+			_reach_destroy = INVALID_CELL
+			_do_destroy(dcell)
+			_play("idle")
 			return
 		_play("idle")
 		return
@@ -451,8 +463,45 @@ func walk_to_station(cell: Vector2i) -> bool:
 	return true
 
 
+## Läuft zu einem platzierten Objekt (Möbel/Lagerfeuer) und zerstört es bei
+## Ankunft (Shift+Rechtsklick). Steht Jack schon daneben, sofort. false, wenn
+## dort nichts Zerstörbares steht oder kein Weg daneben führt.
+func walk_to_destroy(cell: Vector2i) -> bool:
+	var node := world.blocker_at(cell)
+	if not (node is Furniture or node is Campfire):
+		return false
+	_cancel_task()
+	# Die Ankerzelle des Objekts nehmen, nicht die evtl. angeklickte Randzelle -
+	# darüber findet der Server den Bau-Eintrag wieder.
+	var anchor: Vector2i = node.cell
+	var here := world.world_to_cell(global_position, level)
+	var stand := GridPath.adjacent_to(world, anchor, here, max_step)
+	if stand.x == 2147483647:
+		return false            # kein begehbares Feld daneben
+	if stand == here:
+		_do_destroy(anchor)     # steht schon daneben
+		return true
+	path = GridPath.find(world, here, stand, max_step)
+	if path.is_empty():
+		return false
+	_reach_destroy = anchor
+	return true
+
+
+## Entfernt das platzierte Objekt an `cell` lokal und meldet es (für die
+## Persistenz und die anderen Spieler). Das Item kehrt NICHT ins Inventar zurück.
+func _do_destroy(cell: Vector2i) -> void:
+	var node := world.blocker_at(cell)
+	if not (node is Furniture or node is Campfire):
+		return
+	var anchor: Vector2i = node.cell
+	# queue_free löst tree_exiting aus -> die belegten Zellen werden wieder frei.
+	node.queue_free()
+	destroyed_placed.emit(anchor)
+
+
 ## Betten, in die sich Jack legen kann.
-const BED_IDS := ["bett", "feldbett"]
+const BED_IDS := ["yatak", "portatif_yatak"]
 ## Liege-Pose entlang der Bett-Diagonale (Kopf oben-links am Kissen, Füsse
 ## unten-rechts). Gespiegeltes Bett spiegelt die Richtung mit.
 const BED_FACING := "south_east"
@@ -578,6 +627,7 @@ func _cancel_task() -> void:
 	_pickup_cell = INVALID_CELL
 	_reach_station = ""
 	_reach_bed = false
+	_reach_destroy = INVALID_CELL
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false
@@ -815,7 +865,7 @@ func campfire_in_reach(only_ready := false) -> Campfire:
 
 
 ## Handwerks-Station in Reichweite (eigene Zelle + Nachbarn), oder "".
-## Gibt die Station-Id zurueck (= die Moebel-Id, z. B. "werkbank").
+## Gibt die Station-Id zurueck (= die Moebel-Id, z. B. "calisma_tezgahi").
 func station_in_reach() -> String:
 	var here := world.world_to_cell(global_position, level)
 	var cells: Array[Vector2i] = [here]

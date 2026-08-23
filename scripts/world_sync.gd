@@ -88,6 +88,7 @@ func _ensure_player() -> bool:
 	_player.stone_collected.connect(_on_local_stone_collected)
 	_player.placed_campfire.connect(_on_local_campfire)
 	_player.placed_furniture.connect(_on_local_furniture)
+	_player.destroyed_placed.connect(_on_local_destroy)
 	return true
 
 
@@ -130,6 +131,12 @@ func _on_local_furniture(id: String, cell: Vector2i, flipped: bool) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "furniture", cell, 0, Vector2i.ZERO, id, flipped)
 
 
+func _on_local_destroy(cell: Vector2i) -> void:
+	if _suppress:
+		return
+	_event.rpc(multiplayer.get_unique_id(), "destroy", cell, 0, Vector2i.ZERO, "", false)
+
+
 # --- Empfang -------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
@@ -141,6 +148,8 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "flipped": flag})
 		elif kind == "campfire":
 			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "flipped": false})
+		elif kind == "destroy":
+			_remove_build(cell)
 		elif kind == "fell" or kind == "stump" or kind == "stone":
 			_record_removal(kind, cell, level, atlas, s)
 		for pid in multiplayer.get_peers():
@@ -173,7 +182,13 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 		"furniture":
 			if _player:
 				_suppress = true
-				_player.place_furniture_at(s, cell, flag)
+				_player.place_furniture_at(ItemDB.canonical(s), cell, flag)
+				_suppress = false
+		"destroy":
+			# Bei einem anderen Spieler abgerissen -> lokal auch entfernen.
+			if _player:
+				_suppress = true
+				_player._do_destroy(cell)
 				_suppress = false
 
 
@@ -234,7 +249,8 @@ func _apply_build(b: Dictionary) -> bool:
 	if b["kind"] == "campfire":
 		ok = _player.place_campfire_at(cell)
 	else:
-		ok = _player.place_furniture_at(String(b["id"]), cell, bool(b["flipped"]))
+		# Alte deutsche Moebel-Id (aus build.json) auf den neuen Namen heben.
+		ok = _player.place_furniture_at(ItemDB.canonical(String(b["id"])), cell, bool(b["flipped"]))
 	_suppress = false
 	return ok
 
@@ -247,6 +263,15 @@ func _record_build(b: Dictionary) -> void:
 			return
 	_builds.append(b)
 	_save_builds()
+
+
+## Server: einen Bau-Eintrag (per Ankerzelle) aus dem Register nehmen und
+## sichern - damit ein abgerissenes Objekt nach dem Neustart wegbleibt.
+func _remove_build(cell: Vector2i) -> void:
+	var before := _builds.size()
+	_builds = _builds.filter(func(e): return not (e["x"] == cell.x and e["y"] == cell.y))
+	if _builds.size() != before:
+		_save_builds()
 
 
 func _save_builds() -> void:

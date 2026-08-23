@@ -132,7 +132,7 @@ func _ready() -> void:
 	# duerfen sich wiegen - Holz und Stein liegen dafuer zu schwer da.
 	if source_id != IsoWorld.PROP_SOURCE_ID:
 		_sway_scale = 0.0
-	if gather_id == "pflanzenfaser":
+	if gather_id == "bitki_lifi":
 		_sway_scale = 0.6 + fmod(absf(key * 0.37), 0.5)
 	# Ein gemalter Stein liegt flach am Boden - ein geworfener Schatten
 	# wuerde von seiner Mitte ausgehen und daneben liegen.
