@@ -80,6 +80,25 @@ func _make_slot(index: int) -> InventorySlot:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(label)
 
+	# Dayaniklilik-Cubugu am unteren Rand - nur bei Aleten sichtbar. Ein
+	# dunkler Hintergrund mit einer eingefaerbten Fuellung (Breite = Rest).
+	var dur_bg := ColorRect.new()
+	dur_bg.name = "DurBg"
+	dur_bg.color = Color(0, 0, 0, 0.6)
+	dur_bg.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	dur_bg.offset_left = PAD
+	dur_bg.offset_right = -PAD
+	dur_bg.offset_top = -6
+	dur_bg.offset_bottom = -3
+	dur_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dur_bg.visible = false
+	var dur_fill := ColorRect.new()
+	dur_fill.name = "Fill"
+	dur_fill.set_anchors_preset(Control.PRESET_LEFT_WIDE)   # links verankert, Breite per anchor_right
+	dur_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dur_bg.add_child(dur_fill)
+	panel.add_child(dur_bg)
+
 	_slot_nodes.append(panel)
 	return panel
 
@@ -187,18 +206,38 @@ func _refresh() -> void:
 		var panel := _slot_nodes[i]
 		var icon: TextureRect = panel.get_node("Icon")
 		var label: Label = panel.get_node("Count")
+		var dur_bg: ColorRect = panel.get_node("DurBg")
 		if slot.is_empty():
 			icon.texture = null
 			label.text = ""
 			panel.tooltip_text = ""
+			dur_bg.visible = false
 		else:
 			icon.texture = ItemDB.icon(slot["id"])
 			label.text = str(slot["count"]) if int(slot["count"]) > 1 else ""
 			# Godot zeigt den Text von selbst, wenn die Maus stehen bleibt.
 			panel.tooltip_text = ItemDB.display_name(slot["id"])
+			_refresh_durability(dur_bg, slot)
 		panel.add_theme_stylebox_override("panel", _style(i == selected))
 	var sel: Dictionary = inventory.slots[selected]
 	_name_label.text = ItemDB.display_name(sel["id"]) if not sel.is_empty() else ""
+
+
+## Stellt den Dayaniklilik-Cubugu eines Slots ein: sichtbar nur bei Aleten,
+## Breite = Restanteil, Farbe von gruen (voll) ueber gelb nach rot (leer).
+func _refresh_durability(dur_bg: ColorRect, slot: Dictionary) -> void:
+	if not ItemDB.has_durability(slot["id"]):
+		dur_bg.visible = false
+		return
+	var maxd := ItemDB.max_durability(slot["id"])
+	var cur := int(slot.get("dur", maxd))
+	var r := clampf(float(cur) / float(maxd), 0.0, 1.0)
+	dur_bg.visible = true
+	var fill: ColorRect = dur_bg.get_node("Fill")
+	fill.anchor_right = r
+	fill.offset_right = 0
+	# Gruen -> Gelb -> Rot ueber den HSV-Farbton (0.33 .. 0.0).
+	fill.color = Color.from_hsv(0.33 * r, 0.85, 0.9)
 
 
 ## Das Bild, das beim Ziehen am Mauszeiger hängt.

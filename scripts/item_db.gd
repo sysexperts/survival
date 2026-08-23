@@ -81,6 +81,10 @@ static var ITEMS := {
 		"max_stack": 1,
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(15, 5),
+		# Dayaniklilik: her balta darbesi 1 harcar, 0'da kirilir. Kural: malzeme
+		# ne kadar sertse o kadar cok darbe. Tas balta = 200 (en dusuk seviye);
+		# demir/celik baltalar geldiginde bu deger artacak.
+		"durability": 200,
 	},
 	"holzbrett": {
 		"name": "Tahta",
@@ -166,6 +170,18 @@ static func display_name(id: String) -> String:
 static func max_stack(id: String) -> int:
 	_ensure()
 	return ITEMS[id]["max_stack"] if ITEMS.has(id) else 1
+
+
+## Tam dayaniklilik (alet ise), yoksa 0. Dur alani olan her esya bir alet
+## sayilir - darbe basina 1 harcanir ve slot uzerinde bir cubuk gosterilir.
+static func max_durability(id: String) -> int:
+	_ensure()
+	return int(ITEMS[id].get("durability", 0)) if ITEMS.has(id) else 0
+
+
+## Bu esya dayanikliligi olan bir alet mi?
+static func has_durability(id: String) -> bool:
+	return max_durability(id) > 0
 
 
 ## Icon als AtlasTexture, einmal pro Item erzeugt und gemerkt.

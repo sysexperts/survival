@@ -99,6 +99,7 @@ func _ready() -> void:
 		# der einen Stein aufhebt - E genauso wie der Rechtsklick-Auftrag.
 		player.stone_collected.connect(_on_stone_collected)
 		player.chop_refused.connect(_on_chop_refused)
+		player.axe_swung.connect(_on_axe_swung)
 		player.reached_station.connect(_on_reached_station)
 
 
@@ -119,7 +120,12 @@ func from_save(data: Dictionary) -> void:
 		var entry: Variant = saved[i] if i < saved.size() else null
 		if typeof(entry) == TYPE_DICTIONARY and entry.has("id") and ItemDB.has(entry["id"]) \
 				and int(entry.get("count", 0)) > 0:
-			inventory.slots[i] = {"id": String(entry["id"]), "count": int(entry["count"])}
+			var rebuilt := {"id": String(entry["id"]), "count": int(entry["count"])}
+			# Dayaniklilik mitnehmen, damit eine halb verbrauchte Axt nach dem
+			# Neuladen nicht wieder voll ist. Auf den gueltigen Bereich klemmen.
+			if entry.has("dur") and ItemDB.has_durability(entry["id"]):
+				rebuilt["dur"] = clampi(int(entry["dur"]), 1, ItemDB.max_durability(entry["id"]))
+			inventory.slots[i] = rebuilt
 		else:
 			inventory.slots[i] = {}
 	inventory.changed.emit()
@@ -290,6 +296,30 @@ func _notice(text: String) -> void:
 
 func _on_chop_refused() -> void:
 	_notice("Bunun icin elinde bir balta olmali")
+
+
+## Ein Axtschlag ist gefallen: der ausgewaehlten Axt einen Dayaniklilik-Punkt
+## abziehen. Bei 0 zerbricht sie - Feld leeren, Meldung, und has_axe sofort
+## selbst auf false setzen, damit der laufende Faell-Auftrag noch in
+## derselben Runde stoppt (nicht erst beim naechsten _process).
+func _on_axe_swung() -> void:
+	var i := hud.selected
+	var slot: Dictionary = inventory.slots[i]
+	if slot.is_empty() or not ItemDB.has_durability(slot["id"]):
+		return
+	# Frische Alete tragen noch kein "dur" - dann als voll behandeln.
+	var dur: int = int(slot.get("dur", ItemDB.max_durability(slot["id"])))
+	dur -= 1
+	if dur > 0:
+		slot["dur"] = dur
+		inventory.changed.emit()   # Dayaniklilik-Cubugu neu zeichnen
+		return
+	# Zerbrochen.
+	inventory.slots[i] = {}
+	inventory.changed.emit()
+	if player != null:
+		player.has_axe = false
+	_notice("Balta kirildi")
 
 
 func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> void:

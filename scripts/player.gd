@@ -27,6 +27,9 @@ signal stump_cleared(cell: Vector2i)
 ## Das Inventar haengt daran und sagt es dem Spieler - der Player selbst
 ## kennt weder HUD noch Hinweiszeile.
 signal chop_refused
+## Ein Axtschlag wurde ausgefuehrt (ein "Schlag"). Das Inventar haengt daran
+## und zieht der Axt Dayaniklilik ab - der Player selbst kennt kein Inventar.
+signal axe_swung
 
 ## Ein Stein wurde aufgehoben.
 ## `gather_id` sagt, WAS aufgehoben wurde (siehe GatherDB) - leer bei den
@@ -319,6 +322,9 @@ func _play(state: String) -> void:
 func _start_axe() -> void:
 	busy = true
 	sprite.play("axe_%s" % facing.replace("-", "_"))
+	# Ein Schlag = ein Dayaniklilik-Punkt. Das Inventar bucht ihn ab und
+	# setzt has_axe auf false, sobald die Axt zerbricht (siehe unten).
+	axe_swung.emit()
 
 
 ## Die Klinge trifft mitten in der Animation, nicht am Ende - sonst wirkt
@@ -348,6 +354,12 @@ func _on_animation_finished() -> void:
 		return
 	busy = false
 	if _chop_level < 0:
+		_play("idle")
+		return
+
+	# Axt zwischendurch zerbrochen (Dayaniklilik 0)? Nicht weiterschlagen.
+	if not has_axe:
+		_end_chop()
 		_play("idle")
 		return
 
