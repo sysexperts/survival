@@ -127,18 +127,10 @@ var _sleep_return_level := 0
 const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
 var _zzz: Node = null
 
-## Laufgeraeusch je nach Untergrund. Als Effekt auf dem "Efektler"-Bus, damit die
-## Lautstaerke spaeter in den Einstellungen regelbar ist. Bewusst leise (_DB).
-## WICHTIG: Grass ist als PCM importiert (QOA lief auf dem ausgelieferten Client
-## nicht), die .ogg haben Loop im Import aktiviert.
+## Laufgeraeusch (Effekt auf dem "Efektler"-Bus, spaeter in den Einstellungen
+## regelbar). Stream + Lautstaerke liegen zentral in audio.gd, damit Mitspieler
+## (remote_player.gd) dieselbe Quelle nutzen.
 const AudioHelper := preload("res://scripts/audio.gd")
-const FOOTSTEP_STREAMS := {
-	"gras": preload("res://assets/sounds/footsteps/Grass.wav"),
-	"erde": preload("res://assets/sounds/footsteps/Mud (3).ogg"),
-}
-## Grundlautstaerke in dB (negativ = leiser). Bei 0 dB war der Loop zu laut,
-## deshalb abgesenkt. Feinjustierung spaeter ueber den Efektler-Bus (Einstellungen).
-const FOOTSTEP_DB := -14.0
 ## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
 const FOOTSTEP_MIN_MOVE := 0.1
@@ -149,7 +141,6 @@ const FOOTSTEP_COOLDOWN := 0.12
 var _footsteps: AudioStreamPlayer = null
 var _last_pos := Vector2.ZERO
 var _move_cooldown := 0.0
-var _cur_surface := ""            ## aktuell abgespielter Untergrund ("gras"/"erde")
 
 
 func _ready() -> void:
@@ -209,27 +200,10 @@ func _update_footsteps(delta: float) -> void:
 	else:
 		_move_cooldown = maxf(_move_cooldown - delta, 0.0)
 	var walking := _move_cooldown > 0.0
-	if not walking:
-		if _footsteps.playing:
-			_footsteps.stop()
-		return
-	# Untergrund kann sich waehrend des Laufens aendern (Gras -> Erde). Bei
-	# Wechsel den passenden Stream setzen und neu starten.
-	var surface := _surface_under_feet()
-	if surface != _cur_surface:
-		_cur_surface = surface
-		_footsteps.stream = FOOTSTEP_STREAMS[surface]
+	if walking and not _footsteps.playing:
 		_footsteps.play()
-	elif not _footsteps.playing:
-		_footsteps.play()
-
-
-## Welcher Untergrund liegt unter Jack? Erde (-> "erde"/Mud) wenn die oberste
-## Bodenkachel eine DIRT-Kachel ist, sonst Gras. Fuer den Schrittsound.
-func _surface_under_feet() -> String:
-	var cell := world.world_to_cell(global_position, level)
-	var atlas := world.top_atlas_at(cell)
-	return "erde" if WorldGen.DIRT.has(atlas) else "gras"
+	elif not walking and _footsteps.playing:
+		_footsteps.stop()
 
 
 ## Baut den Laufgeraeusch-Player. Nur der LOKALE Spieler ist ein Player (andere
@@ -242,10 +216,8 @@ func _setup_footsteps() -> void:
 	AudioHelper.ensure_effects_bus()
 	_footsteps = AudioStreamPlayer.new()
 	_footsteps.bus = AudioHelper.EFFECTS_BUS
-	_footsteps.volume_db = FOOTSTEP_DB
-	# Startstream setzen, damit nie null; der echte Untergrund wird beim Laufen
-	# bestimmt (_update_footsteps).
-	_footsteps.stream = FOOTSTEP_STREAMS["gras"]
+	_footsteps.volume_db = AudioHelper.FOOTSTEP_DB
+	_footsteps.stream = AudioHelper.FOOTSTEP_STREAM
 	add_child(_footsteps)
 	_last_pos = global_position
 

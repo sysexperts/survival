@@ -11,6 +11,13 @@ extends Object
 ## AudioServer.set_bus_volume_db ile ayarlayabilir.
 const EFFECTS_BUS := "Efektler"
 
+## Ayak sesi. Simdilik her zeminde ayni (Grass). Hem yerel oyuncu (player.gd)
+## hem uzaktaki oyuncular (remote_player.gd) ayni kaynagi kullanir. Grass PCM
+## olarak import edildi (QOA istemcide calismadi).
+const FOOTSTEP_STREAM := preload("res://assets/sounds/footsteps/Grass.wav")
+## Temel ses (dB, negatif = daha kis). Efektler bus'i uzerinden ayarlanir.
+const FOOTSTEP_DB := -17.0
+
 
 ## "Efektler" kanalini (yoksa) olusturur ve indexini dondurur. Master'a gonderir.
 static func ensure_effects_bus() -> int:

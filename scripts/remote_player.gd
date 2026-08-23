@@ -16,10 +16,19 @@ const FRAMES := preload("res://resources/jack_frames.tres")
 const SPRITE_OFFSET := Vector2(0, -18)
 
 const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
+const AudioHelper := preload("res://scripts/audio.gd")
+
+## Ab dieser Entfernung (px) ist der Mitspieler-Schritt nicht mehr zu hoeren.
+## Darunter wird er mit der Naehe lauter (AudioStreamPlayer2D-Daempfung).
+const FOOTSTEP_MAX_DISTANCE := 800.0
 
 var _sprite: AnimatedSprite2D
 var _plate: NamePlate
 var _zzz: Node = null   # SleepZzz - per preload, siehe player.gd
+## Schrittgeraeusch dieses Mitspielers - positionsabhaengig (2D), damit es mit
+## der Entfernung leiser wird. Laeuft, solange seine Animation "walk_/run_" ist.
+var _footsteps: AudioStreamPlayer2D = null
+var _walking := false
 
 
 func _ready() -> void:
@@ -39,6 +48,15 @@ func _ready() -> void:
 
 	_plate = NamePlate.new()
 	add_child(_plate)
+
+	# Schrittgeraeusch positionsabhaengig. Bus VOR dem Zuweisen anlegen.
+	AudioHelper.ensure_effects_bus()
+	_footsteps = AudioStreamPlayer2D.new()
+	_footsteps.stream = AudioHelper.FOOTSTEP_STREAM
+	_footsteps.bus = AudioHelper.EFFECTS_BUS
+	_footsteps.volume_db = AudioHelper.FOOTSTEP_DB
+	_footsteps.max_distance = FOOTSTEP_MAX_DISTANCE
+	add_child(_footsteps)
 
 
 var pname := ""
@@ -69,7 +87,11 @@ func apply_state(pos: Vector2, anim: StringName, frame: int) -> void:
 	# Schlaeft der Mitspieler, denselben Zzz-Effekt zeigen wie bei der eigenen
 	# Figur. Rein lokal gezeichnet - die Schlaf-Animation kommt ja schon
 	# synchron ueber das Netz, jede Seite ergaenzt ihr eigenes Zzz.
-	var sleeping := String(anim).begins_with("sleep_")
+	# Laeuft der Mitspieler? Dann Schrittgeraeusch an (die Animation kommt
+	# synchron ueber das Netz - kein Positions-Vergleich noetig).
+	var a := String(anim)
+	_walking = a.begins_with("walk_") or a.begins_with("run_")
+	var sleeping := a.begins_with("sleep_")
 	if sleeping and _zzz == null:
 		_zzz = SleepZzzScript.new()
 		add_child(_zzz)
@@ -82,3 +104,13 @@ func _process(delta: float) -> void:
 	if _has_target:
 		# Exponentielles Glaetten - unabhaengig von der Bildrate.
 		global_position = global_position.lerp(_target, 1.0 - exp(-16.0 * delta))
+	if _footsteps != null:
+		# Zusaetzlich an Restbewegung koppeln: bleibt das letzte Paket auf "walk"
+		# stehen (kein Idle-Paket nachgekommen), stoppt der Sound trotzdem, sobald
+		# die Figur ihr Ziel erreicht hat.
+		var moving := global_position.distance_to(_target) > 1.0
+		var run := _walking and moving
+		if run and not _footsteps.playing:
+			_footsteps.play()
+		elif not run and _footsteps.playing:
+			_footsteps.stop()
