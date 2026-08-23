@@ -92,6 +92,12 @@ func _highlight_furniture(node: Furniture) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Offene Abriss-Rückfrage: Esc bricht ab, sonst schluckt sie ohnehin die Klicks.
+	if _confirm != null and _confirm.visible:
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			_close_confirm()
+			get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and preview.active:
 		if event.keycode == KEY_ESCAPE:
 			preview.cancel()
@@ -149,30 +155,86 @@ func _unhandled_input(event: InputEvent) -> void:
 ## --- Abriss-Rückfrage ---------------------------------------------------
 
 ## Nachfrage vor dem Abreißen, damit man nicht aus Versehen ein Möbel verliert.
-var _confirm: ConfirmationDialog
+## Selbst gebaut statt ConfirmationDialog: dessen Fenster ist zu groß und die
+## Default-Schriftgröße verwäscht den Bitmap-Font (nur 11/22 px bleiben scharf).
+const CONFIRM_FONT := 11
+var _confirm: CanvasLayer
+var _confirm_label: Label
 var _pending_destroy := Vector2i(2147483647, 2147483647)
 
 
-## Fragt "«Name» yıkılsın mı?" und reißt erst nach Bestätigung ab.
+## Fragt "Name yikilsin mi?" und reißt erst nach Bestätigung ab.
 func _ask_destroy(cell: Vector2i) -> void:
 	if _confirm == null:
-		_confirm = ConfirmationDialog.new()
-		_confirm.title = "Yikim"
-		_confirm.get_ok_button().text = "Evet"
-		_confirm.get_cancel_button().text = "Hayir"
-		_confirm.confirmed.connect(_on_destroy_confirmed)
-		# Bei Abbruch/Schließen den gemerkten Auftrag verwerfen.
-		_confirm.canceled.connect(func(): _pending_destroy = Player.INVALID_CELL)
-		add_child(_confirm)
+		_build_confirm()
 	_pending_destroy = cell
-	_confirm.dialog_text = "%s yikilsin mi?" % _placed_name(cell)
-	_confirm.popup_centered()
+	_confirm_label.text = "%s yikilsin mi?" % _placed_name(cell)
+	_confirm.visible = true
+
+
+func _build_confirm() -> void:
+	_confirm = CanvasLayer.new()
+	_confirm.layer = 120                 # über der Hotbar (110)
+	add_child(_confirm)
+
+	# Sperrfläche: dunkelt ab und schluckt Klicks dahinter.
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.4)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_confirm.add_child(center)
+
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.07, 0.10, 0.96)
+	sb.border_color = Color(0.35, 0.37, 0.45, 0.95)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(5)
+	sb.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", sb)
+	center.add_child(panel)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	panel.add_child(col)
+
+	_confirm_label = Label.new()
+	_confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_label.add_theme_font_size_override("font_size", CONFIRM_FONT)
+	col.add_child(_confirm_label)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	col.add_child(row)
+	row.add_child(_confirm_button("Evet", _on_destroy_confirmed))
+	row.add_child(_confirm_button("Hayir", _close_confirm))
+
+
+func _confirm_button(text: String, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.add_theme_font_size_override("font_size", CONFIRM_FONT)
+	b.custom_minimum_size = Vector2(64, 0)
+	b.pressed.connect(on_press)
+	return b
+
+
+func _close_confirm() -> void:
+	_pending_destroy = Player.INVALID_CELL
+	if _confirm != null:
+		_confirm.visible = false
 
 
 func _on_destroy_confirmed() -> void:
 	if _pending_destroy != Player.INVALID_CELL:
 		player.walk_to_destroy(_pending_destroy)
-	_pending_destroy = Player.INVALID_CELL
+	_close_confirm()
 
 
 ## Anzeigename des platzierten Objekts an `cell` (für die Rückfrage).
