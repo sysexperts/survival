@@ -229,7 +229,7 @@ func can_place_2x2(top: Vector2i) -> bool:
 			level = l
 		elif l != level:
 			return false
-	return true
+	return not _furniture_adjacent(footprint_2x2(top))
 
 
 ## Passt hier ein 1x1-Objekt hin (z. B. ein Moebel)? Die Zelle muss Boden
@@ -240,7 +240,23 @@ func can_place_2x2(top: Vector2i) -> bool:
 func can_place_1x1(cell: Vector2i) -> bool:
 	if top_level_at(cell) < 0:
 		return false
-	return blocker_at(cell) == null and prop_node(cell) == null and not has_stump(cell)
+	if blocker_at(cell) != null or prop_node(cell) != null or has_stump(cell):
+		return false
+	return not _furniture_adjacent([cell])
+
+
+## Steht auf einer Nachbarzelle des Fussabdrucks schon ein Moebel/Lagerfeuer?
+## Verhindert, dass zwei Objekte so dicht stehen, dass ihre (deutlich groesser
+## als eine Zelle gezeichneten) Bilder sichtbar ineinanderlaufen. Die eigenen
+## Fussabdruck-Zellen zaehlen nicht als Nachbarn.
+func _furniture_adjacent(foot: Array) -> bool:
+	for c in foot:
+		for n in neighbors(c):
+			if n in foot:
+				continue
+			if blocker_at(n) != null:
+				return true
+	return false
 
 
 ## Die Nachbarzelle unten rechts auf dem Bildschirm. Ueber die Weltposition
@@ -277,7 +293,7 @@ func can_place_long(top: Vector2i) -> bool:
 			lvl = l
 		elif l != lvl:
 			return false
-	return true
+	return not _furniture_adjacent(footprint_long(top))
 
 
 ## Kann man von `from` nach `to` treten? Prueft Loch, Prop und Stufenhoehe.

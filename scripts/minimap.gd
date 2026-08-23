@@ -131,7 +131,9 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			_open_editor(_cell_at(event.position))
+			# Wegpunkt entsteht IMMER an der aktuellen Spielerposition, nicht an
+			# der angeklickten Stelle - man markiert, wo man gerade steht.
+			_open_editor(_pcell)
 			accept_event()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_remove_waypoint_near(event.position)
