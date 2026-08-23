@@ -220,6 +220,13 @@ func _setup_footsteps() -> void:
 	_footsteps.stream = AudioHelper.FOOTSTEP_STREAM
 	add_child(_footsteps)
 	_last_pos = global_position
+	# Audio-Hoerpunkt an die eigene Figur binden, damit 2D-Klaenge (z. B. die
+	# Schritte anderer Spieler) korrekt mit der Entfernung leiser werden. Ohne
+	# expliziten Listener nimmt Godot den Bildschirmmittelpunkt - das daempft hier
+	# nicht zuverlaessig. Der Listener wandert als Kind beim Ebenenwechsel mit.
+	var listener := AudioListener2D.new()
+	add_child(listener)
+	listener.make_current()
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die
