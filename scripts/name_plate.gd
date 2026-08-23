@@ -30,9 +30,10 @@ const FONT_SIZE := 9
 		position = Vector2(0, -height)
 @export var text_scale := 0.5
 @export var color := Color(1, 0.97, 0.88)
-## Harter Schatten statt Umriss: ein Bitmap-Font hat keine Umrissdaten,
-## und ohne irgendetwas dahinter verschwindet heller Text im hellen Gras.
-@export var shadow := Color(0, 0, 0, 0.7)
+## Voller Umriss (rundum), damit der Name auf jedem Untergrund lesbar bleibt.
+## Ein Bitmap-Font hat keine Umrissdaten, also zeichnen wir den Text selbst
+## mehrfach versetzt in Schwarz und legen die helle Schrift darueber.
+@export var shadow := Color(0, 0, 0, 1)
 
 var _font: Font
 
@@ -53,7 +54,13 @@ func _draw() -> void:
 		return
 	var w := _font.get_string_size(player_name, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
 	var at := Vector2(-roundf(w * 0.5), 0.0)
-	draw_string(_font, at + Vector2.ONE, player_name,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, shadow)
+	# Rundum-Umriss: den Text achtfach versetzt in Schwarz zeichnen ...
+	for oy in [-1, 0, 1]:
+		for ox in [-1, 0, 1]:
+			if ox == 0 and oy == 0:
+				continue
+			draw_string(_font, at + Vector2(ox, oy), player_name,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, shadow)
+	# ... und die helle Schrift oben drauf.
 	draw_string(_font, at, player_name,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, color)

@@ -78,7 +78,7 @@ script = ExtResource("13_net")
 script = ExtResource("15_wsync")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
-zoom = Vector2(2, 2)
+zoom = Vector2(2.5, 2.5)
 script = ExtResource("3_cam")
 
 [node name="Overlay" type="CanvasLayer" parent="." unique_id=1668305282]

@@ -190,6 +190,9 @@ func _esc(s: String) -> String:
 
 
 func _scroll_to_bottom() -> void:
+	# Zwei Frames warten: der RichTextLabel muss erst seine Hoehe ausrechnen,
+	# sonst ist max_value noch veraltet und die letzte Zeile bleibt verdeckt.
+	await get_tree().process_frame
 	await get_tree().process_frame
 	if is_instance_valid(_scroll):
 		var sb := _scroll.get_v_scroll_bar()
