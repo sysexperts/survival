@@ -505,6 +505,25 @@ Wichtige Pfade auf dem Server:
 ssh -i ~/.ssh/id_vapur_admin root@185.248.140.225 "cd /opt/survival && git pull && systemctl restart survival"
 ```
 
+> **Neue `class_name`-Skripte?** Dann reicht `git pull && restart` **nicht** —
+> der Server kennt die neue Klasse erst nach einem Editor-Durchlauf, sonst
+> bricht der Start mit `Could not find type "…"` ab (und abhängige Skripte
+> wie `net_game.gd` laden nicht mehr). In dem Fall **vor** dem Neustart einmal
+> importieren:
+>
+> ```bash
+> ssh -i ~/.ssh/id_vapur_admin root@185.248.140.225 "cd /opt/survival && git pull && /opt/godot/godot --headless --editor --path . --quit && systemctl restart survival"
+> ```
+>
+> Danach im Log prüfen (`journalctl -u survival -n 20`), dass kein
+> `SCRIPT ERROR` / `Parse Error` steht.
+
+> **Weltzustand:** Gesetzte Möbel/Lagerfeuer persistiert der Server in
+> `/opt/survival_world/build.json` (siehe `scripts/world_sync.gd`) und spielt
+> sie jedem Client beim Beitritt vor — sie überleben einen Neustart. **Nicht**
+> persistiert: Abbau/Sammeln (gefällte Bäume, Steine) — das gehört zum offenen
+> Chunk-Diff (Milestone 3 in `AGENTS.md`).
+
 **Update an die Spieler ausliefern** (nur nötig bei Client-Änderungen —
 der Auto-Updater der Clients zieht die neue `game.pck`):
 
