@@ -304,6 +304,13 @@ func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:
 	_grant("holz", wood_per_tree)
 
 
+## Holz fuer einen im Multiplayer (server-autoritativ) gefaellten Baum - wird
+## von world_sync beim toedlichen Schlaeger aufgerufen (dort laeuft kein
+## felled-Signal, um Doppel-Verteilung zu vermeiden).
+func grant_wood_for_tree() -> void:
+	_grant("holz", wood_per_tree)
+
+
 func _on_stump_cleared(_cell: Vector2i) -> void:
 	_grant("holz", wood_per_stump)
 

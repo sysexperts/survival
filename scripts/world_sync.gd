@@ -29,6 +29,9 @@ const REMOVED_FILE := BUILD_DIR + "/removed.json"
 ## rechnet damit die Restzeit aus und laesst Abgelaufenes weg.
 const REGROW_SECONDS := 300.0
 const STONE_SECONDS := 240.0
+## Lebenspunkte eines Baums (Axtschlaege bis er faellt). GETEILT ueber alle
+## Spieler - schlagen zwei am selben Baum, faellt er doppelt so schnell.
+const TREE_MAX_HP := 6
 
 var _world: IsoWorld
 var _regrowth: Node
@@ -45,6 +48,10 @@ var _removed: Dictionary = {}
 ## Client: vom Server empfangene Bauten, die noch nicht gesetzt werden konnten
 ## (der Chunk ist evtl. noch nicht geladen). Werden in _process nachgezogen.
 var _pending: Array = []
+## Server: geteilte Baum-HP je Zelle (Vector2i -> int).
+var _tree_hp: Dictionary = {}
+## Client: Inventar, um dem toedlichen Schlaeger Holz gutzuschreiben.
+var _pinv: Node
 
 
 func _ready() -> void:
@@ -57,6 +64,7 @@ func _ready() -> void:
 		_load_removed()
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
+	_pinv = get_node_or_null(^"../Inventory")
 	_ensure_player()
 	# Ein Frame warten, damit Welt + Spieler stehen, dann den Bau-Stand des
 	# Servers anfordern (analog save_sync fuer das Inventar).
@@ -333,6 +341,52 @@ func _load_removed() -> void:
 		if typeof(r) == TYPE_DICTIONARY and _remaining(r, now) > 0.0:
 			_removed["%d,%d" % [int(r["x"]), int(r["y"])]] = r
 	print("WorldSync: %d Abbauten aus %s geladen." % [_removed.size(), REMOVED_FILE])
+
+
+# --- Baum-Durability (geteilte HP, server-autoritativ) -------------------
+
+## Client -> Server: "ich habe diesen Baum einmal geschlagen".
+func report_tree_hit(cell: Vector2i, level: int, atlas: Vector2i) -> void:
+	_tree_hit.rpc_id(1, cell, level, atlas)
+
+
+@rpc("any_peer", "reliable")
+func _tree_hit(cell: Vector2i, level: int, atlas: Vector2i) -> void:
+	if not multiplayer.is_server():
+		return
+	# Schon gefaellt und noch nicht nachgewachsen? Dann Schlaege ignorieren -
+	# sonst wuerde ein Nachzuegler-Schlag die HP des (spaeter) nachgewachsenen
+	# Baums vermindern.
+	var key := "%d,%d" % [cell.x, cell.y]
+	if _removed.has(key) and _remaining(_removed[key], Time.get_unix_time_from_system()) > 0.0:
+		return
+	var killer := multiplayer.get_remote_sender_id()
+	var hp := int(_tree_hp.get(cell, TREE_MAX_HP)) - 1
+	print("[Baum] Zelle %s: %d/%d HP (Schlag von %d)" % [cell, maxi(hp, 0), TREE_MAX_HP, killer])
+	if hp > 0:
+		_tree_hp[cell] = hp
+		return
+	_tree_hp.erase(cell)
+	_record_removal("fell", cell, level, atlas, "")
+	# Jeder Client faellt den Baum; nur der toedliche Schlaeger bekommt Holz.
+	for pid in multiplayer.get_peers():
+		_fell_now.rpc_id(pid, cell, level, atlas, pid == killer)
+
+
+@rpc("any_peer", "reliable")
+func _fell_now(cell: Vector2i, level: int, atlas: Vector2i, got_wood: bool) -> void:
+	_apply_fell(cell, level, atlas, got_wood)
+
+
+## Faellt den Baum lokal: Umkipp-Animation, Stumpf + Nachwachs-Uhr, und - nur
+## beim toedlichen Schlaeger - Holz gutschreiben. KEIN felled.emit (das wuerde
+## das Ereignis erneut ans Netz verteilen).
+func _apply_fell(cell: Vector2i, level: int, atlas: Vector2i, got_wood: bool) -> void:
+	_remove_tree(cell, level)
+	if _regrowth:
+		_regrowth.replicate_felled(cell, level, atlas)
+	if got_wood and _pinv and _pinv.has_method("grant_wood_for_tree"):
+		_pinv.grant_wood_for_tree()
 
 
 ## Entfernt einen Baum wie beim lokalen Faellen - mit Umkipp-Animation, wenn

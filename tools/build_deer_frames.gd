@@ -14,6 +14,8 @@ const DIRS := ["south", "south-east", "east", "north-east",
 	"north", "north-west", "west", "south-west"]
 const WALK_FRAMES := 9
 const WALK_FPS := 10.0
+const LAY_FRAMES := 9
+const LAY_FPS := 10.0
 
 func _initialize() -> void:
 	var sf := SpriteFrames.new()
@@ -35,6 +37,13 @@ func _initialize() -> void:
 		sf.set_animation_loop(ia, true)
 		sf.set_animation_speed(ia, 1.0)
 		sf.add_frame(ia, _load_centered("res://.deer_src/idle/%s.png" % d))
+		# Lay down (nicht loopend; rueckwaerts abgespielt = Aufstehen).
+		var la := "laydown_%s" % us
+		sf.add_animation(la)
+		sf.set_animation_loop(la, false)
+		sf.set_animation_speed(la, LAY_FPS)
+		for j in LAY_FRAMES:
+			sf.add_frame(la, _load_centered("res://.deer_src/laydown/%s/frame_%03d.png" % [d, j]))
 	var err := ResourceSaver.save(sf, "res://resources/deer_frames.tres")
 	print("deer_frames.tres gespeichert, err=", err, " Animationen=", sf.get_animation_names().size())
 	quit()

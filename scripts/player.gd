@@ -98,6 +98,9 @@ var _pickup_cell := Vector2i(2147483647, 2147483647)  ## Stein, der nach dem Lau
 var _reach_station := ""          ## Station, die nach dem Laufen geoeffnet wird
 var _tree: TreeActor = null      ## Baum als Node, solange gefällt wird
 var _camera: Camera2D = null
+## WorldSync-Node (Multiplayer): geteilte Baum-HP. Im Einzelspieler null bzw.
+## inaktiv - dann zaehlt der Baum lokal herunter.
+var _ws: Node = null
 
 ## Schlafen im Bett. `_sleeping` = Jack liegt gerade; `_reach_bed` = er laeuft
 ## noch zum Bett und legt sich bei Ankunft hin. `_sleep_return_pos`/`_level`
@@ -136,6 +139,9 @@ func _ready() -> void:
 	add_child(OcclusionOutline.create(self, sprite, world))
 	add_child(CastShadow.create(sprite))
 	sprite.frame_changed.connect(_on_frame_changed)
+	# WorldSync fuer die geteilte Baum-HP (Multiplayer). Einmal cachen - der
+	# Player haengt sich zur Laufzeit um, ein NodePath wuerde danach brechen.
+	_ws = get_parent().get_node_or_null(^"WorldSync")
 	# Umhaengen ist waehrend _ready nicht erlaubt -> auf den naechsten Frame legen
 	_snap_to_cell.call_deferred(start_cell)
 
@@ -322,8 +328,10 @@ func _on_frame_changed() -> void:
 		return
 	if sprite.frame != axe_impact_frame or not is_instance_valid(_tree):
 		return
-	var away := (_tree.global_position - global_position).normalized()
-	if _chops_left > 1:
+	# Wackeln bei jedem Schlag, solange der Baum noch steht (bei geteilter HP
+	# weiss der Client die Restschlaege nicht - der Fall ersetzt den Node eh).
+	if world.prop_node(_chop_cell) != null:
+		var away := (_tree.global_position - global_position).normalized()
 		_tree.hit(away)
 		_shake(hit_shake)
 
@@ -339,36 +347,59 @@ func _on_animation_finished() -> void:
 	if not String(sprite.animation).begins_with("axe_"):
 		return
 	busy = false
+	if _chop_level < 0:
+		_play("idle")
+		return
+
+	# Stumpf roden: ein Schlag, endgueltig (unveraendert).
+	if _clearing_stump:
+		var scell := _chop_cell
+		world.remove_prop(scell, _chop_level)
+		_shake(hit_shake)
+		_end_chop()
+		stump_cleared.emit(scell)
+		_play("idle")
+		return
+
+	# Baum ist inzwischen gefaellt (von mir oder einem Mitspieler)? Aufhoeren.
+	if not is_instance_valid(_tree) or world.prop_node(_chop_cell) == null:
+		_tree = null
+		_end_chop()
+		_play("idle")
+		return
+
+	if Net.active and _ws != null:
+		# GETEILTE HP: Treffer an den Server melden und weiterschlagen. Der Baum
+		# faellt, wenn der Server ihn (ueber _fell_now -> _apply_fell) entfernt;
+		# der naechste Zyklus sieht dann prop_node == null und stoppt.
+		_ws.report_tree_hit(_chop_cell, _chop_level, _tree.atlas)
+		_start_axe()
+		return
+
+	# Einzelspieler: lokale HP herunterzaehlen.
+	_chops_left -= 1
+	print("[Baum] %s: %d/%d HP" % [_chop_cell, maxi(_chops_left, 0), chops_to_fell])
 	if _chops_left > 0:
-		_chops_left -= 1
-		if _chops_left > 0:
-			_start_axe()
-			return
-		var cell := _chop_cell
-		var lvl := _chop_level
-		if _clearing_stump:
-			world.remove_prop(cell, lvl)
-			_shake(hit_shake)
-			path.clear()
-			_chop_level = -1
-			_chops_left = 0
-			_clearing_stump = false
-			stump_cleared.emit(cell)
-			_play("idle")
-			return
-		var atlas := _tree.atlas if is_instance_valid(_tree) else Vector2i.ZERO
-		if is_instance_valid(_tree):
-			# Aus der Verwaltung nehmen, aber am Leben lassen: der Node
-			# blendet noch aus und raeumt sich danach selbst weg.
-			world.detach_prop(cell)
-			_tree.fell((_tree.global_position - global_position).normalized())
-			_shake(fell_shake)
-		_tree = null                 # blendet selbstständig aus und räumt sich auf
-		path.clear()
-		_chop_level = -1
-		_chops_left = 0
-		felled.emit(cell, lvl, atlas)
+		_start_axe()
+		return
+	var cell := _chop_cell
+	var lvl := _chop_level
+	var atlas := _tree.atlas
+	world.detach_prop(cell)
+	_tree.fell((_tree.global_position - global_position).normalized())
+	_shake(fell_shake)
+	_tree = null
+	_end_chop()
+	felled.emit(cell, lvl, atlas)
 	_play("idle")
+
+
+## Beendet einen Fäll-/Rode-Auftrag (ohne den Baum-Node anzufassen).
+func _end_chop() -> void:
+	path.clear()
+	_chop_level = -1
+	_chops_left = 0
+	_clearing_stump = false
 
 
 # --- Klick-Aufträge -----------------------------------------------------

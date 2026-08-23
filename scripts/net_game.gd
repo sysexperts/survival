@@ -151,6 +151,18 @@ func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, f
 	av.apply_state(pos, anim, frame)
 
 
+## Weltpositionen aller sichtbaren Spieler (eigener + Mitspieler). Der
+## Deer-Host spawnt darueber Rehe in der Naehe JEDES Spielers.
+func all_player_positions() -> Array:
+	var out: Array = []
+	if _local and is_instance_valid(_local):
+		out.append(_local.global_position)
+	for av in _avatars.values():
+		if is_instance_valid(av):
+			out.append(av.global_position)
+	return out
+
+
 func _spawn_avatar(id: int) -> RemotePlayer:
 	if _world == null or _world.props_root == null:
 		return null                  # Welt noch nicht bereit - naechstes Paket
