@@ -410,15 +410,18 @@ func walk_to_station(cell: Vector2i) -> bool:
 
 ## Betten, in die sich Jack legen kann.
 const BED_IDS := ["bett", "feldbett"]
-## Blickrichtung im Bett - passend zur Liege-Pose (Kopf oben-links, Füsse
-## unten-rechts, also entlang der Bett-Diagonale). Gespiegeltes Bett spiegelt
-## die Richtung mit.
-const BED_FACING := "east"
-const BED_FACING_FLIPPED := "west"
+## Liege-Pose entlang der Bett-Diagonale (Kopf oben-links am Kissen, Füsse
+## unten-rechts). Gespiegeltes Bett spiegelt die Richtung mit.
+const BED_FACING := "south_east"
+const BED_FACING_FLIPPED := "south_west"
 ## Feinjustierung der Liegeposition. y leicht positiv, damit Jack in der
-## Y-Sortierung VOR dem Bettrahmen liegt; der Sprite-Offset (-18) hebt das
-## Bild auf die Matratze.
+## Y-Sortierung VOR dem Bettrahmen liegt (er wird also ganz auf dem Bett
+## gezeichnet, nicht dahinter).
 const BED_POS_NUDGE := Vector2(0, 3)
+## Zusaetzlicher Bild-Versatz beim Liegen: hebt das Sprite mittig auf die
+## Matratze, OHNE den Fusspunkt (und damit die Y-Sortierung) zu verschieben.
+## x wird beim gespiegelten Bett mitgespiegelt.
+const BED_SLEEP_OFFSET := Vector2(-4, -14)
 
 
 ## Ist auf dieser Zelle ein Bett?
@@ -467,6 +470,11 @@ func _lie_down(cell: Vector2i) -> void:
 	_sleeping = true
 	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
+	# Bild auf die Matratze heben; beim gespiegelten Bett den x-Versatz spiegeln.
+	var off := BED_SLEEP_OFFSET
+	if bed.flipped:
+		off.x = -off.x
+	sprite.offset = sprite_offset + off
 	if _zzz == null:
 		_zzz = SleepZzzScript.new()
 		add_child(_zzz)
@@ -475,6 +483,7 @@ func _lie_down(cell: Vector2i) -> void:
 ## Weckt Jack: zurück auf die gemerkte Standfläche, normale Anzeige.
 func _wake_up() -> void:
 	_sleeping = false
+	sprite.offset = sprite_offset      # Liege-Bildversatz zuruecknehmen
 	if _zzz != null:
 		_zzz.queue_free()
 		_zzz = null

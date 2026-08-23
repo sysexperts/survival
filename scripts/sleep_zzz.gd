@@ -22,12 +22,13 @@ const FONT_SIZE := 9
 ## Sekunden zwischen zwei Buchstaben.
 const SPAWN_INTERVAL := 0.6
 ## Lebensdauer eines Buchstabens in Sekunden.
-const LIFE := 2.0
-## Startpunkt ueber dem Kopf (der bei der Liege-Pose oben-links liegt).
-const ORIGIN := Vector2(0, -24)
-## Aufstiegsgeschwindigkeit und seitliche Drift (Bildpixel/s).
-const RISE := 12.0
-const DRIFT := 9.0
+const LIFE := 1.8
+## Startpunkt direkt ueber dem Kopf (Liege-Pose: Kopf oben-links).
+const ORIGIN := Vector2(-7, -34)
+## Aufstiegsgeschwindigkeit und seitliche Drift (Bildpixel/s) - klein halten,
+## damit die Z dicht ueber dem Kopf bleiben.
+const RISE := 9.0
+const DRIFT := 4.0
 const COLOR := Color(0.85, 0.9, 1.0)
 const SHADOW := Color(0, 0, 0, 0.9)
 
@@ -50,8 +51,8 @@ func _process(delta: float) -> void:
 	_t += delta
 	if _t >= SPAWN_INTERVAL:
 		_t -= SPAWN_INTERVAL
-		# Wechselnde Groesse ergibt das typische z-Z-z-Muster.
-		var s := 0.6 if _letters.size() % 2 == 0 else 0.9
+		# Wechselnde Groesse ergibt das typische z-Z-z-Muster - klein gehalten.
+		var s := 0.4 if _letters.size() % 2 == 0 else 0.55
 		_letters.append({"age": 0.0, "scale": s})
 	for l in _letters:
 		l["age"] += delta
