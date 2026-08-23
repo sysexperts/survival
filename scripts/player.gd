@@ -421,7 +421,7 @@ const BED_POS_NUDGE := Vector2(0, 3)
 ## Zusaetzlicher Bild-Versatz beim Liegen: hebt das Sprite mittig auf die
 ## Matratze, OHNE den Fusspunkt (und damit die Y-Sortierung) zu verschieben.
 ## x wird beim gespiegelten Bett mitgespiegelt.
-const BED_SLEEP_OFFSET := Vector2(-4, -14)
+const BED_SLEEP_OFFSET := Vector2(-1, -12)
 
 
 ## Ist auf dieser Zelle ein Bett?
