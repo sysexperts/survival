@@ -10,6 +10,129 @@ seitdem dazugekommen ist, und wo die offenen Enden liegen.
 
 ---
 
+## ⚡ Übergabe / Infrastruktur (Stand Build 39 = Anzeige „v0.29")
+
+**Alles ist committet, gepusht und live deployt.** GitHub `origin` =
+https://github.com/sysexperts/survival (Branch `main`). Lokaler Stand = Server =
+`main`.
+
+### Lokale Umgebung (Windows)
+- Repo: `C:\Users\vase\Projekte\survival`
+- Godot-Binary: `C:\Users\vase\OneDrive - Intelego GmbH\Desktop\Godot.exe` (4.7.2)
+- SSH-Key: `~/.ssh/id_vapur_admin`
+- **Kein Python/PIL** in der Bash-Umgebung (`python` schlägt fehl). Für
+  Bild-Maße `file <png>` nutzen; Sprite-/Frame-Verarbeitung über ein Godot-
+  Tool-Skript (siehe `tools/build_deer_frames.gd`), nicht über PIL.
+
+### Server (Linux)
+- IP **185.248.140.225** (Proxmox-Container), Website
+  http://survival.vapur-it.de/ (Default-Host im Beitreten-Feld:
+  `survival.vapur-it.de`).
+- Zugang: `ssh -i ~/.ssh/id_vapur_admin root@185.248.140.225`
+- Wichtige Pfade:
+  - `/opt/survival` — Repo (hier `git pull`)
+  - `/opt/godot/godot` — Godot 4.7.2 (Editor-fähig, für Import/Export headless)
+  - `/var/www/survival` — Webroot (`game.pck`, `version.json`, Installer/ZIP)
+  - `/opt/survival_world/` — **Welt-Persistenz**: `build.json` (gesetzte
+    Möbel/Lagerfeuer), `removed.json` (Abbau: gefällt/gerodet/gesammelt, mit
+    Zeitstempel) — siehe `scripts/world_sync.gd`.
+  - `/opt/survival_saves/<name>.json` — Inventar pro Spielername (kein Account),
+    siehe `scripts/save_sync.gd`.
+  - Dienst: `survival.service` (dedizierter Relay-Server, Autostart/-Restart).
+    Log: `journalctl -u survival -n 50`.
+
+### Deploy-Ablauf (WICHTIG — der Nutzer will IMMER sofort live)
+Nach **jeder** Code-Änderung die volle Auslieferung, ohne Rückfrage:
+1. `version.txt` erhöhen (Build-Ganzzahl; Anzeige = `v0.(build-10)`).
+2. `git add … && git commit && git push origin main`.
+3. `game.pck` bauen:
+   `"$GODOT" --headless --path . --export-pack "Windows Desktop" build/game.pck`
+4. `version.json` schreiben — **MUSS `pck` enthalten**, sonst lädt der Updater
+   nicht: `{"version":N,"pck":"game.pck"}`.
+5. `game.pck` + `version.json` nach `/var/www/survival/` scp'en.
+6. Auf dem Server: `cd /opt/survival && git pull && systemctl restart survival`.
+
+**Drei Auto-Updater-Fallstricke** (die `game.pck` wird per
+`load_resource_pack(replace=true)` über die Basis-`.exe` gelegt — die ersetzt
+NICHT alles):
+- **Neue `class_name`-Klassen** werden nicht registriert → **KEIN `class_name`
+  verwenden, stattdessen `preload("res://…gd")`** (Muster: `WorldGen`,
+  `SleepZzz`, `CreativeHUD`, `deer.gd`).
+- **Autoloads** (z. B. `Net`) werden beim Start aus der Basis-`.exe`
+  instanziert und NICHT ersetzt → neue Methoden dort fehlen am Client. Neue
+  Logik in normale (nicht-Autoload) Skripte legen. (Deshalb liegt die
+  Admin-Prüfung in `scripts/admins.gd`, per preload, statt in `Net`.)
+- **Neue Assets (PNG o. ä.) UND neue `class_name`** brauchen vor dem
+  Server-Neustart einen Editor-Import auf dem Server:
+  `/opt/godot/godot --headless --editor --path . --quit`. Eingebettete `.tres`
+  (z. B. `deer_frames.tres`) brauchen das NICHT. Nach dem Restart Log auf
+  `SCRIPT ERROR`/`Parse Error` prüfen.
+
+### PixelLab (Sprites/Animationen)
+- API-Key: `a3aceed9-0867-4fb2-ac6c-0f45c25caf93` (auch in der Memory
+  `pixellab-api.md`). Auth: `Authorization: Bearer <key>`.
+- Charaktere listen: `GET https://api.pixellab.ai/v2/characters` →
+  ID + `name` + `state_name`. ZIP eines States:
+  `GET /v2/characters/<id>/zip` (Rotations + Animations-Frames pro Richtung).
+- **Jack** (Spieler) und **deer** (Reh) liegen dort. Deer-States:
+  `f02ca099…` Walking, `11d475ee…` „lay down" (+ Grasen),
+  `444c2ffa…` Idle, **`31f0cac7…` „die"** (Sterbe-Animation, für die Jagd
+  bereit, noch nicht geladen).
+- Frames werden **fußbündig auf ein gemeinsames Raster** gelegt (Jack 72,
+  Reh 64), da PixelLab je Animation unterschiedliche Frame-Größen liefert.
+  Deer-Frames baut `tools/build_deer_frames.gd` (Frames aus dem gitignorierten
+  `.deer_src/`, eingebettet in `resources/deer_frames.tres`).
+
+### Was seit der letzten Übergabe dazugekommen ist
+- **Bett**: Jack legt sich hinein (Rechtsklick), Liege-Pose `south_east`
+  (gespiegelt `south_west`), Bild via `sprite.offset` auf die Matratze gehoben;
+  **Zzz**-Effekt (`scripts/sleep_zzz.gd`) klein über dem Kopf, gespiegelt.
+- **Welt-Persistenz** (`scripts/world_sync.gd`): Server merkt Möbel/Lagerfeuer
+  (build.json) UND Abbau mit Restzeit (removed.json) und spielt sie Beitretenden
+  vor → überlebt Neustart. Chunk-Diff (Milestone 3) ist damit **erledigt**:
+  `regrowth.suppresses_prop()` + `chunk_manager.gd` verhindern, dass Gefälltes
+  beim Nachladen wiederkommt.
+- **Admin/Gamemaster**: `scripts/admins.gd` (`NAMES=["serdar"]`). Admins bekommen
+  Taste **X** = Kreativ-Inventar (`scripts/creative_hud.gd`, alle Items) und ein
+  **GM-Abzeichen** über dem Kopf (`assets/gamemaster.png`, animiert in
+  `name_plate.gd`).
+- **TAB-Spielerliste** (`net_game.gd`), **Inventar 6 Taschenzeilen**
+  (`player_inventory.gd bag_rows`).
+- **Baum-Durability**: geteilte, server-autoritative HP
+  (`world_sync._tree_hit`, `TREE_MAX_HP=6`) — zwei Spieler fällen doppelt so
+  schnell; HP wird geloggt. Einzelspieler zählt lokal.
+- **Reh** (`scripts/deer.gd`, `scripts/deer_spawner.gd`): wandert, ist scheu
+  (flieht vor Spielern), legt sich hin/steht auf, Baby-Rehe. **MP-Sync per
+  Host-Autorität**: der Server bestimmt den Client mit kleinster Peer-ID zum
+  „Deer-Host", der simuliert und den Zustand übers Relay verteilt; andere zeigen
+  Remote-Rehe. Spawnt nahe **jedem** Spieler.
+
+### Offene nächste Schritte (Priorität grob absteigend)
+1. **Feldbett-Layering-Bug**: hinter dem Feldbett stimmt die Zeichenreihenfolge
+   nicht ganz, und die Liege-Pose passt nicht (mein `BED_SLEEP_OFFSET` in
+   `player.gd` ist für „bett" getunt; das flachere Feldbett braucht eigene Werte
+   und ggf. eine Prüfung der Y-Sortierung/`TerrainOcclusion`).
+2. **Reh jagen/töten**: die „die"-Animation (`31f0cac7…`) laden, ins
+   `deer_frames.tres` aufnehmen; Angriff (Speer/Waffe) + Reh-Tod als
+   world_sync-Ereignis (analog Baum-Fall) an alle verteilen; Drop (Fleisch →
+   `gebratenes_fleisch`/Rohfleisch). Achtung: das Reh wird bisher nur vom
+   Deer-Host simuliert — Treffer müssen an den Host/Server laufen.
+3. **Bessere Reh-Autorität**: der dedizierte Server simuliert nichts (kein
+   Terrain, kein lokaler Spieler → `ChunkManager` läuft dort nicht). Aktuell
+   löst das die Host-Autorität. Für robustere NPCs später überlegen, ob der
+   Server Terrain generieren soll.
+4. **Milestone 4 — Biome**: zweiter, großmaßstäbiger Noise + Biom-Tabellen im
+   `*_db.gd`-Stil (siehe unten „Laufendes Vorhaben").
+5. **Axt-Rezept** fehlt weiterhin (Item existiert, aber nicht herstellbar).
+
+### Kleiner Hinweis
+`removed.json` wurde beim Aufräumen eines Test-Baums einmal komplett geleert —
+ein paar Abbau-Diffs echter Spieler sind dadurch zurückgesetzt (kein
+Bau-Verlust; Abbau wächst ohnehin nach). Beim nächsten Mal nur den einzelnen
+Test-Eintrag entfernen, nicht die ganze Datei.
+
+---
+
 ## Wie der Nutzer arbeitet
 
 - Er beschreibt Wünsche auf Deutsch, oft mit angehängten Bildausschnitten
