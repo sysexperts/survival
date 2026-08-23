@@ -136,9 +136,9 @@ const FOOTSTEP_STREAM := preload("res://assets/sounds/laufen_auf_gras.wav")
 const FOOTSTEP_DB := -16.0
 ## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
-const FOOTSTEP_MIN_MOVE := 0.4
+const FOOTSTEP_MIN_MOVE := 0.1
 const FOOTSTEP_MAX_MOVE := 20.0
-var _footsteps: AudioStreamPlayer2D = null
+var _footsteps: AudioStreamPlayer = null
 var _last_pos := Vector2.ZERO
 
 
@@ -200,17 +200,20 @@ func _update_footsteps() -> void:
 		_footsteps.stop()
 
 
-## Baut den Laufgeraeusch-Player. AudioStreamPlayer2D, damit auch Mitspieler
-## positionsabhaengig zu hoeren sind. Der Stream wird auf Dauerschleife gesetzt
-## (der Import laesst ihn ungeschleift) und auf dem Efektler-Bus abgespielt.
+## Baut den Laufgeraeusch-Player. Nur der LOKALE Spieler ist ein Player (andere
+## sind remote_player.gd), deshalb reicht ein einfacher AudioStreamPlayer -
+## unabhaengig von Kamera/Listener, immer voll hoerbar. Der Stream wird auf
+## Dauerschleife gesetzt (der Import laesst ihn ungeschleift) und laeuft auf dem
+## Efektler-Bus. WICHTIG: den Bus VOR dem Zuweisen anlegen, sonst faellt der
+## Player still auf Master zurueck bzw. verstummt.
 func _setup_footsteps() -> void:
 	var stream := FOOTSTEP_STREAM
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	_footsteps = AudioStreamPlayer2D.new()
+	AudioHelper.ensure_effects_bus()
+	_footsteps = AudioStreamPlayer.new()
 	_footsteps.stream = stream
 	_footsteps.bus = AudioHelper.EFFECTS_BUS
-	AudioHelper.ensure_effects_bus()
 	_footsteps.volume_db = FOOTSTEP_DB
 	add_child(_footsteps)
 	_last_pos = global_position
