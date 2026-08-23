@@ -48,24 +48,37 @@ func _ready() -> void:
 		_load_builds()               # Register vom letzten Lauf wiederherstellen
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
-	_player = get_tree().get_first_node_in_group("player") as Player
-	if _player:
-		_player.felled.connect(_on_local_felled)
-		_player.stump_cleared.connect(_on_local_stump_cleared)
-		_player.stone_collected.connect(_on_local_stone_collected)
-		_player.placed_campfire.connect(_on_local_campfire)
-		_player.placed_furniture.connect(_on_local_furniture)
+	_ensure_player()
 	# Ein Frame warten, damit Welt + Spieler stehen, dann den Bau-Stand des
 	# Servers anfordern (analog save_sync fuer das Inventar).
 	await get_tree().process_frame
+	print("WorldSync(client): fordere Bau-Stand an")
 	_request_builds.rpc_id(1)
+
+
+## Holt den Spieler-Node (Gruppe "player") und verbindet die lokalen Signale -
+## einmalig. Bewusst nachziehbar: beim Beitritt kann der Spieler beim ersten
+## Versuch noch nicht in der Gruppe stehen; sonst bliebe _player fuer immer null
+## und das Replay (das ihn zum Setzen braucht) liefe ins Leere.
+func _ensure_player() -> bool:
+	if _player != null:
+		return true
+	_player = get_tree().get_first_node_in_group("player") as Player
+	if _player == null:
+		return false
+	_player.felled.connect(_on_local_felled)
+	_player.stump_cleared.connect(_on_local_stump_cleared)
+	_player.stone_collected.connect(_on_local_stone_collected)
+	_player.placed_campfire.connect(_on_local_campfire)
+	_player.placed_furniture.connect(_on_local_furniture)
+	return true
 
 
 ## Client: noch nicht platzierbare Bauten erneut versuchen. Solange der Chunk
 ## einer weit entfernten Baute nicht geladen ist, schlaegt place_* fehl - der
 ## Eintrag bleibt liegen und wird gesetzt, sobald der Spieler hinlaeuft.
 func _process(_delta: float) -> void:
-	if _pending.is_empty() or _player == null or _world == null:
+	if _pending.is_empty() or _world == null or not _ensure_player():
 		return
 	var still: Array = []
 	for b in _pending:
@@ -161,6 +174,7 @@ func _request_builds() -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
+	print("WorldSync(server): sende %d Bauten an peer %d" % [_builds.size(), id])
 	for b in _builds:
 		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), bool(b["flipped"]))
 
@@ -170,14 +184,16 @@ func _request_builds() -> void:
 @rpc("any_peer", "reliable")
 func _spawn_build(kind: String, cell: Vector2i, id: String, flipped: bool) -> void:
 	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "flipped": flipped}
-	if not _apply_build(b):
+	var ok := _apply_build(b)
+	print("WorldSync(client): Baute %s '%s' @ %s -> %s" % [kind, id, cell, "gesetzt" if ok else "wartet auf Chunk"])
+	if not ok:
 		_pending.append(b)
 
 
 ## Setzt eine Baute lokal. true = gesetzt (oder steht schon da), false = ging
 ## gerade nicht (Chunk noch nicht bereit) und sollte erneut versucht werden.
 func _apply_build(b: Dictionary) -> bool:
-	if _player == null or _world == null:
+	if _world == null or not _ensure_player():
 		return false
 	var cell := Vector2i(int(b["x"]), int(b["y"]))
 	# Steht dort schon etwas (z. B. beim erneuten Versuch nach Teil-Erfolg),
