@@ -529,8 +529,13 @@ der Auto-Updater der Clients zieht die neue `game.pck`):
 
 1. `version.txt` erhöhen (Build-Ganzzahl, für den Updater-Vergleich).
 2. `game.pck` bauen: `godot --headless --path . --export-pack "Windows Desktop" build/game.pck`
-3. `game.pck` + `version.json` (Version dort ebenfalls erhöhen) nach
-   `/var/www/survival/` scp'en.
+3. `game.pck` + `version.json` nach `/var/www/survival/` scp'en. **`version.json`
+   MUSS beide Felder tragen**, sonst überspringt der Updater den Download
+   (`bootstrap.gd` verlangt `_pck_url != ""`):
+
+   ```json
+   {"version":26,"pck":"game.pck"}
+   ```
 4. `git push` und auf dem Server pullen/neustarten (siehe oben).
 5. Nur bei Engine-Wechsel/neuer Baseline: Installer neu bauen (Windows-Export
    + Inno Setup) und `SerdarsGameSetup.exe` hochladen.
