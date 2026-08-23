@@ -1,5 +1,4 @@
 extends Node2D
-class_name DroppedItem
 
 ## Ein auf dem Boden liegendes Item: Bodenschatten, schwebendes Icon und eine
 ## enge, zentrierte Beschriftung ("Name xN"). Alles selbst gezeichnet, damit
