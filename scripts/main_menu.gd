@@ -58,11 +58,6 @@ func _ready() -> void:
 
 	box.add_child(_spacer(8))
 
-	var host_btn := Button.new()
-	host_btn.text = "Sunucu Ac"
-	host_btn.pressed.connect(_on_host)
-	box.add_child(host_btn)
-
 	var join_btn := Button.new()
 	join_btn.text = "Katil"
 	join_btn.pressed.connect(_on_join)

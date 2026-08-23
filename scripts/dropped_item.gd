@@ -35,8 +35,6 @@ func _ready() -> void:
 	_spr.position = Vector2(0, -9)
 	add_child(_spr)
 	queue_redraw()
-	print("[DROP] DroppedItem._ready %s icon=%s visible=%s parent=%s gpos=%s" % [
-		item_id, str(_spr.texture != null), str(visible), str(get_parent()), global_position])
 
 
 func _process(delta: float) -> void:

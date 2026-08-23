@@ -80,7 +80,6 @@ func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> voi
 		return
 	if not ItemDB.has(item_id) or count <= 0:
 		return
-	print("[DROP] SRV request: %s x%d @ cell %s lvl %d" % [item_id, count, cell, lvl])
 	var id := _next_id
 	_next_id += 1
 	_drops[id] = {"item_id": item_id, "count": count}
@@ -122,9 +121,6 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 	node.setup(item_id, count)
 	_world.props_root.add_child(node)
 	node.global_position = _world.cell_to_world(cell, lvl)
-	print("[DROP] CLI spawn id=%d %s x%d -> pos %s (props_root=%s, kinder=%d)" % [
-		id, item_id, count, node.global_position, str(_world.props_root != null),
-		_world.props_root.get_child_count() if _world.props_root else -1])
 	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell, "level": lvl}
 
 
