@@ -123,7 +123,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.shift_pressed:
 			var target := _placed_under_mouse()
 			if target != Player.INVALID_CELL:
-				player.walk_to_destroy(target)
+				_ask_destroy(target)
 			get_viewport().set_input_as_handled()
 			return
 		if _hovered.is_empty():
@@ -144,6 +144,45 @@ func _unhandled_input(event: InputEvent) -> void:
 			player.clear_stump(_hovered[0], _hovered[1])
 		else:
 			player.chop(_hovered[0], _hovered[1])
+
+
+## --- Abriss-Rückfrage ---------------------------------------------------
+
+## Nachfrage vor dem Abreißen, damit man nicht aus Versehen ein Möbel verliert.
+var _confirm: ConfirmationDialog
+var _pending_destroy := Vector2i(2147483647, 2147483647)
+
+
+## Fragt "«Name» yıkılsın mı?" und reißt erst nach Bestätigung ab.
+func _ask_destroy(cell: Vector2i) -> void:
+	if _confirm == null:
+		_confirm = ConfirmationDialog.new()
+		_confirm.title = "Yikim"
+		_confirm.get_ok_button().text = "Evet"
+		_confirm.get_cancel_button().text = "Hayir"
+		_confirm.confirmed.connect(_on_destroy_confirmed)
+		# Bei Abbruch/Schließen den gemerkten Auftrag verwerfen.
+		_confirm.canceled.connect(func(): _pending_destroy = Player.INVALID_CELL)
+		add_child(_confirm)
+	_pending_destroy = cell
+	_confirm.dialog_text = "%s yikilsin mi?" % _placed_name(cell)
+	_confirm.popup_centered()
+
+
+func _on_destroy_confirmed() -> void:
+	if _pending_destroy != Player.INVALID_CELL:
+		player.walk_to_destroy(_pending_destroy)
+	_pending_destroy = Player.INVALID_CELL
+
+
+## Anzeigename des platzierten Objekts an `cell` (für die Rückfrage).
+func _placed_name(cell: Vector2i) -> String:
+	var node := world.blocker_at(cell)
+	if node is Furniture:
+		return ItemDB.display_name(node.id)
+	if node is Campfire:
+		return ItemDB.display_name("kamp_atesi")
+	return "Bu"
 
 
 ## Ankerzelle des platzierten Objekts unter der Maus (Möbel pixelgenau,
