@@ -68,6 +68,7 @@ func _ready() -> void:
 
 	# Admins bekommen das Kreativ-Inventar (Taste X). Nur dann gebaut, damit
 	# es fuer normale Spieler gar nicht erst existiert.
+	print("[Admin] player_name='%s' is_admin=%s" % [Net.player_name, Net.is_admin()])
 	if Net.is_admin():
 		creative = CreativeHUDScript.new()
 		add_child(creative)
@@ -256,13 +257,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F:
 		_use_selected()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_X and creative != null:
-		# Admin-Kreativinventar auf/zu. Andere Fenster weichen.
-		if hud.bag_open():
-			hud.toggle_bag()
-		_close_all_crafting()
-		creative.toggle()
-		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_X or event.physical_keycode == KEY_X:
+		# Admin-Kreativinventar auf/zu. physical_keycode als Fallback fuer
+		# abweichende Tastatur-Layouts. Log, damit wir sehen ob die Taste
+		# ankommt und ob der Admin-Modus aktiv ist.
+		print("[Admin] X gedrueckt - creative=%s is_admin=%s" % [creative != null, Net.is_admin()])
+		if creative != null:
+			if hud.bag_open():
+				hud.toggle_bag()
+			_close_all_crafting()
+			creative.toggle()
+			get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_Q:
 		if _drop:
 			_drop.drop_selected()
