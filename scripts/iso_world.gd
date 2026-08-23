@@ -607,7 +607,10 @@ func furniture_cells() -> Array:
 
 
 func has_prop(cell: Vector2i) -> bool:
-	if blocker_at(cell) != null:
+	var b := blocker_at(cell)
+	# Kachelbare Moebel (Hochbeet) blockieren den Weg NICHT - man laeuft drueber.
+	# Fuers Platzieren/Zerstoeren zaehlen sie weiter (das prueft blocker_at direkt).
+	if b != null and not (b is Furniture and Furniture.tileable(b.id)):
 		return true
 	var n := prop_node(cell)
 	if n:
