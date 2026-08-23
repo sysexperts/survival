@@ -37,7 +37,7 @@ func _ready() -> void:
 	box.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Cok Oyuncu  ·  v%d" % _read_version()
+	subtitle.text = "Cok Oyuncu  ·  v%s" % Net.version_name(_read_version())
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(subtitle)
 

@@ -34,6 +34,13 @@ var chat_open := false
 signal connection_failed()
 
 
+## Anzeige-Version (Alpha) aus der internen Build-Nummer. Die Build-Nummer
+## zaehlt in Einerschritten hoch (fuer den Updater-Vergleich), angezeigt wird
+## aber "0.1", "0.2", ... Build 11 -> 0.1.
+static func version_name(build: int) -> String:
+	return "0.%d" % maxi(build - 10, 0)
+
+
 ## Startet einen Server und wechselt sofort ins Spiel. Gibt bei Erfolg einen
 ## leeren String zurueck, sonst eine Fehlermeldung fuers Menue.
 func host() -> String:

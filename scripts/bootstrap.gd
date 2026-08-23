@@ -86,12 +86,12 @@ func _on_version_response(result: int, code: int, _headers: PackedStringArray, b
 	if _server_version > _active_version and _pck_url != "":
 		_download_update()
 	else:
-		_set_status("Güncel (v%d)" % _active_version)
+		_set_status("Güncel (v%s)" % Net.version_name(_active_version))
 		_start_game()
 
 
 func _download_update() -> void:
-	_set_status("Güncelleme yükleniyor v%d ..." % _server_version)
+	_set_status("Güncelleme yükleniyor v%s ..." % Net.version_name(_server_version))
 	DirAccess.make_dir_recursive_absolute(UPDATE_DIR)
 	var tmp := UPDATE_PCK + ".tmp"
 	if FileAccess.file_exists(tmp):
@@ -117,7 +117,7 @@ func _on_pck_downloaded(result: int, code: int, _headers: PackedStringArray, _bo
 			vf.close()
 		if ProjectSettings.load_resource_pack(UPDATE_PCK, true):
 			_active_version = _server_version
-			_set_status("Güncelleme kuruldu (v%d)" % _active_version)
+			_set_status("Güncelleme kuruldu (v%s)" % Net.version_name(_active_version))
 	_start_game()
 
 
