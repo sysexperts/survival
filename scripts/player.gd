@@ -131,6 +131,9 @@ var _zzz: Node = null
 ## regelbar). Stream + Lautstaerke liegen zentral in audio.gd, damit Mitspieler
 ## (remote_player.gd) dieselbe Quelle nutzen.
 const AudioHelper := preload("res://scripts/audio.gd")
+## Eigene Schritte etwas leiser als die der Mitspieler (die man ohnehin nur aus
+## der Naehe hoert). Separat von AudioHelper.FOOTSTEP_DB, das die Remote-Basis ist.
+const OWN_FOOTSTEP_DB := -22.0
 ## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
 const FOOTSTEP_MIN_MOVE := 0.1
@@ -216,7 +219,7 @@ func _setup_footsteps() -> void:
 	AudioHelper.ensure_effects_bus()
 	_footsteps = AudioStreamPlayer.new()
 	_footsteps.bus = AudioHelper.EFFECTS_BUS
-	_footsteps.volume_db = AudioHelper.FOOTSTEP_DB
+	_footsteps.volume_db = OWN_FOOTSTEP_DB
 	_footsteps.stream = AudioHelper.FOOTSTEP_STREAM
 	add_child(_footsteps)
 	_last_pos = global_position
