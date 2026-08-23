@@ -15,16 +15,7 @@ extends Node
 ## der Spieler soll mit nichts anfangen und sich alles selbst
 ## zusammensammeln. Laesst sich auch im Inspector am Inventory-Node leeren,
 ## ohne den Code anzufassen.
-@export var starting_items := {
-	"axt": 1,
-	"holz": 40,
-	"pflanzenfaser": 40,
-	"stein": 40,
-	"seil": 40,
-	"holzbrett": 40,
-	"werkbank": 2,
-	"webetisch": 2,
-}
+@export var starting_items := {}
 ## Wie viel gebratenes Fleisch ein Lagerfeuer abwirft.
 @export var meat_per_fire := 1
 ## Wie viele Steine ein von Hand in die Karte gemalter Steinhaufen abwirft.
@@ -84,6 +75,29 @@ func _ready() -> void:
 		player.stone_collected.connect(_on_stone_collected)
 		player.chop_refused.connect(_on_chop_refused)
 		player.reached_station.connect(_on_reached_station)
+
+
+## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
+
+## Das Inventar als speicherbare Daten.
+func to_save() -> Dictionary:
+	return {"slots": inventory.slots}
+
+
+## Setzt das Inventar aus gespeicherten Daten. Ungueltige/unbekannte Eintraege
+## werden verworfen, die Slot-Anzahl bleibt wie im aktuellen Spiel.
+func from_save(data: Dictionary) -> void:
+	if not data.has("slots") or typeof(data["slots"]) != TYPE_ARRAY:
+		return
+	var saved: Array = data["slots"]
+	for i in inventory.slots.size():
+		var entry: Variant = saved[i] if i < saved.size() else null
+		if typeof(entry) == TYPE_DICTIONARY and entry.has("id") and ItemDB.has(entry["id"]) \
+				and int(entry.get("count", 0)) > 0:
+			inventory.slots[i] = {"id": String(entry["id"]), "count": int(entry["count"])}
+		else:
+			inventory.slots[i] = {}
+	inventory.changed.emit()
 
 
 ## Zeigt an, wenn ein Stein aufgehoben werden kann - sonst raet man, ob man

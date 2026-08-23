@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/chat.gd" id="14_chat"]
 [ext_resource type="Script" path="res://scripts/world_sync.gd" id="15_wsync"]
 [ext_resource type="Script" path="res://scripts/announce.gd" id="16_announce"]
+[ext_resource type="Script" path="res://scripts/save_sync.gd" id="17_save"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -77,6 +78,9 @@ script = ExtResource("13_net")
 
 [node name="WorldSync" type="Node" parent="."]
 script = ExtResource("15_wsync")
+
+[node name="SaveSync" type="Node" parent="."]
+script = ExtResource("17_save")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2.5, 2.5)
