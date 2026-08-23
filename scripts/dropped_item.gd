@@ -27,9 +27,8 @@ func setup(p_id: String, p_count: int) -> void:
 
 func _ready() -> void:
 	_font = load(FONT)
-	z_as_relative = false
-	z_index = IsoWorld.TALL_Z_INDEX + 2
-
+	# Normale y-Sortierung im Props-Container (wie ein Baum/Stein), damit das
+	# Item korrekt zwischen den Props einsortiert und sicher sichtbar ist.
 	_spr = Sprite2D.new()
 	_spr.texture = ItemDB.icon(item_id)
 	_spr.scale = Vector2(0.55, 0.55)
