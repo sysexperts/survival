@@ -45,6 +45,8 @@ func drop_index(slot_index: int) -> void:
 		return
 	var cell := _world.world_to_cell(_player.global_position, _player.level)
 	var lvl := maxi(_world.top_level_at(cell), 0)
+	print("[DROP] CLI sende request: %s x%d @ %s (mein peer=%d, active=%s)" % [
+		String(stack["id"]), int(stack["count"]), cell, multiplayer.get_unique_id(), str(Net.active)])
 	_request_drop.rpc_id(1, String(stack["id"]), int(stack["count"]), cell, lvl)
 
 
@@ -79,7 +81,9 @@ func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> voi
 	if not multiplayer.is_server():
 		return
 	if not ItemDB.has(item_id) or count <= 0:
+		print("[DROP] SRV request ABGELEHNT: %s x%d (has=%s)" % [item_id, count, str(ItemDB.has(item_id))])
 		return
+	print("[DROP] SRV request OK: %s x%d @ %s lvl %d von peer %d" % [item_id, count, cell, lvl, multiplayer.get_remote_sender_id()])
 	var id := _next_id
 	_next_id += 1
 	_drops[id] = {"item_id": item_id, "count": count}
@@ -113,6 +117,9 @@ func _request_pickup(id: int) -> void:
 
 @rpc("any_peer", "reliable")
 func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+	print("[DROP] CLI _spawn EMPFANGEN id=%d %s x%d dedic=%s world=%s props=%s" % [
+		id, item_id, count, str(Net.is_dedicated), str(_world != null),
+		str(_world.props_root != null if _world else false)])
 	if Net.is_dedicated or _world == null or _world.props_root == null:
 		return
 	if _drops.has(id):
@@ -122,6 +129,8 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 	_world.props_root.add_child(node)
 	node.global_position = _world.cell_to_world(cell, lvl)
 	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell, "level": lvl}
+	print("[DROP] CLI node erstellt id=%d pos=%s sichtbar=%s props_kinder=%d" % [
+		id, node.global_position, str(node.visible), _world.props_root.get_child_count()])
 
 
 @rpc("any_peer", "reliable")
