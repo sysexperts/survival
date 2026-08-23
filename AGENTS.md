@@ -5,9 +5,10 @@ Kurzbriefing für alle, die an diesem Projekt weiterarbeiten. Die
 Beleuchtung, Fällen) und gilt weiterhin — dieses Dokument beschreibt, was
 seitdem dazugekommen ist, und wo die offenen Enden liegen.
 
-**Godot 4.7**, Hauptszene `scenes/main.tscn`. Sprachen: **Ingame-/UI-Texte
-Türkisch** (z. B. „Canta", „Oyuncular", „Kizarmis Et"), **Code-Kommentare und
-Item-Ids Deutsch**, **Kommunikation mit dem Nutzer Deutsch**. Bitte beibehalten.
+**Godot 4.7**, Hauptszene `scenes/main.tscn`. Sprachen: **alles Türkisch** —
+Ingame-/UI-Texte (z. B. „Canta", „Oyuncular", „Kizarmis Et"), **Code-Kommentare
+und Item-Namen/-Ids** ebenfalls Türkisch. **Einzige Ausnahme: die Kommunikation
+mit dem Nutzer ist Deutsch.** Bitte beibehalten.
 
 ---
 
