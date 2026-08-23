@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/save_sync.gd" id="17_save"]
 [ext_resource type="Script" path="res://scripts/time_sync.gd" id="18_time"]
 [ext_resource type="Script" path="res://scripts/drop_sync.gd" id="19_drop"]
+[ext_resource type="Script" path="res://scripts/deer_spawner.gd" id="20_deer"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -77,6 +78,9 @@ script = ExtResource("18_time")
 
 [node name="DropSync" type="Node" parent="."]
 script = ExtResource("19_drop")
+
+[node name="DeerSpawner" type="Node" parent="."]
+script = ExtResource("20_deer")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2.5, 2.5)

@@ -23,7 +23,7 @@ const FONT_SIZE := 9
 const GM_TEX := preload("res://assets/gamemaster.png")
 const AdminsScript := preload("res://scripts/admins.gd")
 ## Anzeigegroesse des Abzeichens ueber dem Namen (lokale Pixel, vor node scale).
-const GM_SIZE := 30.0
+const GM_SIZE := 38.0
 
 ## Laufzeit fuer die GM-Animation (Float, Glow-Puls, Funken).
 var _t := 0.0

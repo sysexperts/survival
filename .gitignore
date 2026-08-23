@@ -12,3 +12,7 @@ build/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# PixelLab-Quellframes (nur zum deer_frames.tres-Bau, siehe tools/build_deer_frames.gd)
+.deer_src/
+/build/
