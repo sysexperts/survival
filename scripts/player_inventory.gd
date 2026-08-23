@@ -68,6 +68,7 @@ func _ready() -> void:
 		preview.ended.connect(func(): hud.set_hint(""))
 
 	_drop = get_node_or_null(^"../DropSync")
+	hud.drop_sync = _drop
 
 	player = get_tree().get_first_node_in_group("player")
 	if player:

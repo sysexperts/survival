@@ -21,7 +21,17 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	if stack.is_empty():
 		return null
 	set_drag_preview(hud.make_drag_preview(stack))
+	hud.drag_from = index          # merken, falls ausserhalb losgelassen wird
 	return {"slot_from": index}
+
+
+## Endet der Zug NICHT auf einem gueltigen Feld (also draussen in der Welt),
+## wird der Stapel fallen gelassen - "mit der Maus rauswerfen".
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END and hud and hud.drag_from == index:
+		if not is_drag_successful():
+			hud.drop_to_world(index)
+		hud.drag_from = -1
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:

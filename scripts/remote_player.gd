@@ -43,11 +43,26 @@ func set_player_name(n: String) -> void:
 		_plate.player_name = n
 
 
-## Uebernimmt eine ueber das Netz empfangene Momentaufnahme.
+var _target := Vector2.ZERO
+var _has_target := false
+
+
+## Uebernimmt eine ueber das Netz empfangene Momentaufnahme. Die Position wird
+## nur als ZIEL gemerkt und in _process weich angefahren - sonst springt die
+## Figur bei 15 Paketen/s sichtbar.
 func apply_state(pos: Vector2, anim: StringName, frame: int) -> void:
-	global_position = pos
+	if not _has_target:
+		global_position = pos        # erstes Paket: direkt hinsetzen
+		_has_target = true
+	_target = pos
 	if _sprite == null:
 		return
 	if _sprite.animation != anim and FRAMES.has_animation(anim):
 		_sprite.play(anim)
 	_sprite.frame = frame
+
+
+func _process(delta: float) -> void:
+	if _has_target:
+		# Exponentielles Glaetten - unabhaengig von der Bildrate.
+		global_position = global_position.lerp(_target, 1.0 - exp(-16.0 * delta))

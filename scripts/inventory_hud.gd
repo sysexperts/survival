@@ -15,6 +15,11 @@ const INFO_FONT := 11
 var inventory: Inventory
 var selected := 0
 
+## DropSync (im Multiplayer) - fuer "aus dem Inventar in die Welt werfen".
+var drop_sync: Node
+## Welches Feld gerade gezogen wird (fuer das Fallenlassen ausserhalb).
+var drag_from := -1
+
 var _slot_nodes: Array[InventorySlot] = []
 var _bag: PanelContainer
 var _dim: ColorRect
@@ -248,5 +253,11 @@ func _on_slot_input(event: InputEvent, index: int) -> void:
 
 
 ## Kurzer Hinweis ueber der Hotbar. Leerer Text blendet ihn aus.
+## Wird vom Slot aufgerufen, wenn ein Zug ausserhalb der Felder endet.
+func drop_to_world(index: int) -> void:
+	if drop_sync:
+		drop_sync.drop_index(index)
+
+
 func set_hint(text: String) -> void:
 	_hint_label.text = text

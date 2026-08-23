@@ -32,10 +32,15 @@ func _ready() -> void:
 # --- Client: fallen lassen -----------------------------------------------
 
 func drop_selected() -> void:
+	if _pinv:
+		drop_index(_pinv.hud.selected)
+
+
+## Laesst den Stapel aus einem bestimmten Inventar-Feld fallen (Q oder Maus).
+func drop_index(slot_index: int) -> void:
 	if _player == null or _pinv == null or _world == null:
 		return
-	var sel: int = _pinv.hud.selected
-	var stack: Dictionary = _pinv.inventory.take(sel)   # leert das Feld
+	var stack: Dictionary = _pinv.inventory.take(slot_index)   # leert das Feld
 	if stack.is_empty():
 		return
 	var cell := _world.world_to_cell(_player.global_position, _player.level)
@@ -118,6 +123,28 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 	spr.scale = Vector2(0.55, 0.55)
 	spr.position = Vector2(0, -6)    # leicht ueber dem Boden
 	node.add_child(spr)
+
+	# Beschriftung darunter: "Name xN" mit leichtem schwarzen Hintergrund.
+	var label := Label.new()
+	label.text = "%s x%d" % [ItemDB.display_name(item_id), count]
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	label.add_theme_constant_override("outline_size", 3)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0.5)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 4
+	sb.content_margin_right = 4
+	sb.content_margin_top = 1
+	sb.content_margin_bottom = 1
+	label.add_theme_stylebox_override("normal", sb)
+	label.z_index = 1
+	node.add_child(label)
+	# Sobald das Label seine Groesse kennt: mittig unter dem Item zentrieren.
+	label.resized.connect(func():
+		label.position = Vector2(-label.size.x * 0.5, 6), CONNECT_ONE_SHOT)
+
 	_world.props_root.add_child(node)
 	node.global_position = _world.cell_to_world(cell, lvl)
 	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell, "level": lvl}
