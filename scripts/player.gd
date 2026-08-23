@@ -513,7 +513,15 @@ const BED_POS_NUDGE := Vector2(0, 3)
 ## Zusaetzlicher Bild-Versatz beim Liegen: hebt das Sprite mittig auf die
 ## Matratze, OHNE den Fusspunkt (und damit die Y-Sortierung) zu verschieben.
 ## x wird beim gespiegelten Bett mitgespiegelt.
+##
+## PRO BETT: das hohe Bett und das flache Feldbett haben die Matratze auf
+## unterschiedlicher Hoehe, brauchen also eigene Werte. `bett_sleep_offset()`
+## liefert den passenden; Standard ist der Wert des hohen Betts.
 const BED_SLEEP_OFFSET := Vector2(-1, -12)
+const BED_SLEEP_OFFSETS := {
+	"yatak": Vector2(-1, -12),
+	"portatif_yatak": Vector2(11, -3),   # flacheres Cot: weniger anheben, nach vorn
+}
 
 
 ## Ist auf dieser Zelle ein Bett?
@@ -563,7 +571,7 @@ func _lie_down(cell: Vector2i) -> void:
 	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
 	# Bild auf die Matratze heben; beim gespiegelten Bett den x-Versatz spiegeln.
-	var off := BED_SLEEP_OFFSET
+	var off: Vector2 = BED_SLEEP_OFFSETS.get(bed.id, BED_SLEEP_OFFSET)
 	if bed.flipped:
 		off.x = -off.x
 	sprite.offset = sprite_offset + off
