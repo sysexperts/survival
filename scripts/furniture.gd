@@ -27,6 +27,13 @@ const ART_OFFSET := Vector2(-32, -56)
 const CONFIG := {
 	"yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
 	"portatif_yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
+	# Hochbeet: soll GENAU eine Zelle gross sein, damit man daraus ein Feld
+	# kacheln kann. Das gezeichnete Beet ist 58 px breit (Mitte x=32), die
+	# Oberseiten-Raute liegt mittig bei y=28. Skalierung 32/58 macht die Raute
+	# genau tile-breit (Top-Diamant = 32 px), der Offset legt ihre Mitte auf die
+	# Zellmitte. So sitzt jedes Beet in seinem Diamanten und Nachbarn kacheln
+	# nahtlos (die Y-Sortierung zeichnet das vordere ueber das hintere).
+	"yukseltilmis_tarha": {"scale": 32.0 / 58.0, "offset": Vector2(-32, -28)},
 }
 
 
