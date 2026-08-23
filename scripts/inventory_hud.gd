@@ -31,7 +31,7 @@ var _hint_label: Label
 func setup(p_inventory: Inventory) -> void:
 	inventory = p_inventory
 	inventory.changed.connect(_refresh)
-	layer = 110                      # über der Vignette
+	layer = 110                      # über dem Overlay
 	_build()
 	_refresh()
 

@@ -65,6 +65,20 @@ signal placed_furniture(id: String, cell: Vector2i, flipped: bool)
 
 @onready var sprite: AnimatedSprite2D = $Sprite
 @onready var lantern: PointLight2D = $Lantern
+@onready var _shadow: Node2D = $Shadow
+@onready var _nameplate: Node2D = $NamePlate
+
+## Wie schnell der Stufen-Versatz ausgeglichen wird (grösser = schneller).
+const STEP_SMOOTH_SPEED := 14.0
+## Visueller Rest-Versatz in px, der einen Höhensprung weich nachzieht,
+## damit Jack beim Stufenwechsel nicht ruckartig 8 px hoch/runter springt.
+## Der Node selbst sitzt logisch schon auf der neuen Höhe (Y-Sortierung und
+## Kollision stimmen); nur die sichtbaren Kinder gleiten nach.
+var _step_lag := 0.0
+var _sprite_base_y := 0.0
+var _shadow_base_y := 0.0
+var _lantern_base_y := 0.0
+var _nameplate_base_y := 0.0
 
 var world: IsoWorld
 ## Haelt Jack gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
@@ -94,6 +108,12 @@ func _ready() -> void:
 	_day_night = get_tree().get_first_node_in_group("day_night")
 	world = get_node(world_path) as IsoWorld
 	sprite.offset = sprite_offset
+	# Ruhelagen der sichtbaren Kinder merken - darauf wird der Stufen-Versatz
+	# addiert (siehe _step_lag).
+	_sprite_base_y = sprite.offset.y
+	_shadow_base_y = _shadow.position.y
+	_lantern_base_y = lantern.position.y
+	_nameplate_base_y = _nameplate.position.y
 	sprite.animation_finished.connect(_on_animation_finished)
 	# Umriss-Anzeige zur Laufzeit anhaengen - so bleibt player.tscn unberuehrt.
 	add_child(OcclusionOutline.create(self, sprite, world))
@@ -111,9 +131,26 @@ func _snap_to_cell(cell: Vector2i) -> void:
 
 
 ## Die Laterne brennt nur, wenn es dunkel genug ist.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _day_night and lantern.visible:
 		lantern.base_energy = lerpf(0.0, lantern_energy, _day_night.darkness())
+	_ease_step_lag(delta)
+
+
+## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die
+## sichtbaren Kinder. So gleitet Jack über ~0,1 s auf die neue Höhe, statt zu
+## springen. Der geworfene Schatten (CastShadow) folgt automatisch, weil er
+## sprite.offset jeden Frame kopiert.
+func _ease_step_lag(delta: float) -> void:
+	if is_zero_approx(_step_lag):
+		return
+	_step_lag = lerpf(_step_lag, 0.0, 1.0 - exp(-STEP_SMOOTH_SPEED * delta))
+	if absf(_step_lag) < 0.05:
+		_step_lag = 0.0
+	sprite.offset.y = _sprite_base_y + _step_lag
+	_shadow.position.y = _shadow_base_y + _step_lag
+	lantern.position.y = _lantern_base_y + _step_lag
+	_nameplate.position.y = _nameplate_base_y + _step_lag
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -208,7 +245,11 @@ func _try_move(delta_pos: Vector2) -> void:
 		return                                  # Loch oder zu hohe Stufe
 	if top != level:
 		# Höhe wechseln: die Standfläche liegt (top - level) * 8 px höher
-		target.y -= float(top - level) * IsoWorld.LEVEL_STEP_PX
+		var dy := float(top - level) * IsoWorld.LEVEL_STEP_PX
+		target.y -= dy
+		# Der Node springt sofort auf die neue Höhe (Y-Sortierung/Kollision),
+		# aber optisch fangen wir den Sprung ab und lassen ihn ausgleiten.
+		_step_lag += dy
 		level = top
 		_reparent_to_level()
 	global_position = target

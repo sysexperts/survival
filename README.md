@@ -311,7 +311,6 @@ Tageslicht — keine platzierten Einzellichter.
 | Datei | Zweck |
 |---|---|
 | `scripts/day_night.gd` | Tageslicht-Zyklus (`CanvasModulate`) |
-| `scripts/vignette.gdshader` | weiche Randabdunklung |
 | `scripts/flicker_light.gd` | unruhiges Licht (für Laterne/Feuer) |
 | `scripts/blob_shadow.gd` | weicher Schattenwurf unter Figuren |
 | `resources/light_gradient.tres` | Lichtabfall-Textur für Light2D |
@@ -332,10 +331,6 @@ Bewusst flach gehalten — auch nachts bleibt alles lesbar.
 `day_length` = Sekunden pro Tag (Standard **1200**, also 20 Minuten; `0` hält den Zyklus an). Das Skript ist
 `@tool`: `time_of_day` im Inspector schieben zeigt die Stimmung direkt im
 Editor-Viewport. Kompletter Austausch über `sky_gradient`.
-
-**Vignette:** ColorRect mit Shader auf einem eigenen `CanvasLayer`, damit
-sie vom Tageslicht unberührt bleibt. Stärke und Weichheit sind
-Shader-Parameter im Inspector.
 
 **Laterne:** Jack hat ein `PointLight2D`, standardmässig **aus**. Mit
 **L** einschalten — es dimmt dann über `DayNight.darkness()` automatisch
@@ -472,7 +467,7 @@ genau wie ein gestapelter Block. Boden auf `Level00` → Baum auf `Level01`.
 Eine eigene `.tscn` bekommt, was **mehrfach vorkommt oder unabhängig
 wiederverwendbar** ist — `player.tscn` (könnte mehrfach existieren),
 `world.tscn` (eigenständige Map). Einmalige Dinge gehören direkt als
-Nodes in die Elternszene: Kamera, Vignette und `WorldEnvironment` sind
+Nodes in die Elternszene: Kamera und `WorldEnvironment` sind
 deshalb einfach Kinder von `main.tscn`, und deren Environment- und
 Shader-Material-Ressourcen liegen als `[sub_resource]` inline in der
 Szene statt in eigenen Dateien.
