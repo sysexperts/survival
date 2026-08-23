@@ -24,6 +24,11 @@ extends Node
 
 const BUILD_DIR := "/opt/survival_world"
 const BUILD_FILE := BUILD_DIR + "/build.json"
+const REMOVED_FILE := BUILD_DIR + "/removed.json"
+## Nachwachs-Zeiten - muessen zu den Defaults in regrowth.gd passen. Der Server
+## rechnet damit die Restzeit aus und laesst Abgelaufenes weg.
+const REGROW_SECONDS := 300.0
+const STONE_SECONDS := 240.0
 
 var _world: IsoWorld
 var _regrowth: Node
@@ -34,6 +39,9 @@ var _suppress := false
 
 ## Server: alle bisher gesetzten Bauten. Je Eintrag {kind, x, y, id, flipped}.
 var _builds: Array = []
+## Server: alle Abbau-Ereignisse, je Zelle EINES (das jeweils letzte).
+## Schluessel "x,y" -> {kind, x, y, level, ax, ay, gid, t}. t = Unix-Zeit.
+var _removed: Dictionary = {}
 ## Client: vom Server empfangene Bauten, die noch nicht gesetzt werden konnten
 ## (der Chunk ist evtl. noch nicht geladen). Werden in _process nachgezogen.
 var _pending: Array = []
@@ -46,6 +54,7 @@ func _ready() -> void:
 	_regrowth = get_node_or_null(^"../Regrowth")
 	if Net.is_dedicated:
 		_load_builds()               # Register vom letzten Lauf wiederherstellen
+		_load_removed()
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
 	_ensure_player()
@@ -124,6 +133,8 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "flipped": flag})
 		elif kind == "campfire":
 			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "flipped": false})
+		elif kind == "fell" or kind == "stump" or kind == "stone":
+			_record_removal(kind, cell, level, atlas, s)
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
 				_event.rpc_id(pid, owner_id, kind, cell, level, atlas, s, flag)
@@ -174,9 +185,19 @@ func _request_builds() -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
-	print("WorldSync(server): sende %d Bauten an peer %d" % [_builds.size(), id])
+	print("WorldSync(server): sende %d Bauten, %d Abbauten an peer %d" % [_builds.size(), _removed.size(), id])
 	for b in _builds:
 		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), bool(b["flipped"]))
+	# Abbau-Ereignisse mit der jeweiligen RESTZEIT senden; Abgelaufenes (Baum
+	# nachgewachsen, Stein wieder da) ueberspringen.
+	var now := Time.get_unix_time_from_system()
+	for key in _removed:
+		var r: Dictionary = _removed[key]
+		var remaining := _remaining(r, now)
+		if remaining <= 0.0:
+			continue
+		_spawn_removal.rpc_id(id, String(r["kind"]), Vector2i(int(r["x"]), int(r["y"])),
+			int(r["level"]), Vector2i(int(r["ax"]), int(r["ay"])), String(r["gid"]), remaining)
 
 
 ## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
@@ -239,6 +260,79 @@ func _load_builds() -> void:
 	if typeof(data) == TYPE_ARRAY:
 		_builds = data
 		print("WorldSync: %d Bauten aus %s geladen." % [_builds.size(), BUILD_FILE])
+
+
+## Server -> Client: ein Abbau-Ereignis mit RESTZEIT wiederherstellen. Setzt bei
+## Regrowth den Stumpf/die Uhr bzw. sperrt die Zelle - der ChunkManager fragt
+## Regrowth beim Generieren, deshalb reicht das auch fuer noch nicht geladene
+## Chunks (kein _pending noetig wie bei den Bauten).
+@rpc("any_peer", "reliable")
+func _spawn_removal(kind: String, cell: Vector2i, level: int, atlas: Vector2i, gid: String, remaining: float) -> void:
+	if _regrowth == null:
+		return
+	match kind:
+		"fell":
+			_regrowth.restore_felled(cell, level, atlas, remaining)
+		"stump":
+			_regrowth.restore_cleared(cell)
+		"stone":
+			if gid == "":
+				_regrowth.restore_stone_collected(cell, level, remaining)
+			else:
+				_regrowth.restore_cleared(cell)   # Chunk-Rohstoff: endgueltig weg
+
+
+## Server: ein Abbau-Ereignis merken (je Zelle das letzte) und sichern.
+func _record_removal(kind: String, cell: Vector2i, level: int, atlas: Vector2i, gid: String) -> void:
+	_removed["%d,%d" % [cell.x, cell.y]] = {
+		"kind": kind, "x": cell.x, "y": cell.y, "level": level,
+		"ax": atlas.x, "ay": atlas.y, "gid": gid,
+		"t": Time.get_unix_time_from_system(),
+	}
+	_save_removed()
+
+
+## Restzeit eines Abbau-Eintrags in Sekunden. Bauten/Stumpf-Rodung und
+## Chunk-Rohstoffe kommen nie zurueck (INF), gefaellte Baeume nach REGROW,
+## gemalte Steine nach STONE.
+func _remaining(r: Dictionary, now: float) -> float:
+	var age := now - float(r["t"])
+	match String(r["kind"]):
+		"fell":
+			return REGROW_SECONDS - age
+		"stone":
+			if String(r["gid"]) == "":
+				return STONE_SECONDS - age
+			return INF                # Chunk-Rohstoff: endgueltig
+		_:                            # "stump" (gerodet): endgueltig
+			return INF
+
+
+func _save_removed() -> void:
+	DirAccess.make_dir_recursive_absolute(BUILD_DIR)
+	var f := FileAccess.open(REMOVED_FILE, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(_removed.values()))
+		f.close()
+
+
+func _load_removed() -> void:
+	if not FileAccess.file_exists(REMOVED_FILE):
+		return
+	var f := FileAccess.open(REMOVED_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(data) != TYPE_ARRAY:
+		return
+	# Abgelaufenes (schon nachgewachsen) beim Laden aussortieren, damit die
+	# Datei nicht unbegrenzt waechst.
+	var now := Time.get_unix_time_from_system()
+	for r in data:
+		if typeof(r) == TYPE_DICTIONARY and _remaining(r, now) > 0.0:
+			_removed["%d,%d" % [int(r["x"]), int(r["y"])]] = r
+	print("WorldSync: %d Abbauten aus %s geladen." % [_removed.size(), REMOVED_FILE])
 
 
 ## Entfernt einen Baum wie beim lokalen Faellen - mit Umkipp-Animation, wenn

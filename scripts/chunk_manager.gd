@@ -40,6 +40,9 @@ const WorldGenScript := preload("res://scripts/world_gen.gd")
 var world: IsoWorld
 var player: Node2D
 var gen                          ## WorldGen; untypisiert, siehe WorldGenScript oben
+## Regrowth kennt die gefällten/geernteten Zellen. Beim Generieren gefragt,
+## damit ein nachgeladener Chunk Gefälltes nicht wieder erzeugt (Milestone 3).
+var regrowth: Node
 
 ## Chunk-Koordinate -> {"blocks": [[cell, level], ...], "props": [cell, ...]}.
 ## Beim Entladen wird genau das wieder weggeräumt - sonst wüchse der Node-Baum.
@@ -53,6 +56,7 @@ func _ready() -> void:
 		push_warning("ChunkManager: keine Welt unter %s" % world_path)
 		return
 	gen = WorldGenScript.new(world_seed)
+	regrowth = get_node_or_null(^"../Regrowth")
 	# Der Spieler landet erst nach seinem eigenen _ready in der Gruppe, und er
 	# hängt sich zur Laufzeit um (siehe README) - deshalb über die Gruppe und
 	# einen Frame später.
@@ -155,6 +159,18 @@ func _gen_cell(cell: Vector2i, blocks: Array, props: Array) -> void:
 
 
 func _place_prop(cell: Vector2i, h: int, props: Array) -> void:
+	# Wurde hier schon gefällt/geerntet? Dann statt des Original-Props einen
+	# Stumpf (wächst noch nach) oder gar nichts setzen - sonst käme Gefälltes
+	# beim Nachladen des Chunks zurück.
+	if regrowth:
+		match regrowth.suppresses_prop(cell):
+			"stump":
+				if h + 1 < world.level_count() and world.prop_node(cell) == null:
+					world.set_prop(cell, h + 1, regrowth.stump_atlas, IsoWorld.STUMP_SOURCE_ID)
+					props.append(cell)
+				return
+			"empty":
+				return
 	var p: Dictionary = gen.prop_at(cell)
 	if p.is_empty() or world.prop_node(cell) != null:
 		return

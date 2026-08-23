@@ -24,6 +24,11 @@ var player: Player
 var _pending: Dictionary = {}
 ## Dasselbe für aufgehobene Steine.
 var _stones: Dictionary = {}
+## Endgültig geräumte Zellen (Stumpf gerodet, eingestreuter Rohstoff geholt).
+## Hier wächst nichts nach - der ChunkManager darf hier auch nichts mehr neu
+## generieren, sonst käme das Gefällte/Geerntete beim Nachladen des Chunks
+## zurück. cell -> true.
+var _cleared: Dictionary = {}
 
 
 func _ready() -> void:
@@ -70,6 +75,7 @@ func _on_felled(cell: Vector2i, level: int, atlas: Vector2i) -> void:
 
 func _on_stump_cleared(cell: Vector2i) -> void:
 	_pending.erase(cell)
+	_cleared[cell] = true         # endgültig - ChunkManager generiert hier nichts mehr
 
 
 func _grow(cell: Vector2i, entry: Dictionary) -> void:
@@ -87,6 +93,10 @@ func _grow(cell: Vector2i, entry: Dictionary) -> void:
 ## Nur die von Hand in die Karte gemalten Steine kommen wieder.
 func _on_stone_collected(cell: Vector2i, level: int, gather_id: String) -> void:
 	if gather_id != "":
+		# Chunk-generierte Rohstoffe (Äste, Fasern, Stein) wachsen NICHT nach.
+		# Ohne Vermerk erzeugt der ChunkManager sie beim Nachladen deterministisch
+		# neu - deshalb die Zelle endgültig sperren.
+		_cleared[cell] = true
 		return
 	var atlas := IsoWorld.STONE_ATLAS[randi() % IsoWorld.STONE_ATLAS.size()]
 	_stones[cell] = {"level": level, "atlas": atlas, "left": stone_seconds}
@@ -107,3 +117,50 @@ func _respawn_stone(cell: Vector2i, entry: Dictionary) -> void:
 ## Praktisch für eine spätere Anzeige.
 func time_left(cell: Vector2i) -> float:
 	return _pending[cell]["left"] if _pending.has(cell) else -1.0
+
+
+# --- Vom ChunkManager beim Generieren gefragt --------------------------------
+
+## Was soll auf dieser Zelle statt des generierten Props stehen?
+## ""      = normal generieren (nichts geändert)
+## "stump" = ein Stumpf (Baum gefällt, wächst noch nach)
+## "empty" = gar nichts (endgültig geräumt / Rohstoff geholt)
+## So bleibt Gefälltes/Geerntetes auch nach dem Nachladen eines Chunks weg.
+func suppresses_prop(cell: Vector2i) -> String:
+	if _pending.has(cell):
+		return "stump"
+	if _cleared.has(cell) or _stones.has(cell):
+		return "empty"
+	return ""
+
+
+# --- Vom Netzwerk beim Beitritt wiederhergestellt (world_sync.gd) ------------
+
+## Ein anderswo gefällter Baum: Stumpf setzen (falls Boden geladen), vorhandenen
+## Baum entfernen, Nachwachs-Uhr mit der RESTZEIT starten. Ist der Chunk noch
+## nicht da, genügt der _pending-Eintrag - der ChunkManager setzt den Stumpf
+## dann beim Generieren (suppresses_prop).
+func restore_felled(cell: Vector2i, level: int, atlas: Vector2i, remaining: float) -> void:
+	var n := world.prop_node(cell)
+	if n != null and n.source_id == IsoWorld.PROP_SOURCE_ID:
+		world.remove_prop(cell, level)
+	if world.top_level_at(cell) >= 0 and not world.has_stump(cell):
+		world.set_prop(cell, level, stump_atlas, IsoWorld.STUMP_SOURCE_ID)
+	_pending[cell] = {"level": level, "atlas": atlas, "left": remaining}
+
+
+## Ein anderswo endgültig gerodeter Stumpf / geholter Rohstoff: Zelle sperren
+## und alles Vorhandene entfernen.
+func restore_cleared(cell: Vector2i) -> void:
+	_pending.erase(cell)
+	_cleared[cell] = true
+	if world.prop_node(cell) != null:
+		world.remove_prop(cell)
+
+
+## Ein anderswo aufgehobener (gemalter) Stein: Respawn-Uhr mit Restzeit starten.
+func restore_stone_collected(cell: Vector2i, level: int, remaining: float) -> void:
+	if world.has_stone(cell):
+		world.remove_prop(cell, level)
+	var atlas := IsoWorld.STONE_ATLAS[randi() % IsoWorld.STONE_ATLAS.size()]
+	_stones[cell] = {"level": level, "atlas": atlas, "left": remaining}
