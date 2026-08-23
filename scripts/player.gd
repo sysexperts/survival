@@ -127,19 +127,29 @@ var _sleep_return_level := 0
 const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
 var _zzz: Node = null
 
-## Laufgeraeusch (Gras). Als Effekt auf dem "Efektler"-Bus, damit die Lautstaerke
-## spaeter in den Einstellungen regelbar ist. Bewusst leise (siehe _DB).
+## Laufgeraeusch je nach Untergrund. Als Effekt auf dem "Efektler"-Bus, damit die
+## Lautstaerke spaeter in den Einstellungen regelbar ist. Bewusst leise (_DB).
+## WICHTIG: Grass ist als PCM importiert (QOA lief auf dem ausgelieferten Client
+## nicht), die .ogg haben Loop im Import aktiviert.
 const AudioHelper := preload("res://scripts/audio.gd")
-const FOOTSTEP_STREAM := preload("res://assets/sounds/laufen_auf_gras.wav")
-## Grundlautstaerke in dB (negativ = leiser). Der Loop ist recht praesent,
-## deshalb deutlich abgesenkt, damit er nicht nervt.
-const FOOTSTEP_DB := 0.0   # DIAGNOSE (v51): laut, danach zurueck auf -16
+const FOOTSTEP_STREAMS := {
+	"gras": preload("res://assets/sounds/footsteps/Grass.wav"),
+	"erde": preload("res://assets/sounds/footsteps/Mud (3).ogg"),
+}
+## Grundlautstaerke in dB (negativ = leiser). Bei 0 dB war der Loop zu laut,
+## deshalb abgesenkt. Feinjustierung spaeter ueber den Efektler-Bus (Einstellungen).
+const FOOTSTEP_DB := -14.0
 ## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
 const FOOTSTEP_MIN_MOVE := 0.1
 const FOOTSTEP_MAX_MOVE := 20.0
+## Nachlauf: so lange nach der letzten Bewegung bleibt der Loop noch an. Federt
+## das Timing zwischen _process und _physics_process ab, sonst stottert der Ton.
+const FOOTSTEP_COOLDOWN := 0.12
 var _footsteps: AudioStreamPlayer = null
 var _last_pos := Vector2.ZERO
+var _move_cooldown := 0.0
+var _cur_surface := ""            ## aktuell abgespielter Untergrund ("gras"/"erde")
 
 
 func _ready() -> void:
@@ -181,46 +191,63 @@ func _process(delta: float) -> void:
 	if _day_night and lantern.visible:
 		lantern.base_energy = lerpf(0.0, lantern_energy, _day_night.darkness())
 	_ease_step_lag(delta)
-	_update_footsteps()
+	_update_footsteps(delta)
 
 
 ## Laufgeraeusch an die tatsaechliche Bewegung koppeln - so deckt es Tastatur
 ## UND Klick-Laufen ab und schweigt bei Idle, Faellen und Schlafen (dort steht
 ## Jack still). Ueber die Positions-Differenz, nicht ueber die Animation, damit
 ## keine Sonderfaelle vergessen werden.
-func _update_footsteps() -> void:
-	return   # DIAGNOSE (v51): Kopplung aus, Sound laeuft dauerhaft (siehe _setup)
+func _update_footsteps(delta: float) -> void:
 	if _footsteps == null:
 		return
 	var moved := global_position.distance_to(_last_pos)
 	_last_pos = global_position
-	var walking := moved > FOOTSTEP_MIN_MOVE and moved < FOOTSTEP_MAX_MOVE and not _sleeping
-	if walking and not _footsteps.playing:
+	# Bewegung erneuert den Nachlauf; ohne aktuelle Bewegung laeuft er ab.
+	if moved > FOOTSTEP_MIN_MOVE and moved < FOOTSTEP_MAX_MOVE and not _sleeping:
+		_move_cooldown = FOOTSTEP_COOLDOWN
+	else:
+		_move_cooldown = maxf(_move_cooldown - delta, 0.0)
+	var walking := _move_cooldown > 0.0
+	if not walking:
+		if _footsteps.playing:
+			_footsteps.stop()
+		return
+	# Untergrund kann sich waehrend des Laufens aendern (Gras -> Erde). Bei
+	# Wechsel den passenden Stream setzen und neu starten.
+	var surface := _surface_under_feet()
+	if surface != _cur_surface:
+		_cur_surface = surface
+		_footsteps.stream = FOOTSTEP_STREAMS[surface]
 		_footsteps.play()
-	elif not walking and _footsteps.playing:
-		_footsteps.stop()
+	elif not _footsteps.playing:
+		_footsteps.play()
+
+
+## Welcher Untergrund liegt unter Jack? Erde (-> "erde"/Mud) wenn die oberste
+## Bodenkachel eine DIRT-Kachel ist, sonst Gras. Fuer den Schrittsound.
+func _surface_under_feet() -> String:
+	var cell := world.world_to_cell(global_position, level)
+	var atlas := world.top_atlas_at(cell)
+	return "erde" if WorldGen.DIRT.has(atlas) else "gras"
 
 
 ## Baut den Laufgeraeusch-Player. Nur der LOKALE Spieler ist ein Player (andere
 ## sind remote_player.gd), deshalb reicht ein einfacher AudioStreamPlayer -
-## unabhaengig von Kamera/Listener, immer voll hoerbar. Der Stream wird auf
-## Dauerschleife gesetzt (der Import laesst ihn ungeschleift) und laeuft auf dem
-## Efektler-Bus. WICHTIG: den Bus VOR dem Zuweisen anlegen, sonst faellt der
-## Player still auf Master zurueck bzw. verstummt.
+## unabhaengig von Kamera/Listener, immer voll hoerbar. Der Stream ist als
+## unkomprimiertes PCM mit eingebackenem Loop importiert (WICHTIG: QOA lief auf
+## dem ausgelieferten Client nicht) und laeuft auf dem Efektler-Bus. Den Bus VOR
+## dem Zuweisen anlegen, sonst verstummt der Player.
 func _setup_footsteps() -> void:
 	AudioHelper.ensure_effects_bus()
 	_footsteps = AudioStreamPlayer.new()
-	_footsteps.stream = FOOTSTEP_STREAM   # Loop ist im Import eingebacken (PCM)
-	# DIAGNOSE (v52): direkt auf Master statt Efektler, um den eigenen Bus als
-	# Fehlerquelle auszuschliessen.
-	_footsteps.bus = "Master"
+	_footsteps.bus = AudioHelper.EFFECTS_BUS
 	_footsteps.volume_db = FOOTSTEP_DB
+	# Startstream setzen, damit nie null; der echte Untergrund wird beim Laufen
+	# bestimmt (_update_footsteps).
+	_footsteps.stream = FOOTSTEP_STREAMS["gras"]
 	add_child(_footsteps)
 	_last_pos = global_position
-	# DIAGNOSE: dauerhaft abspielen.
-	_footsteps.play()
-	print("[Audio] setup bus=%s playing=%s len=%.2f" % [
-		_footsteps.bus, _footsteps.playing, FOOTSTEP_STREAM.get_length()])
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die

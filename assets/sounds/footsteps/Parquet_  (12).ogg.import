@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bfjk0j4gw31ry"
+path="res://.godot/imported/Parquet_  (12).ogg-84649a3176272f81ec636146fdb4d2be.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/sounds/footsteps/Parquet_  (12).ogg"
+dest_files=["res://.godot/imported/Parquet_  (12).ogg-84649a3176272f81ec636146fdb4d2be.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

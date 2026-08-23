@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dndu5s152pd3q"
+path="res://.godot/imported/Mud (3).ogg-348954a6075d4d2440880aeac5d616dc.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/sounds/footsteps/Mud (3).ogg"
+dest_files=["res://.godot/imported/Mud (3).ogg-348954a6075d4d2440880aeac5d616dc.oggvorbisstr"]
+
+[params]
+
+loop=true
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
