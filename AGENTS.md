@@ -230,7 +230,12 @@ A* rechnet ohnehin pro Anfrage neu.
 1. Chunk-Streaming Boden + Höhe (`scripts/world_gen.gd` +
    `scripts/chunk_manager.gd`), Authored-Bereich aussparen. — **erledigt**
 2. Props/Rohstoffe pro Chunk (Umbau von `_spawn_prop_nodes` + Scatter). — **erledigt**
-3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — **offen (nächster Schritt)**
+3. Änderungs-Diff pro Chunk (an `Player.felled`/`stump_cleared`). — **erledigt**
+   (`regrowth.gd` merkt geräumte/gefällte Zellen und bietet `suppresses_prop()`;
+   `chunk_manager.gd` fragt es beim Generieren, damit Gefälltes/Geerntetes beim
+   Nachladen wegbleibt. Der dedizierte Server persistiert Abbau **und** Bauten
+   in `/opt/survival_world/` und spielt sie beim Beitritt vor — siehe
+   `world_sync.gd`. Überlebt Server-Neustart.)
 4. Biome: zweiter, großmaßstäbiger Noise + Biom-Datentabellen im
    `*_db.gd`-Stil; Übergänge feinschleifen. — offen
 
