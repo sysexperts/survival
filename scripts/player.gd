@@ -208,22 +208,19 @@ func _update_footsteps() -> void:
 ## Efektler-Bus. WICHTIG: den Bus VOR dem Zuweisen anlegen, sonst faellt der
 ## Player still auf Master zurueck bzw. verstummt.
 func _setup_footsteps() -> void:
-	var stream := FOOTSTEP_STREAM
-	if stream is AudioStreamWAV:
-		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	AudioHelper.ensure_effects_bus()
 	_footsteps = AudioStreamPlayer.new()
-	_footsteps.stream = stream
-	_footsteps.bus = AudioHelper.EFFECTS_BUS
+	_footsteps.stream = FOOTSTEP_STREAM   # Loop ist im Import eingebacken (PCM)
+	# DIAGNOSE (v52): direkt auf Master statt Efektler, um den eigenen Bus als
+	# Fehlerquelle auszuschliessen.
+	_footsteps.bus = "Master"
 	_footsteps.volume_db = FOOTSTEP_DB
 	add_child(_footsteps)
 	_last_pos = global_position
-	# DIAGNOSE (v51): dauerhaft abspielen, um zu pruefen ob ueberhaupt Ton
-	# ankommt. Danach wieder entfernen und normal an die Bewegung koppeln.
+	# DIAGNOSE: dauerhaft abspielen.
 	_footsteps.play()
-	print("[Audio] footsteps setup: bus=%s idx=%d master_mute=%s" % [
-		_footsteps.bus, AudioServer.get_bus_index(AudioHelper.EFFECTS_BUS),
-		AudioServer.is_bus_mute(0)])
+	print("[Audio] setup bus=%s playing=%s len=%.2f" % [
+		_footsteps.bus, _footsteps.playing, FOOTSTEP_STREAM.get_length()])
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die
