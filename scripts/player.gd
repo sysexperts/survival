@@ -477,6 +477,7 @@ func _lie_down(cell: Vector2i) -> void:
 	sprite.offset = sprite_offset + off
 	if _zzz == null:
 		_zzz = SleepZzzScript.new()
+		_zzz.mirror = bed.flipped     # Kopf liegt beim gespiegelten Bett rechts
 		add_child(_zzz)
 
 

@@ -32,6 +32,10 @@ const DRIFT := 3.0
 const COLOR := Color(0.85, 0.9, 1.0)
 const SHADOW := Color(0, 0, 0, 0.9)
 
+## Gespiegeltes Bett: Kopf liegt rechts statt links - Ursprung und Drift in x
+## spiegeln, damit die Z ueber dem Kopf bleiben und nicht bei den Fuessen.
+var mirror := false
+
 var _font: Font
 var _t := SPAWN_INTERVAL     ## sofort beim ersten Frame einen Buchstaben
 ## Jeder Eintrag: {"age": float, "scale": float}. Position folgt aus dem Alter,
@@ -66,7 +70,8 @@ func _draw() -> void:
 	for l in _letters:
 		var age: float = l["age"]
 		var f := age / LIFE                       # 0..1 ueber die Lebensdauer
-		var pos := ORIGIN + Vector2(DRIFT * f, -RISE * age)
+		var sx := -1.0 if mirror else 1.0
+		var pos := Vector2(ORIGIN.x * sx, ORIGIN.y) + Vector2(DRIFT * f * sx, -RISE * age)
 		# Sanft ein- und wieder ausblenden statt hart erscheinen.
 		var a: float = clampf(sin(f * PI) * 1.4, 0.0, 1.0)
 		var sc: float = l["scale"]
