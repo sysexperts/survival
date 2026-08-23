@@ -34,6 +34,14 @@ var chat_open := false
 signal connection_failed()
 
 
+## Admin-Namen (kleingeschrieben). Wer so heisst, bekommt das Kreativ-Inventar
+## (Taste X). Bewusst ueber den Namen - es gibt keine Accounts (siehe save_sync).
+const ADMINS := ["serdar"]
+
+func is_admin() -> bool:
+	return player_name.strip_edges().to_lower() in ADMINS
+
+
 ## Anzeige-Version (Alpha) aus der internen Build-Nummer. Die Build-Nummer
 ## zaehlt in Einerschritten hoch (fuer den Updater-Vergleich), angezeigt wird
 ## aber "0.1", "0.2", ... Build 11 -> 0.1.

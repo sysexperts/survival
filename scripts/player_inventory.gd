@@ -31,6 +31,8 @@ var station_huds: Dictionary = {}
 var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
+## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null (siehe Net.is_admin).
+var creative: CreativeHUD
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
 ## Als String statt bool, weil es jetzt mehrere Sorten gibt.
@@ -60,6 +62,13 @@ func _ready() -> void:
 
 	for id in starting_items:
 		inventory.add(id, int(starting_items[id]))
+
+	# Admins bekommen das Kreativ-Inventar (Taste X). Nur dann gebaut, damit
+	# es fuer normale Spieler gar nicht erst existiert.
+	if Net.is_admin():
+		creative = CreativeHUD.new()
+		add_child(creative)
+		creative.setup(inventory)
 
 	var interaction := get_tree().get_first_node_in_group("interaction")
 	if interaction:
@@ -126,6 +135,7 @@ func _process(delta: float) -> void:
 	# sonst bliebe er unter der Tasche stehen bzw. neben der Vorschau, die
 	# ihren eigenen Hinweis schreibt.
 	if player == null or hud.bag_open() or _crafting_open() \
+			or (creative != null and creative.is_open()) \
 			or (preview != null and preview.active):
 		_set_ctx_hint("")
 		return
@@ -239,6 +249,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_F:
 		_use_selected()
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_X and creative != null:
+		# Admin-Kreativinventar auf/zu. Andere Fenster weichen.
+		if hud.bag_open():
+			hud.toggle_bag()
+		_close_all_crafting()
+		creative.toggle()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_Q:
 		if _drop:
@@ -354,6 +371,9 @@ func _on_placement_confirmed(top_cell: Vector2i) -> void:
 ## Schliesst das oberste offene Fenster. false, wenn keines offen war -
 ## dann darf Escape weiterlaufen (die Platzieren-Vorschau haengt daran).
 func _close_windows() -> bool:
+	if creative != null and creative.is_open():
+		creative.set_open(false)
+		return true
 	var station := _open_station()
 	if station != null:
 		station.set_open(false)
