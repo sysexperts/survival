@@ -21,6 +21,17 @@ func _ready() -> void:
 		Net.start_dedicated_server()
 		return
 
+	# Aktuelle Version immer oben sichtbar. Nach einem Auto-Update liegt die
+	# neue version.txt aus der game.pck ueber res:// - hier steht also der
+	# tatsaechlich laufende Stand.
+	var ver := Label.new()
+	ver.text = "v%s" % Net.version_name(_read_version())
+	ver.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ver.offset_top = 8
+	ver.add_theme_color_override("font_color", Color(1, 0.92, 0.7))
+	add_child(ver)
+
 	# Volle Flaeche, Inhalt zentriert.
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

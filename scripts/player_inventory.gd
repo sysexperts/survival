@@ -32,7 +32,10 @@ var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
 ## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null (siehe Net.is_admin).
-var creative: CreativeHUD
+## Per preload statt ueber den class_name CreativeHUD - sonst kennt der
+## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
+const CreativeHUDScript := preload("res://scripts/creative_hud.gd")
+var creative: Node
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
 ## Als String statt bool, weil es jetzt mehrere Sorten gibt.
@@ -66,9 +69,12 @@ func _ready() -> void:
 	# Admins bekommen das Kreativ-Inventar (Taste X). Nur dann gebaut, damit
 	# es fuer normale Spieler gar nicht erst existiert.
 	if Net.is_admin():
-		creative = CreativeHUD.new()
+		creative = CreativeHUDScript.new()
 		add_child(creative)
 		creative.setup(inventory)
+		# Kurz einblenden, dass der Admin-Modus laeuft - und welche Taste. So
+		# sieht man auch gleich, ob man ueberhaupt als Admin erkannt wurde.
+		_notice.call_deferred("Admin modu  ·  X = tüm esyalar")
 
 	var interaction := get_tree().get_first_node_in_group("interaction")
 	if interaction:

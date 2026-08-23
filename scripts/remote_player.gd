@@ -15,9 +15,11 @@ const FRAMES := preload("res://resources/jack_frames.tres")
 ## Gleicher Fusspunkt-Versatz wie beim echten Player (siehe player.gd).
 const SPRITE_OFFSET := Vector2(0, -18)
 
+const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
+
 var _sprite: AnimatedSprite2D
 var _plate: NamePlate
-var _zzz: SleepZzz = null
+var _zzz: Node = null   # SleepZzz - per preload, siehe player.gd
 
 
 func _ready() -> void:
@@ -66,7 +68,7 @@ func apply_state(pos: Vector2, anim: StringName, frame: int) -> void:
 	# synchron ueber das Netz, jede Seite ergaenzt ihr eigenes Zzz.
 	var sleeping := String(anim).begins_with("sleep_")
 	if sleeping and _zzz == null:
-		_zzz = SleepZzz.new()
+		_zzz = SleepZzzScript.new()
 		add_child(_zzz)
 	elif not sleeping and _zzz != null:
 		_zzz.queue_free()

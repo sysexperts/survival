@@ -110,7 +110,11 @@ var _sleep_return_pos := Vector2.ZERO
 var _sleep_return_level := 0
 ## Der aufsteigende Zzz-Effekt, solange Jack liegt (rein optisch, siehe
 ## sleep_zzz.gd). Haengt an der Figur und wandert beim Ebenenwechsel mit.
-var _zzz: SleepZzz = null
+## Per preload statt ueber den class_name SleepZzz - sonst kennt der
+## Auto-Updater die neue Klasse nicht (die Basis-.exe registriert sie beim
+## Start nicht, siehe chunk_manager.gd/WorldGen).
+const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
+var _zzz: Node = null
 
 
 func _ready() -> void:
@@ -464,7 +468,7 @@ func _lie_down(cell: Vector2i) -> void:
 	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
 	if _zzz == null:
-		_zzz = SleepZzz.new()
+		_zzz = SleepZzzScript.new()
 		add_child(_zzz)
 
 
