@@ -127,6 +127,20 @@ var _sleep_return_level := 0
 const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
 var _zzz: Node = null
 
+## Laufgeraeusch (Gras). Als Effekt auf dem "Efektler"-Bus, damit die Lautstaerke
+## spaeter in den Einstellungen regelbar ist. Bewusst leise (siehe _DB).
+const AudioHelper := preload("res://scripts/audio.gd")
+const FOOTSTEP_STREAM := preload("res://assets/sounds/laufen_auf_gras.wav")
+## Grundlautstaerke in dB (negativ = leiser). Der Loop ist recht praesent,
+## deshalb deutlich abgesenkt, damit er nicht nervt.
+const FOOTSTEP_DB := -16.0
+## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
+## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
+const FOOTSTEP_MIN_MOVE := 0.4
+const FOOTSTEP_MAX_MOVE := 20.0
+var _footsteps: AudioStreamPlayer2D = null
+var _last_pos := Vector2.ZERO
+
 
 func _ready() -> void:
 	# Jack haengt sich zur Laufzeit in die TileMapLayer um, deshalb ist er
@@ -147,6 +161,7 @@ func _ready() -> void:
 	add_child(OcclusionOutline.create(self, sprite, world))
 	add_child(CastShadow.create(sprite))
 	sprite.frame_changed.connect(_on_frame_changed)
+	_setup_footsteps()
 	# WorldSync fuer die geteilte Baum-HP (Multiplayer). Einmal cachen - der
 	# Player haengt sich zur Laufzeit um, ein NodePath wuerde danach brechen.
 	_ws = get_parent().get_node_or_null(^"WorldSync")
@@ -166,6 +181,39 @@ func _process(delta: float) -> void:
 	if _day_night and lantern.visible:
 		lantern.base_energy = lerpf(0.0, lantern_energy, _day_night.darkness())
 	_ease_step_lag(delta)
+	_update_footsteps()
+
+
+## Laufgeraeusch an die tatsaechliche Bewegung koppeln - so deckt es Tastatur
+## UND Klick-Laufen ab und schweigt bei Idle, Faellen und Schlafen (dort steht
+## Jack still). Ueber die Positions-Differenz, nicht ueber die Animation, damit
+## keine Sonderfaelle vergessen werden.
+func _update_footsteps() -> void:
+	if _footsteps == null:
+		return
+	var moved := global_position.distance_to(_last_pos)
+	_last_pos = global_position
+	var walking := moved > FOOTSTEP_MIN_MOVE and moved < FOOTSTEP_MAX_MOVE and not _sleeping
+	if walking and not _footsteps.playing:
+		_footsteps.play()
+	elif not walking and _footsteps.playing:
+		_footsteps.stop()
+
+
+## Baut den Laufgeraeusch-Player. AudioStreamPlayer2D, damit auch Mitspieler
+## positionsabhaengig zu hoeren sind. Der Stream wird auf Dauerschleife gesetzt
+## (der Import laesst ihn ungeschleift) und auf dem Efektler-Bus abgespielt.
+func _setup_footsteps() -> void:
+	var stream := FOOTSTEP_STREAM
+	if stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	_footsteps = AudioStreamPlayer2D.new()
+	_footsteps.stream = stream
+	_footsteps.bus = AudioHelper.EFFECTS_BUS
+	AudioHelper.ensure_effects_bus()
+	_footsteps.volume_db = FOOTSTEP_DB
+	add_child(_footsteps)
+	_last_pos = global_position
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die
