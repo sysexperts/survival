@@ -514,13 +514,13 @@ const BED_POS_NUDGE := Vector2(0, 3)
 ## Matratze, OHNE den Fusspunkt (und damit die Y-Sortierung) zu verschieben.
 ## x wird beim gespiegelten Bett mitgespiegelt.
 ##
-## PRO BETT: das hohe Bett und das flache Feldbett haben die Matratze auf
-## unterschiedlicher Hoehe, brauchen also eigene Werte. `bett_sleep_offset()`
-## liefert den passenden; Standard ist der Wert des hohen Betts.
+## PRO BETT, weil das Feldbett tiefer aufgesetzt ist (siehe furniture.gd): sein
+## Wert ist um denselben Betrag gesenkt, damit die Liegepose relativ gleich
+## bleibt. Standard = Wert des hohen Betts.
 const BED_SLEEP_OFFSET := Vector2(-1, -12)
 const BED_SLEEP_OFFSETS := {
 	"yatak": Vector2(-1, -12),
-	"portatif_yatak": Vector2(11, -3),   # flacheres Cot: weniger anheben, nach vorn
+	"portatif_yatak": Vector2(-1, 0),
 }
 
 

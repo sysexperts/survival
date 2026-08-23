@@ -26,7 +26,11 @@ const ART_OFFSET := Vector2(-32, -56)
 ## damit das groessere Bild die zwei Zellen ausfuellt.
 const CONFIG := {
 	"yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
-	"portatif_yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -50)},
+	# Feldbett tiefer aufgesetzt (-38 statt -50): die duennen Beine stehen so auf
+	# dem Boden. Sonst hing das erhoehte Cot ueber der Zelle dahinter in der Luft -
+	# lief man dahinter, sah es aus, als wuerde es schweben. Die Liegepose wird in
+	# player.gd um denselben Betrag mitgesenkt (BED_SLEEP_OFFSETS), bleibt also gleich.
+	"portatif_yatak": {"long": true, "scale": 1.0, "offset": Vector2(-32, -38)},
 	# Hochbeet: soll GENAU eine Zelle gross sein, damit man daraus ein Feld
 	# kacheln kann. Das gezeichnete Beet ist 58 px breit (Mitte x=32), die
 	# Oberseiten-Raute liegt mittig bei y=28. Skalierung 32/58 macht die Raute
