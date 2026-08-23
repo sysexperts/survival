@@ -20,15 +20,15 @@ extends Node2D
 const FONT := "res://assets/fonts/pixel_bold.fnt"
 const FONT_SIZE := 9
 ## Sekunden zwischen zwei Buchstaben.
-const SPAWN_INTERVAL := 0.6
+const SPAWN_INTERVAL := 0.5
 ## Lebensdauer eines Buchstabens in Sekunden.
-const LIFE := 1.8
-## Startpunkt direkt ueber dem Kopf (Liege-Pose: Kopf oben-links).
-const ORIGIN := Vector2(-7, -34)
+const LIFE := 1.5
+## Startpunkt direkt am Kopf (Liege-Pose: Kopf oben-links).
+const ORIGIN := Vector2(-14, -40)
 ## Aufstiegsgeschwindigkeit und seitliche Drift (Bildpixel/s) - klein halten,
-## damit die Z dicht ueber dem Kopf bleiben.
-const RISE := 9.0
-const DRIFT := 4.0
+## damit die Z dicht ueber dem Kopf bleiben und nicht wegfliegen.
+const RISE := 5.0
+const DRIFT := 3.0
 const COLOR := Color(0.85, 0.9, 1.0)
 const SHADOW := Color(0, 0, 0, 0.9)
 
