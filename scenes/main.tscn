@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/net_game.gd" id="13_net"]
 [ext_resource type="Script" path="res://scripts/chat.gd" id="14_chat"]
 [ext_resource type="Script" path="res://scripts/world_sync.gd" id="15_wsync"]
+[ext_resource type="Script" path="res://scripts/announce.gd" id="16_announce"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -99,3 +100,6 @@ script = ExtResource("12_wparrow")
 
 [node name="Chat" type="Control" parent="Overlay"]
 script = ExtResource("14_chat")
+
+[node name="Announce" type="Control" parent="Overlay"]
+script = ExtResource("16_announce")
