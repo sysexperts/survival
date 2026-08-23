@@ -7,7 +7,6 @@
 [ext_resource type="Shader" uid="uid://sr6it3u28unt" path="res://scripts/vignette.gdshader" id="5_vignette"]
 [ext_resource type="Script" path="res://scripts/interaction.gd" id="6_interaction"]
 [ext_resource type="Script" path="res://scripts/regrowth.gd" id="7_regrowth"]
-[ext_resource type="Script" path="res://scripts/resource_scatter.gd" id="9_scatter"]
 [ext_resource type="Script" path="res://scripts/chunk_manager.gd" id="10_chunks"]
 [ext_resource type="Script" path="res://scripts/minimap.gd" id="11_minimap"]
 [ext_resource type="Script" path="res://scripts/waypoint_arrow.gd" id="12_wparrow"]
@@ -17,6 +16,8 @@
 [ext_resource type="Script" path="res://scripts/world_sync.gd" id="15_wsync"]
 [ext_resource type="Script" path="res://scripts/announce.gd" id="16_announce"]
 [ext_resource type="Script" path="res://scripts/save_sync.gd" id="17_save"]
+[ext_resource type="Script" path="res://scripts/time_sync.gd" id="18_time"]
+[ext_resource type="Script" path="res://scripts/drop_sync.gd" id="19_drop"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -58,10 +59,6 @@ sky_gradient = SubResource("Gradient_tbgi4")
 script = ExtResource("6_interaction")
 world_path = NodePath("../World")
 
-[node name="ResourceScatter" type="Node" parent="."]
-script = ExtResource("9_scatter")
-world_path = NodePath("../World")
-
 [node name="Regrowth" type="Node" parent="."]
 script = ExtResource("7_regrowth")
 world_path = NodePath("../World")
@@ -81,6 +78,12 @@ script = ExtResource("15_wsync")
 
 [node name="SaveSync" type="Node" parent="."]
 script = ExtResource("17_save")
+
+[node name="TimeSync" type="Node" parent="."]
+script = ExtResource("18_time")
+
+[node name="DropSync" type="Node" parent="."]
+script = ExtResource("19_drop")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2.5, 2.5)

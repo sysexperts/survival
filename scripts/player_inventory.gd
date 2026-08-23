@@ -31,6 +31,7 @@ var station_huds: Dictionary = {}
 var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
+var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
 ## Als String statt bool, weil es jetzt mehrere Sorten gibt.
 var _ctx_hint := ""
@@ -65,6 +66,8 @@ func _ready() -> void:
 		preview = interaction.preview
 		preview.confirmed.connect(_on_placement_confirmed)
 		preview.ended.connect(func(): hud.set_hint(""))
+
+	_drop = get_node_or_null(^"../DropSync")
 
 	player = get_tree().get_first_node_in_group("player")
 	if player:
@@ -129,14 +132,21 @@ func _process(delta: float) -> void:
 	# Was liegt gerade an? Stein zuerst (haeufigste Aktion, direkt vor den
 	# Fuessen), sonst eine Station in Reichweite.
 	var want := ""
-	var cell := player.stone_in_reach()
-	if cell != Player.INVALID_CELL:
-		var what := player.world.gather_id_at(cell)
-		want = GatherDB.hint(what) if GatherDB.has(what) else "F  Tas al"
-	else:
-		var st := player.station_in_reach()
-		if st != "":
-			want = "F  %s ac" % ItemDB.display_name(st)
+	# Fallengelassenes Item in Reichweite hat Vorrang - "unten steht, was da liegt".
+	if _drop:
+		var did: int = _drop.dropped_in_reach()
+		if did >= 0:
+			var d: Dictionary = _drop.info(did)
+			want = "F  %s x%d al" % [ItemDB.display_name(String(d["item_id"])), int(d["count"])]
+	if want == "":
+		var cell := player.stone_in_reach()
+		if cell != Player.INVALID_CELL:
+			var what := player.world.gather_id_at(cell)
+			want = GatherDB.hint(what) if GatherDB.has(what) else "F  Tas al"
+		else:
+			var st := player.station_in_reach()
+			if st != "":
+				want = "F  %s ac" % ItemDB.display_name(st)
 	_set_ctx_hint(want)
 
 
@@ -229,6 +239,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F:
 		_use_selected()
 		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_Q:
+		if _drop:
+			_drop.drop_selected()
+		get_viewport().set_input_as_handled()
 	elif event.keycode >= KEY_1 and event.keycode <= KEY_9:
 		hud.select(event.keycode - KEY_1)
 
@@ -288,6 +302,12 @@ func _use_selected() -> void:
 	if preview != null and preview.active:
 		preview.cancel()
 		return
+	# Liegt ein fallengelassenes Item in Reichweite? Das zuerst aufheben.
+	if _drop:
+		var did: int = _drop.dropped_in_reach()
+		if did >= 0:
+			_drop.pickup(did)
+			return
 	# Steine zuerst: sie liegen direkt vor den Fuessen und sind die
 	# haeufigste Kontextaktion.
 	var stone := player.stone_in_reach()
