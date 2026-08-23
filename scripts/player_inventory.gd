@@ -5,7 +5,7 @@ extends Node
 ## Das HUD wird zur Laufzeit erzeugt, in der Szene steht nur dieser Node.
 
 @export var hotbar_size := 9
-@export var bag_rows := 3
+@export var bag_rows := 6
 ## Wie viel Holz ein gefällter Baum bzw. ein gerodeter Stumpf abwirft.
 @export var wood_per_tree := 4
 @export var wood_per_stump := 1
@@ -36,11 +36,9 @@ var preview: PlacementPreview
 ## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
 const CreativeHUDScript := preload("res://scripts/creative_hud.gd")
 var creative: Node
-## Admin-Namen (kleingeschrieben). Bewusst HIER statt in Net.is_admin(): Net ist
-## ein Autoload und wird beim Programmstart aus der Basis-.exe instanziert - die
-## per Auto-Update geladene game.pck ersetzt das laufende Autoload NICHT, seine
-## neuen Methoden fehlen also. Dieses Skript kommt dagegen frisch aus der pck.
-const ADMINS := ["serdar"]
+## Admin-Pruefung zentral (per preload, nicht ueber das Net-Autoload - das wird
+## vom Auto-Updater nicht ersetzt, siehe admins.gd).
+const AdminsScript := preload("res://scripts/admins.gd")
 var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
@@ -74,7 +72,7 @@ func _ready() -> void:
 
 	# Admins bekommen das Kreativ-Inventar (Taste X). Nur dann gebaut, damit
 	# es fuer normale Spieler gar nicht erst existiert.
-	_is_admin = String(Net.player_name).strip_edges().to_lower() in ADMINS
+	_is_admin = AdminsScript.is_admin(String(Net.player_name))
 	print("[Admin] player_name='%s' is_admin=%s" % [Net.player_name, _is_admin])
 	if _is_admin:
 		creative = CreativeHUDScript.new()

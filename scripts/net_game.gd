@@ -16,6 +16,7 @@ extends Node
 ## Figur zugeordnet werden - get_remote_sender_id() waere dann der Server.
 
 const RemotePlayerScript := preload("res://scripts/remote_player.gd")
+const AdminsScript := preload("res://scripts/admins.gd")
 ## Wie oft pro Sekunde der eigene Zustand verschickt wird.
 const SEND_HZ := 15.0
 
@@ -23,6 +24,11 @@ var _local: Player
 var _world: IsoWorld
 var _avatars: Dictionary = {}     ## owner_id -> RemotePlayer
 var _accum := 0.0
+
+## TAB-Spielerliste (wie in Minecraft), nur solange TAB gehalten wird.
+var _tab_layer: CanvasLayer
+var _tab_panel: PanelContainer
+var _tab_list: VBoxContainer
 
 
 func _ready() -> void:
@@ -40,6 +46,73 @@ func _ready() -> void:
 			plate.player_name = Net.player_name
 
 	multiplayer.peer_disconnected.connect(_on_peer_left)
+
+	if not Net.is_dedicated:
+		_build_tab_list()
+
+
+# --- TAB-Spielerliste ----------------------------------------------------
+
+func _build_tab_list() -> void:
+	_tab_layer = CanvasLayer.new()
+	_tab_layer.layer = 120
+	add_child(_tab_layer)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tab_layer.add_child(center)
+	_tab_panel = PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.07, 0.10, 0.88)
+	style.border_color = Color(0.35, 0.37, 0.45, 0.95)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	style.set_content_margin_all(12)
+	_tab_panel.add_theme_stylebox_override("panel", style)
+	center.add_child(_tab_panel)
+	_tab_list = VBoxContainer.new()
+	_tab_list.add_theme_constant_override("separation", 4)
+	_tab_list.custom_minimum_size = Vector2(200, 0)
+	_tab_panel.add_child(_tab_list)
+	_tab_layer.visible = false
+
+
+func _input(event: InputEvent) -> void:
+	if _tab_layer == null or not (event is InputEventKey) or event.echo:
+		return
+	if event.keycode != KEY_TAB:
+		return
+	# TAB haelt die Liste offen; loslassen schliesst sie. accept, damit TAB
+	# nicht den UI-Fokus weiterschaltet.
+	if event.pressed:
+		_refresh_tab_list()
+		_tab_layer.visible = true
+	else:
+		_tab_layer.visible = false
+	get_viewport().set_input_as_handled()
+
+
+func _refresh_tab_list() -> void:
+	for c in _tab_list.get_children():
+		c.queue_free()
+	# Namen sammeln: eigener zuerst, dann die Mitspieler.
+	var names: Array = [Net.player_name]
+	for av in _avatars.values():
+		if is_instance_valid(av) and av.pname != "":
+			names.append(av.pname)
+	var title := Label.new()
+	title.text = "Oyuncular (%d)" % names.size()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color(1, 0.92, 0.7))
+	_tab_list.add_child(title)
+	for n in names:
+		var l := Label.new()
+		l.text = n
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# Admins golden hervorheben.
+		if AdminsScript.is_admin(n):
+			l.add_theme_color_override("font_color", Color(1, 0.84, 0.3))
+		_tab_list.add_child(l)
 
 
 func _process(delta: float) -> void:

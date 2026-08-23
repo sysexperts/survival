@@ -41,7 +41,10 @@ func _ready() -> void:
 	add_child(_plate)
 
 
+var pname := ""
+
 func set_player_name(n: String) -> void:
+	pname = n
 	if _plate:
 		_plate.player_name = n
 

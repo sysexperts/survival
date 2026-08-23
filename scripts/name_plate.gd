@@ -18,6 +18,12 @@ class_name NamePlate
 const FONT := "res://assets/fonts/pixel_bold.fnt"
 ## Rasterhöhe der Vorlage. Andere Werte verwaschen die Glyphen.
 const FONT_SIZE := 9
+## Gamemaster-Abzeichen (64x64) und die zentrale Admin-Pruefung. Beides per
+## preload, damit es auch ueber den Auto-Updater greift (siehe admins.gd).
+const GM_TEX := preload("res://assets/gamemaster.png")
+const AdminsScript := preload("res://scripts/admins.gd")
+## Anzeigegroesse des Abzeichens ueber dem Namen (lokale Pixel, vor node scale).
+const GM_SIZE := 24.0
 
 @export var player_name := "dodominati":
 	set(v):
@@ -64,3 +70,9 @@ func _draw() -> void:
 	# ... und die helle Schrift oben drauf.
 	draw_string(_font, at, player_name,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, color)
+
+	# Gamemaster-Abzeichen ueber dem Namen, wenn dieser Spieler Admin ist.
+	if AdminsScript.is_admin(player_name):
+		var top := -FONT_SIZE - 4          # knapp ueber der Schrift
+		draw_texture_rect(GM_TEX,
+			Rect2(-GM_SIZE * 0.5, top - GM_SIZE, GM_SIZE, GM_SIZE), false)
