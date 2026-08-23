@@ -13,6 +13,17 @@ extends Node
 ## ANDEREN wird nur die Welt angepasst - kein Inventar, kein Item-Abzug.
 ##
 ## Der dedizierte Server spielt nicht mit: er leitet die Ereignisse nur weiter.
+##
+## PERSISTENZ (Bauten): Weil die Welt nur im RAM der verbundenen Clients lebt,
+## verschwaende ohne diesen Teil jeder Server-Neustart alles Gebaute - und ein
+## neu beitretender Spieler saehe nichts, was vor ihm gebaut wurde. Der Server
+## fuehrt deshalb ein Register aller gesetzten Moebel/Lagerfeuer, schreibt es
+## auf Platte (BUILD_FILE) und spielt es jedem Client beim Beitritt vor.
+## (Abbau/Sammeln wird noch NICHT persistiert - gefaellte Baeume wachsen ohnehin
+## nach; das gehoert zum offenen Chunk-Diff, Milestone 3 in AGENTS.md.)
+
+const BUILD_DIR := "/opt/survival_world"
+const BUILD_FILE := BUILD_DIR + "/build.json"
 
 var _world: IsoWorld
 var _regrowth: Node
@@ -21,6 +32,12 @@ var _player: Player
 ## wieder als eigenes weiterverteilt wird (place_* feuert dieselben Signale).
 var _suppress := false
 
+## Server: alle bisher gesetzten Bauten. Je Eintrag {kind, x, y, id, flipped}.
+var _builds: Array = []
+## Client: vom Server empfangene Bauten, die noch nicht gesetzt werden konnten
+## (der Chunk ist evtl. noch nicht geladen). Werden in _process nachgezogen.
+var _pending: Array = []
+
 
 func _ready() -> void:
 	if not Net.active:
@@ -28,7 +45,9 @@ func _ready() -> void:
 	_world = get_node_or_null(^"../World") as IsoWorld
 	_regrowth = get_node_or_null(^"../Regrowth")
 	if Net.is_dedicated:
-		return                       # Server: nur weiterleiten (siehe RPC)
+		_load_builds()               # Register vom letzten Lauf wiederherstellen
+		multiplayer.peer_connected.connect(_on_peer_joined)
+		return                       # Server: nur weiterleiten + persistieren
 	_player = get_tree().get_first_node_in_group("player") as Player
 	if _player:
 		_player.felled.connect(_on_local_felled)
@@ -36,6 +55,23 @@ func _ready() -> void:
 		_player.stone_collected.connect(_on_local_stone_collected)
 		_player.placed_campfire.connect(_on_local_campfire)
 		_player.placed_furniture.connect(_on_local_furniture)
+	# Ein Frame warten, damit Welt + Spieler stehen, dann den Bau-Stand des
+	# Servers anfordern (analog save_sync fuer das Inventar).
+	await get_tree().process_frame
+	_request_builds.rpc_id(1)
+
+
+## Client: noch nicht platzierbare Bauten erneut versuchen. Solange der Chunk
+## einer weit entfernten Baute nicht geladen ist, schlaegt place_* fehl - der
+## Eintrag bleibt liegen und wird gesetzt, sobald der Spieler hinlaeuft.
+func _process(_delta: float) -> void:
+	if _pending.is_empty() or _player == null or _world == null:
+		return
+	var still: Array = []
+	for b in _pending:
+		if not _apply_build(b):
+			still.append(b)
+	_pending = still
 
 
 # --- lokale Aktionen -> an alle senden -----------------------------------
@@ -68,8 +104,13 @@ func _on_local_furniture(id: String, cell: Vector2i, flipped: bool) -> void:
 
 @rpc("any_peer", "reliable")
 func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vector2i, s: String, flag: bool) -> void:
-	# Server: an alle anderen Clients weiterreichen.
+	# Server: Bauten ins Register aufnehmen (ueberleben den Neustart) und an
+	# alle anderen Clients weiterreichen.
 	if Net.is_dedicated:
+		if kind == "furniture":
+			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "flipped": flag})
+		elif kind == "campfire":
+			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "flipped": false})
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
 				_event.rpc_id(pid, owner_id, kind, cell, level, atlas, s, flag)
@@ -102,6 +143,86 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 				_suppress = true
 				_player.place_furniture_at(s, cell, flag)
 				_suppress = false
+
+
+# --- Bau-Persistenz (Server) + Replay (Client) ---------------------------
+
+## Server: ein Client ist beigetreten - noch nichts tun. Der Client fordert den
+## Bau-Stand selbst an (_request_builds), sobald seine Welt bereit ist; das ist
+## robuster, als sofort zu senden, wenn dort evtl. noch nichts steht.
+func _on_peer_joined(_id: int) -> void:
+	pass
+
+
+## Client -> Server: "schick mir alle Bauten". Der Server antwortet fuer jede
+## gemerkte Baute mit _spawn_build.
+@rpc("any_peer", "reliable")
+func _request_builds() -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	for b in _builds:
+		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), bool(b["flipped"]))
+
+
+## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
+## mit, landet sie in _pending und wird spaeter nachgezogen.
+@rpc("any_peer", "reliable")
+func _spawn_build(kind: String, cell: Vector2i, id: String, flipped: bool) -> void:
+	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "flipped": flipped}
+	if not _apply_build(b):
+		_pending.append(b)
+
+
+## Setzt eine Baute lokal. true = gesetzt (oder steht schon da), false = ging
+## gerade nicht (Chunk noch nicht bereit) und sollte erneut versucht werden.
+func _apply_build(b: Dictionary) -> bool:
+	if _player == null or _world == null:
+		return false
+	var cell := Vector2i(int(b["x"]), int(b["y"]))
+	# Steht dort schon etwas (z. B. beim erneuten Versuch nach Teil-Erfolg),
+	# als erledigt werten - place_* wuerde nur an der Belegung scheitern.
+	if _world.blocker_at(cell) != null:
+		return true
+	_suppress = true
+	var ok: bool
+	if b["kind"] == "campfire":
+		ok = _player.place_campfire_at(cell)
+	else:
+		ok = _player.place_furniture_at(String(b["id"]), cell, bool(b["flipped"]))
+	_suppress = false
+	return ok
+
+
+## Server: eine Baute ins Register aufnehmen und sofort sichern. Doppelte
+## (dieselbe Zelle) werden nicht zweimal gespeichert.
+func _record_build(b: Dictionary) -> void:
+	for e in _builds:
+		if e["x"] == b["x"] and e["y"] == b["y"]:
+			return
+	_builds.append(b)
+	_save_builds()
+
+
+func _save_builds() -> void:
+	DirAccess.make_dir_recursive_absolute(BUILD_DIR)
+	var f := FileAccess.open(BUILD_FILE, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(_builds))
+		f.close()
+
+
+func _load_builds() -> void:
+	if not FileAccess.file_exists(BUILD_FILE):
+		return
+	var f := FileAccess.open(BUILD_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(data) == TYPE_ARRAY:
+		_builds = data
+		print("WorldSync: %d Bauten aus %s geladen." % [_builds.size(), BUILD_FILE])
 
 
 ## Entfernt einen Baum wie beim lokalen Faellen - mit Umkipp-Animation, wenn
