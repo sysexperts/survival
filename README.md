@@ -482,3 +482,39 @@ Kurz: Axt-Rezept fehlt, Möbel lassen sich noch nicht aufstellen, die
 Werkbank ist noch keine Station.
 
 Assets: CanadianBoy (`assets/LICENSE-CanadianBoy.txt`) — frei nutzbar, nicht weiterverkaufen.
+
+## Server & Deployment
+
+Dedizierter Spielserver + Website laufen auf **`185.248.140.225`**
+(Website: http://survival.vapur-it.de/). Zugriff per SSH mit dem Key aus
+`~/.ssh`:
+
+```bash
+ssh -i ~/.ssh/id_vapur_admin root@185.248.140.225
+```
+
+Wichtige Pfade auf dem Server:
+
+- Repo: `/opt/survival` (Godot-Binary: `/opt/godot/godot`, 4.7.x linux)
+- Dienst: `survival.service` (dedizierter Relay-Server, Autostart/-Restart)
+- Webroot: `/var/www/survival` (liefert `game.pck`, `version.json`, Download)
+
+**Änderung auf den Server pullen** (nach jedem `git push` auf `main`):
+
+```bash
+ssh -i ~/.ssh/id_vapur_admin root@185.248.140.225 "cd /opt/survival && git pull && systemctl restart survival"
+```
+
+**Update an die Spieler ausliefern** (nur nötig bei Client-Änderungen —
+der Auto-Updater der Clients zieht die neue `game.pck`):
+
+1. `version.txt` erhöhen (Build-Ganzzahl, für den Updater-Vergleich).
+2. `game.pck` bauen: `godot --headless --path . --export-pack "Windows Desktop" build/game.pck`
+3. `game.pck` + `version.json` (Version dort ebenfalls erhöhen) nach
+   `/var/www/survival/` scp'en.
+4. `git push` und auf dem Server pullen/neustarten (siehe oben).
+5. Nur bei Engine-Wechsel/neuer Baseline: Installer neu bauen (Windows-Export
+   + Inno Setup) und `SerdarsGameSetup.exe` hochladen.
+
+Reine Client-Visuals (z. B. UI, Bewegungs-Glättung) brauchen für den
+Server-Dienst keinen Neustart, wohl aber ein neues `game.pck` für die Spieler.
