@@ -123,7 +123,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			# eine Station ist, oeffnet sie sich bei Ankunft von selbst).
 			var furn := _furniture_under_mouse()
 			if not furn.is_empty():
-				player.walk_to_station(furn[0])
+				# Bett: hinlaufen und hineinlegen. Sonst: Station (oeffnet bei
+				# Ankunft) bzw. gar nichts.
+				if not player.walk_to_bed(furn[0]):
+					player.walk_to_station(furn[0])
 			return
 		# Stein: hinlaufen und aufheben - E geht weiter zu Fuss.
 		if int(_hovered[3]) == IsoWorld.STONE_SOURCE_ID:

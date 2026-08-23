@@ -99,6 +99,16 @@ var _reach_station := ""          ## Station, die nach dem Laufen geoeffnet wird
 var _tree: TreeActor = null      ## Baum als Node, solange gefällt wird
 var _camera: Camera2D = null
 
+## Schlafen im Bett. `_sleeping` = Jack liegt gerade; `_reach_bed` = er laeuft
+## noch zum Bett und legt sich bei Ankunft hin. `_sleep_return_pos`/`_level`
+## merken, wo er vorm Hinlegen stand, damit er beim Aufwachen dorthin zurueck-
+## springt (das Bett selbst ist belegt, dort kann er nicht stehen).
+var _sleeping := false
+var _reach_bed := false
+var _bed_cell := Vector2i.ZERO
+var _sleep_return_pos := Vector2.ZERO
+var _sleep_return_level := 0
+
 
 func _ready() -> void:
 	# Jack haengt sich zur Laufzeit in die TileMapLayer um, deshalb ist er
@@ -177,11 +187,19 @@ func _physics_process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_S): input.y += 1.0
 	input = input.limit_length(1.0)
 
+	# Schlafen: Jack liegt still im Bett, bis eine Bewegungstaste kommt. Erst
+	# aufstehen (zurueck auf die Standfläche), dann normal weiter - so laeuft er
+	# im selben Tastendruck los, statt einen Frame zu verschlucken.
+	if _sleeping:
+		if input == Vector2.ZERO:
+			return
+		_wake_up()
+
 	# Tastatur bricht einen laufenden Auftrag ab - und zwar VOR dem
 	# busy-Guard, sonst käme man während der Axt-Animation nie durch und
 	# der gefällte Baum bliebe als Node hängen.
 	if input != Vector2.ZERO and (busy or not path.is_empty() or _chop_level >= 0
-			or _pickup_cell != INVALID_CELL or _reach_station != ""):
+			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed):
 		_cancel_task()
 
 	if busy:
@@ -209,6 +227,10 @@ func _physics_process(delta: float) -> void:
 			_reach_station = ""
 			reached_station.emit(s)
 			_play("idle")
+			return
+		if _reach_bed:
+			_reach_bed = false
+			_lie_down(_bed_cell)
 			return
 		_play("idle")
 		return
@@ -379,6 +401,76 @@ func walk_to_station(cell: Vector2i) -> bool:
 	return true
 
 
+## Betten, in die sich Jack legen kann.
+const BED_IDS := ["bett", "feldbett"]
+## Blickrichtung im Bett - passend zur Liege-Pose (Kopf oben-links, Füsse
+## unten-rechts, also entlang der Bett-Diagonale). Gespiegeltes Bett spiegelt
+## die Richtung mit.
+const BED_FACING := "east"
+const BED_FACING_FLIPPED := "west"
+## Feinjustierung der Liegeposition. y leicht positiv, damit Jack in der
+## Y-Sortierung VOR dem Bettrahmen liegt; der Sprite-Offset (-18) hebt das
+## Bild auf die Matratze.
+const BED_POS_NUDGE := Vector2(0, 3)
+
+
+## Ist auf dieser Zelle ein Bett?
+func _bed_at(cell: Vector2i) -> Furniture:
+	var node := world.blocker_at(cell)
+	if node is Furniture and BED_IDS.has(node.id):
+		return node
+	return null
+
+
+## Läuft zum Bett und legt sich bei Ankunft hinein (Rechtsklick). false, wenn
+## dort kein Bett steht oder kein Weg daneben führt.
+func walk_to_bed(cell: Vector2i) -> bool:
+	var bed := _bed_at(cell)
+	if bed == null:
+		return false
+	_cancel_task()
+	var here := world.world_to_cell(global_position, level)
+	var stand := GridPath.adjacent_to(world, cell, here, max_step)
+	if stand.x == 2147483647:
+		return false            # kein begehbares Feld neben dem Bett
+	_bed_cell = cell
+	if stand == here:
+		_lie_down(cell)         # steht schon daneben
+		return true
+	path = GridPath.find(world, here, stand, max_step)
+	if path.is_empty():
+		return false
+	_reach_bed = true
+	return true
+
+
+## Legt Jack ins Bett: Position auf die Bett-Mitte, passende Liege-Pose. Die
+## Standfläche wird gemerkt, damit er beim Aufwachen wieder daneben steht.
+func _lie_down(cell: Vector2i) -> void:
+	var bed := _bed_at(cell)
+	if bed == null:
+		_play("idle")
+		return
+	_sleep_return_pos = global_position
+	_sleep_return_level = level
+	var center := world.footprint_long_center(bed.cell, bed.level)
+	global_position = center + BED_POS_NUDGE
+	level = bed.level
+	_reparent_to_level()
+	_sleeping = true
+	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
+	sprite.play("sleep_%s" % facing.replace("-", "_"))
+
+
+## Weckt Jack: zurück auf die gemerkte Standfläche, normale Anzeige.
+func _wake_up() -> void:
+	_sleeping = false
+	global_position = _sleep_return_pos
+	level = _sleep_return_level
+	_reparent_to_level()
+	_play("idle")
+
+
 ## Läuft zum Stumpf und entfernt ihn mit einem Schlag - endgültig, es
 ## wächst danach nichts mehr nach.
 func clear_stump(cell: Vector2i, stump_level: int) -> bool:
@@ -412,9 +504,14 @@ func chop(cell: Vector2i, prop_level: int) -> bool:
 
 
 func _cancel_task() -> void:
+	# Ein neuer Auftrag (Klick) weckt Jack zuerst - er steht auf und geht dann
+	# von der Standfläche neben dem Bett aus weiter.
+	if _sleeping:
+		_wake_up()
 	path.clear()
 	_pickup_cell = INVALID_CELL
 	_reach_station = ""
+	_reach_bed = false
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false
