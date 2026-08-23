@@ -237,11 +237,14 @@ func can_place_2x2(top: Vector2i) -> bool:
 ## bereits gesetztes Objekt. `prop_node` deckt Baeume, Steine, Rohstoffe und
 ## die zu Nodes gewordenen Stuempfe ab; `has_stump` faengt zusaetzlich den
 ## Editor-/Tile-Fall ab, bevor die Props zu Nodes werden.
-func can_place_1x1(cell: Vector2i) -> bool:
+func can_place_1x1(cell: Vector2i, allow_adjacent := false) -> bool:
 	if top_level_at(cell) < 0:
 		return false
 	if blocker_at(cell) != null or prop_node(cell) != null or has_stump(cell):
 		return false
+	# `allow_adjacent`: kachelbare Moebel (Hochbeet) duerfen aneinander stehen.
+	if allow_adjacent:
+		return true
 	return not _furniture_adjacent([cell])
 
 

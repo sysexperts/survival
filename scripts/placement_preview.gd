@@ -137,7 +137,7 @@ func _track_furniture() -> void:
 		valid = world.can_place_long(top_cell)
 		global_position = world.footprint_long_center(top_cell, lvl)
 	else:
-		valid = world.can_place_1x1(top_cell)
+		valid = world.can_place_1x1(top_cell, Furniture.tileable(item_id))
 		global_position = world.cell_to_world(top_cell, lvl)
 
 

@@ -33,12 +33,19 @@ const CONFIG := {
 	# genau tile-breit (Top-Diamant = 32 px), der Offset legt ihre Mitte auf die
 	# Zellmitte. So sitzt jedes Beet in seinem Diamanten und Nachbarn kacheln
 	# nahtlos (die Y-Sortierung zeichnet das vordere ueber das hintere).
-	"yukseltilmis_tarha": {"scale": 32.0 / 58.0, "offset": Vector2(-32, -28)},
+	# `tileable`: darf direkt neben anderen Moebeln stehen (Ausnahme von der
+	# Abstandsregel) - damit man aus Hochbeeten ein zusammenhaengendes Feld legt.
+	"yukseltilmis_tarha": {"scale": 32.0 / 58.0, "offset": Vector2(-32, -28), "tileable": true},
 }
 
 
 static func is_long(id: String) -> bool:
 	return CONFIG.get(id, {}).get("long", false)
+
+
+## Darf direkt an andere Moebel angrenzen (kein Mindestabstand)?
+static func tileable(id: String) -> bool:
+	return CONFIG.get(id, {}).get("tileable", false)
 
 
 static func scale_of(id: String) -> float:

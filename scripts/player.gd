@@ -772,7 +772,7 @@ func place_furniture_at(id: String, cell: Vector2i, flipped: bool) -> bool:
 			return false
 		cells = world.footprint_long(cell)
 	else:
-		if not world.can_place_1x1(cell):
+		if not world.can_place_1x1(cell, Furniture.tileable(id)):
 			return false
 		cells = [cell]
 	var lvl := maxi(world.top_level_at(cell), 0)
