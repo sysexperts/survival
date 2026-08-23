@@ -11,6 +11,11 @@ extends Node
 const DESPAWN_SECONDS := 300.0
 ## Aufhebe-Reichweite in Zellen (wie bei Steinen gemessen).
 const PICKUP_RADIUS := 1.4
+## Reichweite fuers automatische Aufheben beim Drueberlaufen (enger).
+const AUTO_PICKUP_RADIUS := 0.9
+## So lange nach dem Fallenlassen kann man ein Item NICHT automatisch aufheben -
+## sonst saugt man sein gerade abgelegtes Item sofort wieder ein.
+const PICKUP_PROTECT_MS := 800
 ## Per preload statt ueber den class_name - so bleibt der ausgelieferte Client
 ## (dessen Basis-EXE die Klasse noch nicht kannte) kompilierbar.
 const DroppedItemScript := preload("res://scripts/dropped_item.gd")
@@ -75,6 +80,34 @@ func pickup(id: int) -> void:
 	_request_pickup.rpc_id(1, id)
 
 
+## Laeuft der lokale Spieler ueber ein Item, wird es automatisch eingesammelt -
+## mit kleiner Flug-Animation zum Charakter.
+func _process(_delta: float) -> void:
+	if Net.is_dedicated or not Net.active or _player == null or _world == null:
+		return
+	var now := Time.get_ticks_msec()
+	for id in _drops.keys():
+		var d: Dictionary = _drops[id]
+		if now - int(d.get("t", 0)) < PICKUP_PROTECT_MS:
+			continue
+		var to := _world.cell_to_world(d["cell"], d["level"]) - _player.global_position
+		var dist := Vector2(to.x / IsoWorld.TILE_SIZE.x, to.y / IsoWorld.TILE_SIZE.y).length()
+		if dist <= AUTO_PICKUP_RADIUS:
+			_auto_collect(id)
+			return                   # pro Bild nur eins
+
+
+func _auto_collect(id: int) -> void:
+	var d: Dictionary = _drops.get(id, {})
+	if d.is_empty():
+		return
+	_drops.erase(id)                 # nicht mehr erkennen; Server-_remove wird no-op
+	pickup(id)                       # Server um die Beute bitten
+	var node = d.get("node")
+	if is_instance_valid(node) and node.has_method("fly_to"):
+		node.fly_to(_player)
+
+
 # --- Server ---------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
@@ -124,7 +157,8 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 	node.setup(item_id, count)
 	_world.props_root.add_child(node)
 	node.global_position = _world.cell_to_world(cell, lvl)
-	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell, "level": lvl}
+	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell,
+		"level": lvl, "t": Time.get_ticks_msec()}
 
 
 @rpc("any_peer", "reliable")

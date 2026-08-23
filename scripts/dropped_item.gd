@@ -42,6 +42,20 @@ func _process(delta: float) -> void:
 	_spr.position.y = -9.0 + sin(_t * 2.4) * 2.5
 
 
+## Kleine "fliegt zum Spieler"-Animation beim Aufheben: zum Ziel fliegen,
+## schrumpfen, ausblenden, dann weg.
+func fly_to(target: Node2D) -> void:
+	set_process(false)                # Schweben stoppen
+	var goal := target.global_position + Vector2(0, -10)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(self, "global_position", goal, 0.22) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if _spr:
+		tw.tween_property(_spr, "scale", Vector2(0.15, 0.15), 0.22)
+	tw.tween_property(self, "modulate:a", 0.0, 0.26)
+	tw.chain().tween_callback(queue_free)
+
+
 func _draw() -> void:
 	# Bodenschatten (gestauchte Ellipse) direkt unter dem Item.
 	draw_set_transform(Vector2(0, -1), 0.0, Vector2(1.0, 0.42))
