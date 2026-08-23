@@ -19,8 +19,12 @@ const SleepZzzScript := preload("res://scripts/sleep_zzz.gd")
 const AudioHelper := preload("res://scripts/audio.gd")
 
 ## Ab dieser Entfernung (px) ist der Mitspieler-Schritt nicht mehr zu hoeren.
-## Darunter wird er mit der Naehe lauter (AudioStreamPlayer2D-Daempfung).
-const FOOTSTEP_MAX_DISTANCE := 800.0
+## Der sichtbare Weltausschnitt ist bei Zoom 2.5 nur ~512x288 px (Halbbreite
+## ~256), deshalb knapp an den Bildschirmrand gesetzt: wer aus dem Bild laeuft,
+## ist still. `ATT` macht den Abfall steil, damit es schon vorher deutlich leiser
+## wird (statt erst am Rand).
+const FOOTSTEP_MAX_DISTANCE := 280.0
+const FOOTSTEP_ATTENUATION := 3.0
 
 var _sprite: AnimatedSprite2D
 var _plate: NamePlate
@@ -56,6 +60,7 @@ func _ready() -> void:
 	_footsteps.bus = AudioHelper.EFFECTS_BUS
 	_footsteps.volume_db = AudioHelper.FOOTSTEP_DB
 	_footsteps.max_distance = FOOTSTEP_MAX_DISTANCE
+	_footsteps.attenuation = FOOTSTEP_ATTENUATION
 	add_child(_footsteps)
 
 
