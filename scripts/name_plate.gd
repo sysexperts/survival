@@ -23,7 +23,10 @@ const FONT_SIZE := 9
 const GM_TEX := preload("res://assets/gamemaster.png")
 const AdminsScript := preload("res://scripts/admins.gd")
 ## Anzeigegroesse des Abzeichens ueber dem Namen (lokale Pixel, vor node scale).
-const GM_SIZE := 24.0
+const GM_SIZE := 30.0
+
+## Laufzeit fuer die GM-Animation (Float, Glow-Puls, Funken).
+var _t := 0.0
 
 @export var player_name := "dodominati":
 	set(v):
@@ -71,8 +74,30 @@ func _draw() -> void:
 	draw_string(_font, at, player_name,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, color)
 
-	# Gamemaster-Abzeichen ueber dem Namen, wenn dieser Spieler Admin ist.
+	# Gamemaster-Abzeichen direkt ueber dem Namen, wenn dieser Spieler Admin ist.
 	if AdminsScript.is_admin(player_name):
-		var top := -FONT_SIZE - 4          # knapp ueber der Schrift
-		draw_texture_rect(GM_TEX,
-			Rect2(-GM_SIZE * 0.5, top - GM_SIZE, GM_SIZE, GM_SIZE), false)
+		var bob := sin(_t * 3.0) * 2.0                 # sanftes Auf und Ab
+		var pulse := 0.5 + 0.5 * sin(_t * 3.0)         # 0..1 fuer den Glow
+		var half := GM_SIZE * 0.5
+		# Zentrum: direkt ueber der Schrift (Namenskante liegt bei ~ -FONT_SIZE).
+		var c := Vector2(0.0, -FONT_SIZE + 1 - half + bob)
+		# Pulsierender Glow: groesseres, halbdurchsichtiges Abzeichen dahinter.
+		var gsize := GM_SIZE * (1.3 + 0.12 * pulse)
+		draw_texture_rect(GM_TEX, Rect2(c.x - gsize * 0.5, c.y - gsize * 0.5, gsize, gsize),
+			false, Color(1.0, 0.85, 0.35, 0.10 + 0.12 * pulse))
+		# Kleine funkelnde Sparks, die um das Abzeichen kreisen und blinken.
+		for i in 4:
+			var a := _t * 2.0 + i * (TAU / 4.0)
+			var sp := c + Vector2(cos(a) * (half + 3.0) * 1.1, sin(a) * (half + 2.0) * 0.6)
+			var sa: float = clampf(sin(_t * 4.0 + i * 1.7) * 0.5 + 0.5, 0.0, 1.0)
+			draw_circle(sp, 0.9, Color(1.0, 0.96, 0.7, sa * 0.9))
+		# Das eigentliche Abzeichen.
+		draw_texture_rect(GM_TEX, Rect2(c.x - half, c.y - half, GM_SIZE, GM_SIZE), false)
+
+
+## Die GM-Animation (Float/Glow/Funken) laeuft nur fuer Admins - sonst kein
+## Dauer-Redraw.
+func _process(delta: float) -> void:
+	if AdminsScript.is_admin(player_name):
+		_t += delta
+		queue_redraw()
