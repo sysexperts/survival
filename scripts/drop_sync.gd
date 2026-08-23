@@ -117,45 +117,8 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 		return
 	if _drops.has(id):
 		return
-	var node := Node2D.new()
-
-	# Bodenschatten unter dem Item.
-	var shadow := Node2D.new()
-	shadow.set_script(load("res://scripts/blob_shadow.gd"))
-	shadow.radius = 5.0
-	node.add_child(shadow)
-
-	# Item-Icon, schwebt sanft auf und ab.
-	var spr := Sprite2D.new()
-	spr.texture = ItemDB.icon(item_id)
-	spr.scale = Vector2(0.55, 0.55)
-	spr.position = Vector2(0, -8)
-	node.add_child(spr)
-	var tw := node.create_tween().set_loops()
-	tw.tween_property(spr, "position:y", -12.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_property(spr, "position:y", -7.0, 1.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	# Beschriftung darunter: klein, "Name xN" mit leichtem schwarzen Hintergrund.
-	var label := Label.new()
-	label.text = "%s x%d" % [ItemDB.display_name(item_id), count]
-	label.add_theme_font_size_override("font_size", 6)
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	label.add_theme_constant_override("outline_size", 2)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.45)
-	sb.set_corner_radius_all(2)
-	sb.content_margin_left = 2
-	sb.content_margin_right = 2
-	sb.content_margin_top = 0
-	sb.content_margin_bottom = 0
-	label.add_theme_stylebox_override("normal", sb)
-	label.z_index = 1
-	node.add_child(label)
-	# Sobald das Label seine Groesse kennt: mittig unter dem Item zentrieren.
-	label.resized.connect(func():
-		label.position = Vector2(-label.size.x * 0.5, 4), CONNECT_ONE_SHOT)
-
+	var node := DroppedItem.new()
+	node.setup(item_id, count)
 	_world.props_root.add_child(node)
 	node.global_position = _world.cell_to_world(cell, lvl)
 	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell, "level": lvl}
