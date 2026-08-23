@@ -108,6 +108,9 @@ var _reach_bed := false
 var _bed_cell := Vector2i.ZERO
 var _sleep_return_pos := Vector2.ZERO
 var _sleep_return_level := 0
+## Der aufsteigende Zzz-Effekt, solange Jack liegt (rein optisch, siehe
+## sleep_zzz.gd). Haengt an der Figur und wandert beim Ebenenwechsel mit.
+var _zzz: SleepZzz = null
 
 
 func _ready() -> void:
@@ -460,11 +463,17 @@ func _lie_down(cell: Vector2i) -> void:
 	_sleeping = true
 	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
+	if _zzz == null:
+		_zzz = SleepZzz.new()
+		add_child(_zzz)
 
 
 ## Weckt Jack: zurück auf die gemerkte Standfläche, normale Anzeige.
 func _wake_up() -> void:
 	_sleeping = false
+	if _zzz != null:
+		_zzz.queue_free()
+		_zzz = null
 	global_position = _sleep_return_pos
 	level = _sleep_return_level
 	_reparent_to_level()

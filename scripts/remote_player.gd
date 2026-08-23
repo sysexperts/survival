@@ -17,6 +17,7 @@ const SPRITE_OFFSET := Vector2(0, -18)
 
 var _sprite: AnimatedSprite2D
 var _plate: NamePlate
+var _zzz: SleepZzz = null
 
 
 func _ready() -> void:
@@ -60,6 +61,16 @@ func apply_state(pos: Vector2, anim: StringName, frame: int) -> void:
 	if _sprite.animation != anim and FRAMES.has_animation(anim):
 		_sprite.play(anim)
 	_sprite.frame = frame
+	# Schlaeft der Mitspieler, denselben Zzz-Effekt zeigen wie bei der eigenen
+	# Figur. Rein lokal gezeichnet - die Schlaf-Animation kommt ja schon
+	# synchron ueber das Netz, jede Seite ergaenzt ihr eigenes Zzz.
+	var sleeping := String(anim).begins_with("sleep_")
+	if sleeping and _zzz == null:
+		_zzz = SleepZzz.new()
+		add_child(_zzz)
+	elif not sleeping and _zzz != null:
+		_zzz.queue_free()
+		_zzz = null
 
 
 func _process(delta: float) -> void:
