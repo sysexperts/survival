@@ -31,11 +31,17 @@ var station_huds: Dictionary = {}
 var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
-## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null (siehe Net.is_admin).
+## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null.
 ## Per preload statt ueber den class_name CreativeHUD - sonst kennt der
 ## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
 const CreativeHUDScript := preload("res://scripts/creative_hud.gd")
 var creative: Node
+## Admin-Namen (kleingeschrieben). Bewusst HIER statt in Net.is_admin(): Net ist
+## ein Autoload und wird beim Programmstart aus der Basis-.exe instanziert - die
+## per Auto-Update geladene game.pck ersetzt das laufende Autoload NICHT, seine
+## neuen Methoden fehlen also. Dieses Skript kommt dagegen frisch aus der pck.
+const ADMINS := ["serdar"]
+var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
 ## Als String statt bool, weil es jetzt mehrere Sorten gibt.
@@ -68,8 +74,9 @@ func _ready() -> void:
 
 	# Admins bekommen das Kreativ-Inventar (Taste X). Nur dann gebaut, damit
 	# es fuer normale Spieler gar nicht erst existiert.
-	print("[Admin] player_name='%s' is_admin=%s" % [Net.player_name, Net.is_admin()])
-	if Net.is_admin():
+	_is_admin = String(Net.player_name).strip_edges().to_lower() in ADMINS
+	print("[Admin] player_name='%s' is_admin=%s" % [Net.player_name, _is_admin])
+	if _is_admin:
 		creative = CreativeHUDScript.new()
 		add_child(creative)
 		creative.setup(inventory)
@@ -261,7 +268,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Admin-Kreativinventar auf/zu. physical_keycode als Fallback fuer
 		# abweichende Tastatur-Layouts. Log, damit wir sehen ob die Taste
 		# ankommt und ob der Admin-Modus aktiv ist.
-		print("[Admin] X gedrueckt - creative=%s is_admin=%s" % [creative != null, Net.is_admin()])
+		print("[Admin] X gedrueckt - creative=%s is_admin=%s" % [creative != null, _is_admin])
 		if creative != null:
 			if hud.bag_open():
 				hud.toggle_bag()
