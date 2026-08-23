@@ -133,7 +133,7 @@ const AudioHelper := preload("res://scripts/audio.gd")
 const FOOTSTEP_STREAM := preload("res://assets/sounds/laufen_auf_gras.wav")
 ## Grundlautstaerke in dB (negativ = leiser). Der Loop ist recht praesent,
 ## deshalb deutlich abgesenkt, damit er nicht nervt.
-const FOOTSTEP_DB := -16.0
+const FOOTSTEP_DB := 0.0   # DIAGNOSE (v51): laut, danach zurueck auf -16
 ## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
 const FOOTSTEP_MIN_MOVE := 0.1
@@ -189,6 +189,7 @@ func _process(delta: float) -> void:
 ## Jack still). Ueber die Positions-Differenz, nicht ueber die Animation, damit
 ## keine Sonderfaelle vergessen werden.
 func _update_footsteps() -> void:
+	return   # DIAGNOSE (v51): Kopplung aus, Sound laeuft dauerhaft (siehe _setup)
 	if _footsteps == null:
 		return
 	var moved := global_position.distance_to(_last_pos)
@@ -217,6 +218,12 @@ func _setup_footsteps() -> void:
 	_footsteps.volume_db = FOOTSTEP_DB
 	add_child(_footsteps)
 	_last_pos = global_position
+	# DIAGNOSE (v51): dauerhaft abspielen, um zu pruefen ob ueberhaupt Ton
+	# ankommt. Danach wieder entfernen und normal an die Bewegung koppeln.
+	_footsteps.play()
+	print("[Audio] footsteps setup: bus=%s idx=%d master_mute=%s" % [
+		_footsteps.bus, AudioServer.get_bus_index(AudioHelper.EFFECTS_BUS),
+		AudioServer.is_bus_mute(0)])
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die

@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://b282gufgrj3wp" path="res://assets/characters/jack/jack_walk.png" id="2_walk"]
 [ext_resource type="Texture2D" uid="uid://cci2jcekhup7m" path="res://assets/characters/jack/jack_run.png" id="3_run"]
 [ext_resource type="Texture2D" uid="uid://x3kjnkavxwe3" path="res://assets/characters/jack/jack_axe.png" id="4_axe"]
-[ext_resource type="Texture2D" path="res://assets/characters/jack/jack_sleeping.png" id="5_sleep"]
+[ext_resource type="Texture2D" uid="uid://o8olghgenxye" path="res://assets/characters/jack/jack_sleeping.png" id="5_sleep"]
 
 [sub_resource type="AtlasTexture" id="At_axe_2_0"]
 atlas = ExtResource("4_axe")
@@ -566,6 +566,46 @@ atlas = ExtResource("3_run")
 region = Rect2(218, 434, 68, 68)
 filter_clip = true
 
+[sub_resource type="AtlasTexture" id="At_sleep_2"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 146, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_4"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 290, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_3"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 218, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_5"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 362, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_0"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 2, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_1"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 74, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_7"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 506, 68, 68)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="At_sleep_6"]
+atlas = ExtResource("5_sleep")
+region = Rect2(2, 434, 68, 68)
+filter_clip = true
+
 [sub_resource type="AtlasTexture" id="At_walk_2_0"]
 atlas = ExtResource("2_walk")
 region = Rect2(2, 146, 68, 68)
@@ -804,46 +844,6 @@ filter_clip = true
 [sub_resource type="AtlasTexture" id="At_walk_6_5"]
 atlas = ExtResource("2_walk")
 region = Rect2(362, 434, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_0"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 2, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_1"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 74, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_2"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 146, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_3"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 218, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_4"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 290, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_5"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 362, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_6"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 434, 68, 68)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="At_sleep_7"]
-atlas = ExtResource("5_sleep")
-region = Rect2(2, 506, 68, 68)
 filter_clip = true
 
 [resource]
@@ -1307,6 +1307,70 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("At_sleep_2")
+}],
+"loop": 1,
+"name": &"sleep_east",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_4")
+}],
+"loop": 1,
+"name": &"sleep_north",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_3")
+}],
+"loop": 1,
+"name": &"sleep_north_east",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_5")
+}],
+"loop": 1,
+"name": &"sleep_north_west",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_0")
+}],
+"loop": 1,
+"name": &"sleep_south",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_1")
+}],
+"loop": 1,
+"name": &"sleep_south_east",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_7")
+}],
+"loop": 1,
+"name": &"sleep_south_west",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("At_sleep_6")
+}],
+"loop": 1,
+"name": &"sleep_west",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("At_walk_2_0")
 }, {
 "duration": 1.0,
@@ -1488,68 +1552,4 @@ animations = [{
 "loop": 1,
 "name": &"walk_west",
 "speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_0")
-}],
-"loop": 1,
-"name": &"sleep_south",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_1")
-}],
-"loop": 1,
-"name": &"sleep_south_east",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_2")
-}],
-"loop": 1,
-"name": &"sleep_east",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_3")
-}],
-"loop": 1,
-"name": &"sleep_north_east",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_4")
-}],
-"loop": 1,
-"name": &"sleep_north",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_5")
-}],
-"loop": 1,
-"name": &"sleep_north_west",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_6")
-}],
-"loop": 1,
-"name": &"sleep_west",
-"speed": 1.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("At_sleep_7")
-}],
-"loop": 1,
-"name": &"sleep_south_west",
-"speed": 1.0
 }]

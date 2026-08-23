@@ -4,20 +4,20 @@
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://ceeulcyrss7qf" path="res://scripts/follow_camera.gd" id="3_cam"]
 [ext_resource type="Script" uid="uid://blgm6hugtqdx0" path="res://scripts/day_night.gd" id="4_daynight"]
-[ext_resource type="Script" path="res://scripts/interaction.gd" id="6_interaction"]
-[ext_resource type="Script" path="res://scripts/regrowth.gd" id="7_regrowth"]
-[ext_resource type="Script" path="res://scripts/chunk_manager.gd" id="10_chunks"]
-[ext_resource type="Script" path="res://scripts/minimap.gd" id="11_minimap"]
-[ext_resource type="Script" path="res://scripts/waypoint_arrow.gd" id="12_wparrow"]
-[ext_resource type="Script" path="res://scripts/player_inventory.gd" id="8_inventory"]
-[ext_resource type="Script" path="res://scripts/net_game.gd" id="13_net"]
-[ext_resource type="Script" path="res://scripts/chat.gd" id="14_chat"]
-[ext_resource type="Script" path="res://scripts/world_sync.gd" id="15_wsync"]
-[ext_resource type="Script" path="res://scripts/announce.gd" id="16_announce"]
-[ext_resource type="Script" path="res://scripts/save_sync.gd" id="17_save"]
-[ext_resource type="Script" path="res://scripts/time_sync.gd" id="18_time"]
-[ext_resource type="Script" path="res://scripts/drop_sync.gd" id="19_drop"]
-[ext_resource type="Script" path="res://scripts/deer_spawner.gd" id="20_deer"]
+[ext_resource type="Script" uid="uid://b7icvkbcu5vi5" path="res://scripts/interaction.gd" id="6_interaction"]
+[ext_resource type="Script" uid="uid://caokvgsfk58kk" path="res://scripts/regrowth.gd" id="7_regrowth"]
+[ext_resource type="Script" uid="uid://do0ng8w2s177p" path="res://scripts/player_inventory.gd" id="8_inventory"]
+[ext_resource type="Script" uid="uid://bau4vuxubp1fn" path="res://scripts/chunk_manager.gd" id="10_chunks"]
+[ext_resource type="Script" uid="uid://bvci1c7baps6f" path="res://scripts/minimap.gd" id="11_minimap"]
+[ext_resource type="Script" uid="uid://dp28ei5iyusve" path="res://scripts/waypoint_arrow.gd" id="12_wparrow"]
+[ext_resource type="Script" uid="uid://bigo1i46ddhyw" path="res://scripts/net_game.gd" id="13_net"]
+[ext_resource type="Script" uid="uid://bn42ux0xjr5sn" path="res://scripts/chat.gd" id="14_chat"]
+[ext_resource type="Script" uid="uid://bgkv8vxi0fwsm" path="res://scripts/world_sync.gd" id="15_wsync"]
+[ext_resource type="Script" uid="uid://bmnblnc3dcf1e" path="res://scripts/announce.gd" id="16_announce"]
+[ext_resource type="Script" uid="uid://cpjmtt32nfwdd" path="res://scripts/save_sync.gd" id="17_save"]
+[ext_resource type="Script" uid="uid://by60en3odwh20" path="res://scripts/time_sync.gd" id="18_time"]
+[ext_resource type="Script" uid="uid://c7t137mixxp86" path="res://scripts/drop_sync.gd" id="19_drop"]
+[ext_resource type="Script" uid="uid://b65h4ghj5g1mg" path="res://scripts/deer_spawner.gd" id="20_deer"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -41,45 +41,43 @@ colors = PackedColorArray(0.52, 0.58, 0.85, 1, 0.56, 0.61, 0.86, 1, 0.86, 0.78, 
 environment = SubResource("Environment_look")
 
 [node name="DayNight" type="CanvasModulate" parent="." unique_id=1710911532]
-color = Color(1, 0.85901755, 0.7932568, 1)
+color = Color(1, 0.92, 0.83000004, 1)
 script = ExtResource("4_daynight")
 sky_gradient = SubResource("Gradient_tbgi4")
 
 [node name="World" parent="." unique_id=464865076 instance=ExtResource("1_world")]
+position = Vector2(-16, -10)
 
 [node name="Player" parent="." unique_id=175672993 instance=ExtResource("2_player")]
 
-[node name="Interaction" type="Node2D" parent="."]
+[node name="Interaction" type="Node2D" parent="." unique_id=1327089021]
 script = ExtResource("6_interaction")
-world_path = NodePath("../World")
 
-[node name="Regrowth" type="Node" parent="."]
+[node name="Regrowth" type="Node" parent="." unique_id=1998635223]
 script = ExtResource("7_regrowth")
-world_path = NodePath("../World")
 
-[node name="ChunkManager" type="Node" parent="."]
+[node name="ChunkManager" type="Node" parent="." unique_id=436195296]
 script = ExtResource("10_chunks")
-world_path = NodePath("../World")
 
-[node name="Inventory" type="Node" parent="."]
+[node name="Inventory" type="Node" parent="." unique_id=1106685324]
 script = ExtResource("8_inventory")
 
-[node name="NetGame" type="Node" parent="."]
+[node name="NetGame" type="Node" parent="." unique_id=557208394]
 script = ExtResource("13_net")
 
-[node name="WorldSync" type="Node" parent="."]
+[node name="WorldSync" type="Node" parent="." unique_id=1651533851]
 script = ExtResource("15_wsync")
 
-[node name="SaveSync" type="Node" parent="."]
+[node name="SaveSync" type="Node" parent="." unique_id=390770508]
 script = ExtResource("17_save")
 
-[node name="TimeSync" type="Node" parent="."]
+[node name="TimeSync" type="Node" parent="." unique_id=154337178]
 script = ExtResource("18_time")
 
-[node name="DropSync" type="Node" parent="."]
+[node name="DropSync" type="Node" parent="." unique_id=564958281]
 script = ExtResource("19_drop")
 
-[node name="DeerSpawner" type="Node" parent="."]
+[node name="DeerSpawner" type="Node" parent="." unique_id=1564797178]
 script = ExtResource("20_deer")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
@@ -89,14 +87,22 @@ script = ExtResource("3_cam")
 [node name="Overlay" type="CanvasLayer" parent="." unique_id=1668305282]
 layer = 100
 
-[node name="Minimap" type="Control" parent="Overlay"]
+[node name="Minimap" type="Control" parent="Overlay" unique_id=1801720313]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("11_minimap")
 
-[node name="WaypointArrow" type="Control" parent="Overlay"]
+[node name="WaypointArrow" type="Control" parent="Overlay" unique_id=598692965]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("12_wparrow")
 
-[node name="Chat" type="Control" parent="Overlay"]
+[node name="Chat" type="Control" parent="Overlay" unique_id=1045668376]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("14_chat")
 
-[node name="Announce" type="Control" parent="Overlay"]
+[node name="Announce" type="Control" parent="Overlay" unique_id=1675334165]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("16_announce")
