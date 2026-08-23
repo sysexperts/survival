@@ -1,7 +1,11 @@
 extends CanvasLayer
-class_name CreativeHUD
 
 ## Kreativ-Inventar fuer Admins (Taste X, siehe Net.is_admin).
+##
+## KEIN class_name: dieses Skript wird ausschliesslich per preload eingebunden
+## (player_inventory.gd). Ein class_name wuerde vom Auto-Updater nicht
+## registriert (die Basis-.exe kennt ihn beim Start nicht) und koennte auf dem
+## ausgelieferten Client Aerger machen - siehe chunk_manager.gd/WorldGen.
 ##
 ## Zeigt ALLE bekannten Gegenstaende in einem Raster. Ein Klick legt einen
 ## vollen Stapel ins Inventar. Rein clientseitig - der Vorrat kommt aus dem

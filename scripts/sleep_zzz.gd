@@ -1,7 +1,10 @@
 extends Node2D
-class_name SleepZzz
 
 ## Aufsteigende "Z"-Zeichen ueber einer schlafenden Figur.
+##
+## KEIN class_name: wird nur per preload eingebunden (player.gd,
+## remote_player.gd) - so haengt nichts an der Klassen-Registrierung, die der
+## Auto-Updater nicht auffrischt (siehe chunk_manager.gd/WorldGen).
 ##
 ## Bewusst selbst gezeichnet (wie das Namensschild) statt Partikel: die
 ## Glyphen kommen aus demselben Bitmap-Font wie die restliche Oberflaeche,
