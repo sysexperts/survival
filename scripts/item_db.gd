@@ -92,6 +92,75 @@ static var ITEMS := {
 		"sheet": SHEET_ITEMS,
 		"item_cell": Vector2i(9, 14),
 	},
+
+	# --- Neue Materialien (Icons als Einzel-PNG unter assets/game_assets) ----
+	# Kil und Demir sind Rohstoffe fuer Ofen bzw. Eisenwerkzeuge. Sammel-/
+	# Schmelzkette steht noch aus (siehe Outline-Notizen).
+	"kil": {
+		"name": "Kil", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/clay.png",
+	},
+	"demir": {
+		"name": "Demir", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/iron.png",
+	},
+	# Islenmis Sopa = bearbeiteter Griff, Zutat der Eisenwerkzeuge.
+	"islenmis_sopa": {
+		"name": "Islenmis Sopa", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/wooden_handle.png",
+	},
+
+	# --- Steinwerkzeuge (Basit Üretim Masasi) -------------------------------
+	# Dayaniklilik wie die Steinaxt (200). Funktion (Abbau) folgt spaeter -
+	# vorerst nur craftbar, siehe Outline.
+	"kazma": {
+		"name": "Tas Kazma", "max_stack": 1, "durability": 200,
+		"texture": "res://assets/game_assets/tools/stone_pickaxe.png",
+	},
+	"kurek": {
+		"name": "Tas Kürek", "max_stack": 1, "durability": 200,
+		"texture": "res://assets/game_assets/tools/stone_shovel.png",
+	},
+	"cekic": {
+		"name": "Tas Cekic", "max_stack": 1, "durability": 200,
+		"texture": "res://assets/game_assets/tools/stone_hammer.png",
+	},
+	"capa": {
+		"name": "Tas Capa", "max_stack": 1, "durability": 200,
+		"texture": "res://assets/game_assets/tools/stone_hoe.png",
+	},
+	"bicak": {
+		"name": "Tas Bicak", "max_stack": 1, "durability": 200,
+		"texture": "res://assets/game_assets/tools/stone_knife.png",
+	},
+
+	# --- Eisenwerkzeuge (Ileri Üretim Masasi) -------------------------------
+	# Haerter als Stein -> mehr Dayaniklilik (500). Zutat Islenmis Sopa + Demir
+	# hat noch keine Herstellkette (Outline-Notiz).
+	"demir_balta": {
+		"name": "Demir Balta", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_axe.png",
+	},
+	"demir_kazma": {
+		"name": "Demir Kazma", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_pickaxe.png",
+	},
+	"demir_kurek": {
+		"name": "Demir Kürek", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_shovel.png",
+	},
+	"demir_cekic": {
+		"name": "Demir Cekic", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_hammer.png",
+	},
+	"demir_capa": {
+		"name": "Demir Capa", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_hoe.png",
+	},
+	"demir_bicak": {
+		"name": "Demir Bicak", "max_stack": 1, "durability": 500,
+		"texture": "res://assets/game_assets/items/iron_knife.png",
+	},
 }
 
 ## Die Einrichtung aus `basic furniture.png`, als {id: [Name, Zelle]}.
@@ -115,6 +184,10 @@ const FURNITURE := {
 	"su_ficisi": ["Su Ficisi", Vector2i(2, 2)],
 	"tabure": ["Tabure", Vector2i(3, 2)],
 	"yukseltilmis_tarha": ["Yükseltilmis Tarha", Vector2i(4, 2)],
+	# Ileri-Baenke: noch kein eigenes Sprite - vorerst dasselbe Icon wie die
+	# einfache Bank/Weberei als Platzhalter (siehe Outline-Notiz).
+	"ileri_uretim_masasi": ["Ileri Üretim Masasi", Vector2i(0, 1)],
+	"ileri_dokuma_tezgahi": ["Ileri Dokuma Tezgahi", Vector2i(3, 1)],
 }
 
 
@@ -217,6 +290,11 @@ static func icon(id: String) -> Texture2D:
 	if not ITEMS.has(id):
 		return null
 	var info: Dictionary = ITEMS[id]
+	# Einzel-PNG (game_assets): das ganze Bild ist das Icon, kein Atlas noetig.
+	if info.has("texture"):
+		var whole: Texture2D = load(info["texture"])
+		_icons[id] = whole
+		return whole
 	var tex := AtlasTexture.new()
 	tex.atlas = load(info["sheet"])
 	if info.has("item_cell"):

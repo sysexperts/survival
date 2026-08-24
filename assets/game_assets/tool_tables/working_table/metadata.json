@@ -1,0 +1,73 @@
+{
+  "group_id": "16d295b6-abf7-4917-9184-bbc914a254fd",
+  "objects": [
+    {
+      "id": "8ff1aea9-7606-4486-9559-14ae755a0dba",
+      "name": "base",
+      "prompt": "pixelart isometric working table",
+      "size": {
+        "width": 68,
+        "height": 68
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    },
+    {
+      "id": "f368a819-01d3-48cb-a1d4-ed304811c04f",
+      "name": "make the table more",
+      "prompt": "pixelart isometric working table",
+      "size": {
+        "width": 68,
+        "height": 68
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    },
+    {
+      "id": "2d8ab1b1-c8c0-4e44-a9ce-037bc1eab916",
+      "name": "make bigger working",
+      "prompt": "pixelart isometric working table",
+      "size": {
+        "width": 68,
+        "height": 68
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    }
+  ],
+  "export_version": "1.1",
+  "export_date": "2026-08-24T18:29:05.208626"
+}
