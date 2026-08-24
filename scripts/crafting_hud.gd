@@ -21,6 +21,8 @@ const PAD := 4
 const SMALL := 11
 ## Obergrenze des Stückzahl-Reglers.
 const MAX_BATCH := 99
+## Höhe des scrollbaren Rezeptbereichs (px). Deckelt die Fensterhöhe.
+const LIST_HEIGHT := 460
 
 var inventory: Inventory
 var queue: CraftQueue
@@ -134,10 +136,20 @@ func _build() -> void:
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(head)
 
+	# Rezeptliste in einem Scrollfeld fester Höhe: lange Listen (z. B. an der
+	# Ileri-Bank) laufen sonst unten aus dem Bildschirm und liessen sich nicht
+	# erreichen. Die Höhe deckelt das Fenster, der Inhalt scrollt darin.
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, LIST_HEIGHT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+
 	# Behälter, der beim Tab-Wechsel neu befüllt wird.
 	_rows_box = VBoxContainer.new()
 	_rows_box.add_theme_constant_override("separation", 8)
-	column.add_child(_rows_box)
+	_rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_rows_box)
 
 	column.add_child(HSeparator.new())
 	column.add_child(_make_queue())
