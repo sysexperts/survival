@@ -88,11 +88,12 @@ func begin_furniture(id: String) -> void:
 	visible = true
 
 
-## Dreht das Moebel eine Stufe weiter (N/O/S/W). Beim Lagerfeuer wirkungslos.
+## Dreht das Moebel eine Stufe weiter (8 Richtungen im Uhrzeigersinn).
+## Nicht-Richtungs-Moebel spiegeln dabei nur (ungerade Stufe).
 func rotate_step() -> void:
 	if not active or kind != Kind.FURNITURE:
 		return
-	orient = (orient + 1) % 4
+	orient = (orient + 1) % 8
 	_apply_orient()
 
 

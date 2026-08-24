@@ -203,9 +203,13 @@ const DIRSPRITES := {
 	"eritme_firini": "res://assets/game_assets/tool_tables/melting_oven/isometric_pixelart/rotations",
 }
 
-## orient 0..3 -> Dateiname der Richtung. Nur 4 Richtungen (N/O/S/W) sind im
-## Spiel drehbar; die Diagonalen des Sprite-Satzes bleiben ungenutzt.
-const DIR_FILE := ["south", "east", "north", "west"]
+## orient 0..7 -> Dateiname der Richtung, im Uhrzeigersinn ab Sued. Alle acht
+## Richtungen sind drehbar - so laesst sich ein Tisch exakt buendig ausrichten.
+const DIR_FILE := ["south", "south-east", "east", "north-east",
+	"north", "north-west", "west", "south-west"]
+
+## Ausrichtung fuers Inventar-/Vorschau-Icon (schraege Ansicht statt frontal).
+const ICON_ORIENT := 1   # south-east
 
 
 ## Hat dieses Moebel einen Richtungs-Sprite-Satz?
@@ -220,7 +224,7 @@ static func dir_texture(id: String, orient: int) -> Texture2D:
 	var key := "%s#%d" % [id, orient]
 	if _icons.has(key):
 		return _icons[key]
-	var img: Texture2D = load("%s/%s.png" % [DIRSPRITES[id], DIR_FILE[orient % 4]])
+	var img: Texture2D = load("%s/%s.png" % [DIRSPRITES[id], DIR_FILE[orient % 8]])
 	var tex := AtlasTexture.new()
 	tex.atlas = img
 	tex.region = Rect2(Vector2.ZERO, img.get_size())
@@ -325,9 +329,10 @@ static func icon(id: String) -> Texture2D:
 	_ensure()
 	if _icons.has(id):
 		return _icons[id]
-	# Richtungs-Moebel: das Inventar-/Vorschau-Icon ist die Suedansicht.
+	# Richtungs-Moebel: als Inventar-Icon die schraege Ansicht (lebendiger als
+	# frontal), bei allen dieselbe Richtung.
 	if has_dirs(id):
-		var t := dir_texture(id, 0)
+		var t := dir_texture(id, ICON_ORIENT)
 		_icons[id] = t
 		return t
 	if not ITEMS.has(id):
