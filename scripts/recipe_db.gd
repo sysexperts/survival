@@ -30,6 +30,57 @@ const STATIONS := [WERKBANK, WEBETISCH, ILERI_WERKBANK]
 static func is_station(id: String) -> bool:
 	return id in STATIONS
 
+
+# --- Kategorien (Tabs im Handwerk-Fenster) ------------------------------ #
+# Reihenfolge der Tabs von oben nach unten. Jede Kategorie hat einen Namen
+# und ein stellvertretendes Icon (ein Item, dessen Grafik den Tab schmueckt).
+const CAT_ORDER := ["masa", "alet", "malzeme", "mobilya"]
+const CATEGORIES := {
+	"masa": {"name": "Masalar", "icon": "calisma_tezgahi"},
+	"alet": {"name": "Aletler", "icon": "balta"},
+	"malzeme": {"name": "Malzemeler", "icon": "tahta"},
+	"mobilya": {"name": "Mobilya", "icon": "yatak"},
+}
+## Kategorie je Ergebnis-Item. Was hier fehlt, gilt als "malzeme".
+const CAT_OF := {
+	"calisma_tezgahi": "masa", "dokuma_tezgahi": "masa",
+	"ileri_uretim_masasi": "masa", "ileri_dokuma_tezgahi": "masa",
+	"eritme_firini": "masa", "kamp_atesi": "masa",
+	"balta": "alet", "kazma": "alet", "kurek": "alet", "cekic": "alet",
+	"capa": "alet", "bicak": "alet",
+	"demir_balta": "alet", "demir_kazma": "alet", "demir_kurek": "alet",
+	"demir_cekic": "alet", "demir_capa": "alet", "demir_bicak": "alet",
+	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
+	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
+	"yatak": "mobilya", "portatif_yatak": "mobilya",
+}
+
+
+## Kategorie eines Rezepts.
+static func cat_of(recipe: Dictionary) -> String:
+	return CAT_OF.get(recipe["out"], "malzeme")
+
+
+## Die an dieser Station vorhandenen Kategorien, in fester Reihenfolge.
+static func categories_for(station: String) -> Array:
+	var present := {}
+	for r in for_station(station):
+		present[cat_of(r)] = true
+	var out: Array = []
+	for c in CAT_ORDER:
+		if present.has(c):
+			out.append(c)
+	return out
+
+
+## Rezepte einer Station, gefiltert auf eine Kategorie.
+static func for_station_cat(station: String, cat: String) -> Array:
+	var out: Array = []
+	for r in for_station(station):
+		if cat_of(r) == cat:
+			out.append(r)
+	return out
+
 const RECIPES := [
 	{
 		"out": "tahta", "count": 1, "station": HAND, "seconds": 1.0,
@@ -47,13 +98,12 @@ const RECIPES := [
 		"out": "dokuma_tezgahi", "count": 1, "station": HAND, "seconds": 8.0,
 		"cost": {"tahta": 16, "halat": 16},
 	},
-	# An der Werkbank: die Steinaxt. Griff (Brett), Kopf (Stein), Bindung
-	# (Seil). Erst damit lassen sich Baeume faellen - Player.chop() verlangt
-	# eine Axt in der Hand. Kosten sind ein erster Vorschlag, leicht zu
-	# aendern.
+	# Tas Balta (Steinaxt): wie die anderen Steinwerkzeuge aus Ast + Stein.
+	# Erst damit lassen sich Baeume faellen - Player.chop() verlangt eine Axt
+	# in der Hand.
 	{
 		"out": "balta", "count": 1, "station": WERKBANK, "seconds": 4.0,
-		"cost": {"tahta": 2, "tas": 3, "halat": 1},
+		"cost": {"odun": 2, "tas": 3},
 	},
 	# Weberei: aus Pflanzenfaser wird Schnur, aus Schnur wird Stoff. Der
 	# Stoff ist die Grundlage fuer Betten und spaeter Kleidung.

@@ -77,10 +77,9 @@ static var ITEMS := {
 		"item_cell": Vector2i(15, 3),   # gerollter Stoffballen
 	},
 	"balta": {
-		"name": "Balta",
+		"name": "Tas Balta",
 		"max_stack": 1,
-		"sheet": SHEET_ITEMS,
-		"item_cell": Vector2i(15, 5),
+		"texture": "res://assets/game_assets/tools/stone_axe.png",
 		# Dayaniklilik: her balta darbesi 1 harcar, 0'da kirilir. Kural: malzeme
 		# ne kadar sertse o kadar cok darbe. Tas balta = 200 (en dusuk seviye);
 		# demir/celik baltalar geldiginde bu deger artacak.

@@ -29,7 +29,11 @@ var title := "Üretim"
 
 var _dim: ColorRect
 var _panel: PanelContainer
-var _rows: Array = []          ## je Rezept: siehe _make_row
+var _rows: Array = []          ## je Rezept der aktuellen Kategorie: siehe _make_row
+var _cat := ""                 ## aktive Kategorie (Tab)
+var _tabs_box: VBoxContainer   ## linke Tab-Spalte
+var _rows_box: VBoxContainer   ## rechter Rezept-Behälter (pro Tab neu gefüllt)
+var _tab_buttons: Dictionary = {}  ## Kategorie -> Button
 var _queue_box: VBoxContainer
 var _queue_empty: Label
 var _bar: ProgressBar
@@ -110,20 +114,82 @@ func _build() -> void:
 	_panel.add_theme_stylebox_override("panel", _frame())
 	center.add_child(_panel)
 
+	# Aussen: links die Kategorie-Tabs, rechts der Inhalt (Titel, Rezepte,
+	# Warteschlange). Wie in der Doku nach Kategorien getrennt.
+	var outer := HBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
+	_panel.add_child(outer)
+
+	_tabs_box = VBoxContainer.new()
+	_tabs_box.add_theme_constant_override("separation", 6)
+	outer.add_child(_tabs_box)
+
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	_panel.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(column)
 
 	var head := Label.new()
 	head.text = title
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(head)
 
-	for recipe in RecipeDB.for_station(station):
-		column.add_child(_make_row(recipe))
+	# Behälter, der beim Tab-Wechsel neu befüllt wird.
+	_rows_box = VBoxContainer.new()
+	_rows_box.add_theme_constant_override("separation", 8)
+	column.add_child(_rows_box)
 
 	column.add_child(HSeparator.new())
 	column.add_child(_make_queue())
+
+	_build_tabs()
+	_populate_rows()
+
+
+# --- Kategorie-Tabs -----------------------------------------------------
+
+func _build_tabs() -> void:
+	_tab_buttons.clear()
+	var cats := RecipeDB.categories_for(station)
+	if not cats.is_empty() and not cats.has(_cat):
+		_cat = cats[0]
+	for cat in cats:
+		var info: Dictionary = RecipeDB.CATEGORIES[cat]
+		var b := Button.new()
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(SLOT + 12, SLOT + 12)
+		b.tooltip_text = info["name"]
+		b.icon = ItemDB.icon(info["icon"])
+		b.expand_icon = true
+		b.pressed.connect(_on_tab.bind(cat))
+		_tabs_box.add_child(b)
+		_tab_buttons[cat] = b
+	_sync_tab_state()
+
+
+func _on_tab(cat: String) -> void:
+	if cat == _cat:
+		_sync_tab_state()   # nicht abwählbar - gedrückt lassen
+		return
+	_cat = cat
+	_sync_tab_state()
+	_populate_rows()
+	_refresh()
+
+
+## Nur der aktive Tab bleibt gedrückt.
+func _sync_tab_state() -> void:
+	for cat in _tab_buttons:
+		_tab_buttons[cat].button_pressed = (cat == _cat)
+
+
+## Baut die Rezeptzeilen der aktuellen Kategorie neu auf.
+func _populate_rows() -> void:
+	for child in _rows_box.get_children():
+		child.queue_free()
+	_rows.clear()
+	for recipe in RecipeDB.for_station_cat(station, _cat):
+		_rows_box.add_child(_make_row(recipe))
 
 
 func _make_row(recipe: Dictionary) -> Control:
