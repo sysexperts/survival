@@ -28,9 +28,9 @@ var active := false
 var valid := false
 var top_cell := Vector2i.ZERO
 var kind := Kind.CAMPFIRE
-## Bei Moebeln: welches Item gesetzt wird und ob gespiegelt.
+## Bei Moebeln: welches Item gesetzt wird und die Ausrichtung 0..3 (S/O/N/W).
 var item_id := ""
-var flipped := false
+var orient := 0
 var _long := false                ## Moebel belegt 1x2 statt 1x1
 
 var _anim: AnimatedSprite2D       ## Lagerfeuer
@@ -76,25 +76,34 @@ func begin_campfire() -> void:
 func begin_furniture(id: String) -> void:
 	kind = Kind.FURNITURE
 	item_id = id
-	flipped = false
+	orient = 0
 	_long = Furniture.is_long(id)
-	_still.texture = ItemDB.icon(id)
 	_still.offset = Furniture.offset_of(id)
 	var s := Furniture.scale_of(id)
 	_still.scale = Vector2(s, s)
-	_still.flip_h = false
+	_apply_orient()
 	_still.visible = true
 	_anim.visible = false
 	active = true
 	visible = true
 
 
-## Dreht das Moebel (spiegeln). Beim Lagerfeuer wirkungslos.
-func flip() -> void:
+## Dreht das Moebel eine Stufe weiter (N/O/S/W). Beim Lagerfeuer wirkungslos.
+func rotate_step() -> void:
 	if not active or kind != Kind.FURNITURE:
 		return
-	flipped = not flipped
-	_still.flip_h = flipped
+	orient = (orient + 1) % 4
+	_apply_orient()
+
+
+## Setzt Sprite/Spiegelung passend zur aktuellen Ausrichtung.
+func _apply_orient() -> void:
+	if ItemDB.has_dirs(item_id):
+		_still.texture = ItemDB.dir_texture(item_id, orient)
+		_still.flip_h = false
+	else:
+		_still.texture = ItemDB.icon(item_id)
+		_still.flip_h = (orient % 2 == 1)
 
 
 func cancel() -> void:

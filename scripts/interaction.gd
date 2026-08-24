@@ -14,7 +14,7 @@ var player: Player
 var highlight: Sprite2D
 var _hovered: Array = []           ## [cell, level, atlas] oder leer
 var _furn_hover: Array = []        ## [cell, Furniture] oder leer
-var _furn_img: Image               ## Moebel-Sheet, einmal geladen (Alpha-Test)
+var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Alpha-Test)
 var preview: PlacementPreview
 
 
@@ -103,9 +103,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			preview.cancel()
 			get_viewport().set_input_as_handled()
 			return
-		# R dreht das Moebel in der Vorschau (spiegeln).
+		# R dreht das Moebel in der Vorschau (N/O/S/W).
 		if event.keycode == KEY_R:
-			preview.flip()
+			preview.rotate_step()
 			get_viewport().set_input_as_handled()
 			return
 	if not (event is InputEventMouseButton and event.pressed) or player == null:
@@ -288,12 +288,16 @@ func _furniture_under_mouse() -> Array:
 
 ## Deckkraft an einer Stelle im Moebel-Bild, in unskalierten Bildpixeln.
 func _furn_alpha(tex: AtlasTexture, local: Vector2) -> float:
-	if _furn_img == null:
-		_furn_img = tex.atlas.get_image()
+	# Je Atlas ein eigenes Bild merken - seit den Richtungs-Tischen gibt es
+	# mehrere Sheets, ein einzelner Cache wuerde die falsche Grafik testen.
+	var atlas: Texture2D = tex.atlas
+	if not _furn_imgs.has(atlas):
+		_furn_imgs[atlas] = tex.atlas.get_image()
+	var img: Image = _furn_imgs[atlas]
 	var px := Vector2i(tex.region.position) + Vector2i(local.floor())
-	if px.x < 0 or px.y < 0 or px.x >= _furn_img.get_width() or px.y >= _furn_img.get_height():
+	if px.x < 0 or px.y < 0 or px.x >= img.get_width() or px.y >= img.get_height():
 		return 0.0
-	return _furn_img.get_pixelv(px).a
+	return img.get_pixelv(px).a
 
 
 ## Vorderstes Prop unter dem Mauszeiger, pixelgenau.

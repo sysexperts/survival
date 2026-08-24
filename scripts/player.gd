@@ -43,7 +43,7 @@ signal reached_station(station: String)
 ## Ein Objekt wurde gesetzt - fuer den Multiplayer-Sync (world_sync.gd), damit
 ## Lagerfeuer und Moebel bei allen erscheinen.
 signal placed_campfire(top: Vector2i)
-signal placed_furniture(id: String, cell: Vector2i, flipped: bool)
+signal placed_furniture(id: String, cell: Vector2i, orient: int)
 ## Ein platziertes Objekt (Moebel/Lagerfeuer) wurde zerstoert. `cell` ist die
 ## Ankerzelle. world_sync entfernt es aus der Persistenz und bei allen anderen.
 ## Es kommt bewusst NICHT ins Inventar zurueck - Zerstoeren heisst weg.
@@ -632,16 +632,16 @@ func _lie_down(cell: Vector2i) -> void:
 	level = bed.level
 	_reparent_to_level()
 	_sleeping = true
-	facing = BED_FACING_FLIPPED if bed.flipped else BED_FACING
+	facing = BED_FACING_FLIPPED if bed.flip_h else BED_FACING
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
 	# Bild auf die Matratze heben; beim gespiegelten Bett den x-Versatz spiegeln.
 	var off: Vector2 = BED_SLEEP_OFFSETS.get(bed.id, BED_SLEEP_OFFSET)
-	if bed.flipped:
+	if bed.flip_h:
 		off.x = -off.x
 	sprite.offset = sprite_offset + off
 	if _zzz == null:
 		_zzz = SleepZzzScript.new()
-		_zzz.mirror = bed.flipped     # Kopf liegt beim gespiegelten Bett rechts
+		_zzz.mirror = bed.flip_h     # Kopf liegt beim gespiegelten Bett rechts
 		add_child(_zzz)
 
 
@@ -836,7 +836,7 @@ func place_campfire_at(top: Vector2i) -> bool:
 ## Stellt ein Moebel auf eine einzelne Zelle. `flipped` spiegelt es.
 ## Gibt false zurueck, wenn dort kein Platz ist - dann wird auch kein Item
 ## verbraucht.
-func place_furniture_at(id: String, cell: Vector2i, flipped: bool) -> bool:
+func place_furniture_at(id: String, cell: Vector2i, orient: int) -> bool:
 	var long := Furniture.is_long(id)
 	var cells: Array[Vector2i] = []
 	if long:
@@ -848,7 +848,7 @@ func place_furniture_at(id: String, cell: Vector2i, flipped: bool) -> bool:
 			return false
 		cells = [cell]
 	var lvl := maxi(world.top_level_at(cell), 0)
-	var f := Furniture.create(world, id, cell, lvl, flipped)
+	var f := Furniture.create(world, id, cell, lvl, orient)
 	world.props_root.add_child(f)
 	f.global_position = world.footprint_long_center(cell, lvl) if long else world.cell_to_world(cell, lvl)
 	for c in cells:
@@ -857,7 +857,7 @@ func place_furniture_at(id: String, cell: Vector2i, flipped: bool) -> bool:
 	f.tree_exiting.connect(func():
 		for c in taken:
 			world.unblock_cell(c))
-	placed_furniture.emit(id, cell, flipped)
+	placed_furniture.emit(id, cell, orient)
 	return true
 
 

@@ -125,29 +125,29 @@ func _on_local_campfire(top: Vector2i) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "campfire", top, 0, Vector2i.ZERO, "", false)
 
 
-func _on_local_furniture(id: String, cell: Vector2i, flipped: bool) -> void:
+func _on_local_furniture(id: String, cell: Vector2i, orient: int) -> void:
 	if _suppress:
 		return
-	_event.rpc(multiplayer.get_unique_id(), "furniture", cell, 0, Vector2i.ZERO, id, flipped)
+	_event.rpc(multiplayer.get_unique_id(), "furniture", cell, 0, Vector2i.ZERO, id, orient)
 
 
 func _on_local_destroy(cell: Vector2i) -> void:
 	if _suppress:
 		return
-	_event.rpc(multiplayer.get_unique_id(), "destroy", cell, 0, Vector2i.ZERO, "", false)
+	_event.rpc(multiplayer.get_unique_id(), "destroy", cell, 0, Vector2i.ZERO, "", 0)
 
 
 # --- Empfang -------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
-func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vector2i, s: String, flag: bool) -> void:
+func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vector2i, s: String, flag: int) -> void:
 	# Server: Bauten ins Register aufnehmen (ueberleben den Neustart) und an
 	# alle anderen Clients weiterreichen.
 	if Net.is_dedicated:
 		if kind == "furniture":
-			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "flipped": flag})
+			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "orient": flag})
 		elif kind == "campfire":
-			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "flipped": false})
+			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "orient": 0})
 		elif kind == "destroy":
 			_remove_build(cell)
 		elif kind == "fell" or kind == "stump" or kind == "stone":
@@ -182,7 +182,7 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 		"furniture":
 			if _player:
 				_suppress = true
-				_player.place_furniture_at(ItemDB.canonical(s), cell, flag)
+				_player.place_furniture_at(ItemDB.canonical(s), cell, flag)  # flag = orient
 				_suppress = false
 		"destroy":
 			# Bei einem anderen Spieler abgerissen -> lokal auch entfernen.
@@ -210,7 +210,7 @@ func _request_builds() -> void:
 	var id := multiplayer.get_remote_sender_id()
 	print("WorldSync(server): sende %d Bauten, %d Abbauten an peer %d" % [_builds.size(), _removed.size(), id])
 	for b in _builds:
-		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), bool(b["flipped"]))
+		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), _orient_of(b))
 	# Abbau-Ereignisse mit der jeweiligen RESTZEIT senden; Abgelaufenes (Baum
 	# nachgewachsen, Stein wieder da) ueberspringen.
 	var now := Time.get_unix_time_from_system()
@@ -226,8 +226,8 @@ func _request_builds() -> void:
 ## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
 ## mit, landet sie in _pending und wird spaeter nachgezogen.
 @rpc("any_peer", "reliable")
-func _spawn_build(kind: String, cell: Vector2i, id: String, flipped: bool) -> void:
-	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "flipped": flipped}
+func _spawn_build(kind: String, cell: Vector2i, id: String, orient: int) -> void:
+	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "orient": orient}
 	var ok := _apply_build(b)
 	print("WorldSync(client): Baute %s '%s' @ %s -> %s" % [kind, id, cell, "gesetzt" if ok else "wartet auf Chunk"])
 	if not ok:
@@ -250,9 +250,17 @@ func _apply_build(b: Dictionary) -> bool:
 		ok = _player.place_campfire_at(cell)
 	else:
 		# Alte deutsche Moebel-Id (aus build.json) auf den neuen Namen heben.
-		ok = _player.place_furniture_at(ItemDB.canonical(String(b["id"])), cell, bool(b["flipped"]))
+		ok = _player.place_furniture_at(ItemDB.canonical(String(b["id"])), cell, _orient_of(b))
 	_suppress = false
 	return ok
+
+
+## Ausrichtung aus einem Bau-Eintrag lesen. Neu: Feld "orient" (0..3). Alt
+## (build.json vor v59): bool "flipped" -> true wird zu 1, false zu 0.
+static func _orient_of(b: Dictionary) -> int:
+	if b.has("orient"):
+		return int(b["orient"])
+	return 1 if bool(b.get("flipped", false)) else 0
 
 
 ## Server: eine Baute ins Register aufnehmen und sofort sichern. Doppelte

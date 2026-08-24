@@ -40,6 +40,12 @@ const CONFIG := {
 	# `tileable`: darf direkt neben anderen Moebeln stehen (Ausnahme von der
 	# Abstandsregel) - damit man aus Hochbeeten ein zusammenhaengendes Feld legt.
 	"yukseltilmis_tarha": {"scale": 32.0 / 58.0, "offset": Vector2(-32, -28), "tileable": true},
+	# Richtungs-Tische (68x68, eigener Sprite-Satz). Mitte x=34, Fuss bei ~60.
+	"calisma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"ileri_uretim_masasi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"ileri_dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"eritme_firini": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 }
 
 
@@ -63,20 +69,22 @@ static func offset_of(id: String) -> Vector2:
 var id := ""
 var cell: Vector2i
 var level: int
-var flipped := false
+## Ausrichtung 0..3 (S/O/N/W). Bei Richtungs-Moebeln waehlt sie den Sprite,
+## bei den uebrigen nur, ob gespiegelt wird (ungerade = gespiegelt).
+var orient := 0
 var world: IsoWorld
 
 
-static func create(p_world: IsoWorld, p_id: String, p_cell: Vector2i, p_level: int, p_flipped: bool) -> Furniture:
+static func create(p_world: IsoWorld, p_id: String, p_cell: Vector2i, p_level: int, p_orient: int) -> Furniture:
 	var f := Furniture.new()
 	f.world = p_world
 	f.id = p_id
 	f.cell = p_cell
 	f.level = p_level
-	f.flipped = p_flipped
-	# ItemDB liefert die 64x64-Region als AtlasTexture - dieselbe, die auch
-	# das Inventar-Icon benutzt, es braucht also keine zweite Grafik.
-	f.texture = ItemDB.icon(p_id)
+	f.orient = p_orient
+	# Richtungs-Moebel bekommen ihren eigenen Sprite je Ausrichtung, alle
+	# anderen die 64er-Region wie das Inventar-Icon (kein zweites Bild noetig).
+	f.texture = ItemDB.dir_texture(p_id, p_orient) if ItemDB.has_dirs(p_id) else ItemDB.icon(p_id)
 	f.centered = false
 	return f
 
@@ -85,9 +93,9 @@ func _ready() -> void:
 	var s := scale_of(id)
 	scale = Vector2(s, s)
 	offset = offset_of(id)
-	# Spiegeln um den Sprite-Ursprung (x = 0 = waagerechte Mitte), damit das
-	# Moebel nach dem Drehen an derselben Stelle sitzt.
-	flip_h = flipped
+	# Nicht-Richtungs-Moebel drehen sich durch Spiegeln (ungerade Ausrichtung).
+	# Richtungs-Moebel tragen die Drehung schon im Sprite, nie spiegeln.
+	flip_h = (orient % 2 == 1) and not ItemDB.has_dirs(id)
 	add_child(CastShadow.create(self))
 	# Terrain, das höher ist und vor dem Möbel liegt, korrekt darüber zeichnen.
 	# Als Geschwister (nicht als Kind), damit es die Möbel-Skalierung nicht erbt.

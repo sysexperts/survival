@@ -418,7 +418,7 @@ func _on_placement_confirmed(top_cell: Vector2i) -> void:
 	if preview.kind == PlacementPreview.Kind.CAMPFIRE:
 		if player.place_campfire_at(top_cell):
 			inventory.remove("kamp_atesi", 1)
-	elif player.place_furniture_at(preview.item_id, top_cell, preview.flipped):
+	elif player.place_furniture_at(preview.item_id, top_cell, preview.orient):
 		inventory.remove(preview.item_id, 1)
 
 

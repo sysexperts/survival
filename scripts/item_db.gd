@@ -184,11 +184,49 @@ const FURNITURE := {
 	"su_ficisi": ["Su Ficisi", Vector2i(2, 2)],
 	"tabure": ["Tabure", Vector2i(3, 2)],
 	"yukseltilmis_tarha": ["Yükseltilmis Tarha", Vector2i(4, 2)],
-	# Ileri-Baenke: noch kein eigenes Sprite - vorerst dasselbe Icon wie die
-	# einfache Bank/Weberei als Platzhalter (siehe Outline-Notiz).
+	# Ileri-Baenke: eigener Richtungs-Sprite (siehe DIRSPRITES). Die Zelle hier
+	# ist nur Fallback und wird von has_dirs()/dir_texture() ueberstochen.
 	"ileri_uretim_masasi": ["Ileri Üretim Masasi", Vector2i(0, 1)],
 	"ileri_dokuma_tezgahi": ["Ileri Dokuma Tezgahi", Vector2i(3, 1)],
 }
+
+
+## Richtungs-Sprites: Stationen, die als 8-Richtungs-Satz (68x68) unter
+## assets/game_assets/tool_tables liegen. Statt eines Sheet-Ausschnitts
+## bekommt so ein Moebel je nach Ausrichtung (orient 0..3 = S/O/N/W) ein
+## eigenes Bild. Ueberschreibt fuer diese Ids den Sheet-Eintrag aus FURNITURE.
+const DIRSPRITES := {
+	"calisma_tezgahi": "res://assets/game_assets/tool_tables/working_table/working_table/rotations",
+	"ileri_uretim_masasi": "res://assets/game_assets/tool_tables/working_table/make_the_table_more/rotations",
+	"dokuma_tezgahi": "res://assets/game_assets/tool_tables/loom_table/loom_table/rotations",
+	"ileri_dokuma_tezgahi": "res://assets/game_assets/tool_tables/loom_table/make_a_advaned_loom/rotations",
+	"eritme_firini": "res://assets/game_assets/tool_tables/melting_oven/isometric_pixelart/rotations",
+}
+
+## orient 0..3 -> Dateiname der Richtung. Nur 4 Richtungen (N/O/S/W) sind im
+## Spiel drehbar; die Diagonalen des Sprite-Satzes bleiben ungenutzt.
+const DIR_FILE := ["south", "east", "north", "west"]
+
+
+## Hat dieses Moebel einen Richtungs-Sprite-Satz?
+static func has_dirs(id: String) -> bool:
+	return DIRSPRITES.has(id)
+
+
+## Textur fuer eine Ausrichtung (orient 0..3). Als AtlasTexture mit voller
+## Region - so bleibt die Klick-/Abriss-Erkennung (die AtlasTexture erwartet)
+## unveraendert nutzbar.
+static func dir_texture(id: String, orient: int) -> Texture2D:
+	var key := "%s#%d" % [id, orient]
+	if _icons.has(key):
+		return _icons[key]
+	var img: Texture2D = load("%s/%s.png" % [DIRSPRITES[id], DIR_FILE[orient % 4]])
+	var tex := AtlasTexture.new()
+	tex.atlas = img
+	tex.region = Rect2(Vector2.ZERO, img.get_size())
+	tex.filter_clip = true
+	_icons[key] = tex
+	return tex
 
 
 ## Moebel sind gewoehnliche Items - sie werden hier einmalig in die
@@ -287,6 +325,11 @@ static func icon(id: String) -> Texture2D:
 	_ensure()
 	if _icons.has(id):
 		return _icons[id]
+	# Richtungs-Moebel: das Inventar-/Vorschau-Icon ist die Suedansicht.
+	if has_dirs(id):
+		var t := dir_texture(id, 0)
+		_icons[id] = t
+		return t
 	if not ITEMS.has(id):
 		return null
 	var info: Dictionary = ITEMS[id]
