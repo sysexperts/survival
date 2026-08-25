@@ -17,19 +17,19 @@ var player: Node2D
 var _sprite: AnimatedSprite2D
 var _tool_id := "balta"
 
-const HELD_SCALE := 0.7
+const HELD_SCALE := 0.58
 
 ## Startwerte je Richtung. pos = Versatz vom Spieler-Ursprung (Fuesse),
 ## front = vor dem Koerper zeichnen, flip = Icon spiegeln.
 var hand := {
-	"south":      {"pos": Vector2(7, -20), "front": true,  "flip": false},
-	"south-east": {"pos": Vector2(9, -21), "front": true,  "flip": false},
-	"east":       {"pos": Vector2(10, -23), "front": true,  "flip": false},
-	"north-east": {"pos": Vector2(9, -25), "front": false, "flip": false},
-	"north":      {"pos": Vector2(-7, -26), "front": false, "flip": true},
-	"north-west": {"pos": Vector2(-9, -25), "front": false, "flip": true},
-	"west":       {"pos": Vector2(-10, -23), "front": true, "flip": true},
-	"south-west": {"pos": Vector2(-9, -21), "front": true,  "flip": true},
+	"south":      {"pos": Vector2(6, -13), "front": true,  "flip": false},
+	"south-east": {"pos": Vector2(8, -14), "front": true,  "flip": false},
+	"east":       {"pos": Vector2(10, -16), "front": true,  "flip": false},
+	"north-east": {"pos": Vector2(9, -18), "front": false, "flip": false},
+	"north":      {"pos": Vector2(-7, -19), "front": false, "flip": true},
+	"north-west": {"pos": Vector2(-9, -18), "front": false, "flip": true},
+	"west":       {"pos": Vector2(-10, -16), "front": true, "flip": true},
+	"south-west": {"pos": Vector2(-8, -14), "front": true,  "flip": true},
 }
 
 
