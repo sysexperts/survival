@@ -37,6 +37,21 @@ func _process(delta: float) -> void:
 		offset = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake))
 	elif offset != Vector2.ZERO:
 		offset = Vector2.ZERO
+	# Kamera aufs BILDSCHIRM-Pixelraster einrasten. Bei nicht-ganzzahligem Zoom
+	# (2.5) und Nearest-Filter flackert sonst das ganze Bild, weil dieselben
+	# Texel je nach Sub-Pixel-Lage mal 2, mal 3 Bildschirmpixel breit werden.
+	# So verschiebt sich die Welt immer um ganze Bildschirmpixel.
+	_snap_to_pixel_grid()
+
+
+## Rundet die effektive Zeichenposition (Position + Offset) so, dass sie auf
+## dem Bildschirm-Pixelraster liegt: (pos * zoom) ganzzahlig, dann / zoom.
+func _snap_to_pixel_grid() -> void:
+	var eff := global_position + offset
+	var snapped := Vector2(
+		round(eff.x * zoom.x) / zoom.x,
+		round(eff.y * zoom.y) / zoom.y)
+	global_position += snapped - eff
 
 
 ## Kurzer Ruck, z. B. bei einem Axtschlag.
