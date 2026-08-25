@@ -9,8 +9,8 @@ extends Sprite2D
 ## Hand-Anker (Position + davor/dahinter + gespiegelt). Ein Icon reicht fuer
 ## alle Richtungen.
 ##
-## === Justier-Modus (Taste F8) ==========================================
-## F8 schaltet den Tuning-Modus an/aus. Dann:
+## === Justier-Modus (Taste P) ===========================================
+## P schaltet den Tuning-Modus an/aus. Dann:
 ##   - die Axt ist immer sichtbar,
 ##   - mit der LINKEN MAUSTASTE ziehst du sie an die richtige Stelle
 ##     (fuer die gerade angezeigte Laufrichtung),
@@ -77,9 +77,9 @@ func _process(_dt: float) -> void:
 func _input(event: InputEvent) -> void:
 	# In _input (nicht _unhandled_input), damit die Maus im Tuning-Modus die
 	# Lauf-/Interaktionslogik nicht ausloest.
-	# F8: Tuning-Modus umschalten.
+	# P: Tuning-Modus umschalten.
 	if event is InputEventKey and event.pressed and not event.echo \
-			and event.keycode == KEY_F8:
+			and event.keycode == KEY_P:
 		_tuning = not _tuning
 		_dragging = false
 		print("[HeldTool] Justier-Modus: %s" % ("AN" if _tuning else "aus"))
