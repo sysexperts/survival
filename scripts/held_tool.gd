@@ -70,7 +70,8 @@ func _process(_dt: float) -> void:
 	# Koerper-Wippen mitnehmen: der Sprite hebt/senkt sich beim Laufen ueber
 	# sprite.offset.y (Schritt-Versatz). Ohne das bleibt die Axt starr am Boden
 	# haengen und "fliegt nur mit", statt an der Hand zu kleben.
-	var bob := _sprite.offset.y - player.sprite_offset.y
+	var base_y: float = player.sprite_offset.y
+	var bob: float = _sprite.offset.y - base_y
 	# Beim Ziehen folgt die Position der Maus, sonst dem Anker (+ Wippen).
 	if not (_tuning and _dragging):
 		position = a["pos"] + Vector2(0, bob)
