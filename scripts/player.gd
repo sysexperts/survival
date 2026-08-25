@@ -91,6 +91,7 @@ var world: IsoWorld
 ## Haelt Jack gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
 ## danach, was in der Hotbar ausgewaehlt ist. Ohne Axt kein Baum.
 var has_axe := false
+var _held: Sprite2D               ## Overlay: gehaltenes Werkzeug an der Hand
 var level := 0                   ## Ebene des Blocks, auf dem Jack steht
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
@@ -164,6 +165,11 @@ func _ready() -> void:
 	# Umriss-Anzeige zur Laufzeit anhaengen - so bleibt player.tscn unberuehrt.
 	add_child(OcclusionOutline.create(self, sprite, world))
 	add_child(CastShadow.create(sprite))
+	# Gehaltenes Werkzeug an der Hand (Overlay). Preload statt class_name wegen
+	# der Auto-Updater-Regel. Zeigt die Axt, solange sie gewaehlt ist.
+	_held = preload("res://scripts/held_tool.gd").new()
+	add_child(_held)
+	_held.setup(self, sprite)
 	sprite.frame_changed.connect(_on_frame_changed)
 	_setup_footsteps()
 	# WorldSync fuer die geteilte Baum-HP (Multiplayer). Einmal cachen - der
