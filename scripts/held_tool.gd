@@ -28,19 +28,20 @@ var _tool_id := "balta"
 var _tuning := false
 var _dragging := false
 
-var held_scale := 0.58
+var held_scale := 0.64
 
-## Startwerte je Richtung. pos = Versatz vom Spieler-Ursprung (Fuesse),
-## front = vor dem Koerper zeichnen, flip = Icon spiegeln.
+## Im Justier-Modus (Taste P) eingestellt und fest eingebacken.
+## pos = Versatz vom Spieler-Ursprung (Fuesse), front = vor dem Koerper
+## zeichnen, flip = Icon spiegeln.
 var hand := {
-	"south":      {"pos": Vector2(6, -13), "front": true,  "flip": false},
-	"south-east": {"pos": Vector2(8, -14), "front": true,  "flip": false},
-	"east":       {"pos": Vector2(10, -16), "front": true,  "flip": false},
-	"north-east": {"pos": Vector2(9, -18), "front": false, "flip": false},
-	"north":      {"pos": Vector2(-7, -19), "front": false, "flip": true},
-	"north-west": {"pos": Vector2(-9, -18), "front": false, "flip": true},
-	"west":       {"pos": Vector2(-10, -16), "front": true, "flip": true},
-	"south-west": {"pos": Vector2(-8, -14), "front": true,  "flip": true},
+	"south":      {"pos": Vector2(-3, -15), "front": true,  "flip": false},
+	"south-east": {"pos": Vector2(1, -12),  "front": true,  "flip": false},
+	"east":       {"pos": Vector2(5, -15),  "front": true,  "flip": false},
+	"north-east": {"pos": Vector2(13, -15), "front": false, "flip": false},
+	"north":      {"pos": Vector2(2, -16),  "front": false, "flip": true},
+	"north-west": {"pos": Vector2(-11, -15), "front": false, "flip": true},
+	"west":       {"pos": Vector2(-26, 7),  "front": false, "flip": true},
+	"south-west": {"pos": Vector2(-3, -14), "front": true,  "flip": true},
 }
 
 
