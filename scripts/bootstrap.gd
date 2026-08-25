@@ -66,8 +66,15 @@ func _load_cached_update() -> void:
 			_active_version = v
 
 
+## Ohne Timeout haengt ein stockender Download den Startbildschirm fuer immer
+## ein. Mit Timeout bricht die Anfrage ab, die Callbacks werten das als
+## Misserfolg und starten mit dem zuletzt geladenen Stand einfach weiter.
+const NET_TIMEOUT := 30.0
+
+
 func _check_server() -> void:
 	_set_status("Güncellemeler araniyor ...")
+	_http.timeout = NET_TIMEOUT
 	_http.request_completed.connect(_on_version_response, CONNECT_ONE_SHOT)
 	if _http.request(VERSION_URL) != OK:
 		_start_game()               # kein Netz -> einfach starten
@@ -92,6 +99,9 @@ func _on_version_response(result: int, code: int, _headers: PackedStringArray, b
 
 func _download_update() -> void:
 	_set_status("Güncelleme yükleniyor v%s ..." % Net.version_name(_server_version))
+	# Grosszuegiger als der Versions-Check: die pck ist ein paar MB. Ein echter
+	# Stall bricht trotzdem ab (statt ewig zu haengen) und startet dann weiter.
+	_http.timeout = 180.0
 	DirAccess.make_dir_recursive_absolute(UPDATE_DIR)
 	var tmp := UPDATE_PCK + ".tmp"
 	if FileAccess.file_exists(tmp):
