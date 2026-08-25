@@ -7,17 +7,28 @@ extends Sprite2D
 ##
 ## Das Tool ist ein eigenes Sprite ueber/hinter dem Koerper. Pro Richtung ein
 ## Hand-Anker (Position + davor/dahinter + gespiegelt). Ein Icon reicht fuer
-## alle Richtungen - das spart die Tool-mal-Richtungen-Explosion im Sheet.
+## alle Richtungen.
 ##
-## Live justieren: Numpad. 4/6 = x, 8/2 = y (der gerade sichtbaren Richtung),
-## 7 = davor/dahinter, 9 = spiegeln. Die Werte werden ins Log gedruckt - so
-## koennen wir die Tabelle danach fest eintragen.
+## === Justier-Modus (Taste F8) ==========================================
+## F8 schaltet den Tuning-Modus an/aus. Dann:
+##   - die Axt ist immer sichtbar,
+##   - mit der LINKEN MAUSTASTE ziehst du sie an die richtige Stelle
+##     (fuer die gerade angezeigte Laufrichtung),
+##   - MAUSRAD = Groesse,
+##   - Taste 7 (Numpad) = vor/hinter den Koerper, 9 = spiegeln.
+## Zum Drehen einfach kurz in eine Richtung laufen. Jede Aenderung wird nach
+## `user://held_tool_anchors.json` gespeichert - daraus backen wir die finalen
+## Werte fest ein.
+
+const SAVE_PATH := "user://held_tool_anchors.json"
 
 var player: Node2D
 var _sprite: AnimatedSprite2D
 var _tool_id := "balta"
+var _tuning := false
+var _dragging := false
 
-const HELD_SCALE := 0.58
+var held_scale := 0.58
 
 ## Startwerte je Richtung. pos = Versatz vom Spieler-Ursprung (Fuesse),
 ## front = vor dem Koerper zeichnen, flip = Icon spiegeln.
@@ -38,42 +49,122 @@ func setup(p_player: Node2D, p_sprite: AnimatedSprite2D) -> void:
 	_sprite = p_sprite
 	centered = true
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	scale = Vector2(HELD_SCALE, HELD_SCALE)
+	_load_anchors()
+	scale = Vector2(held_scale, held_scale)
 	visible = false
 
 
 func _process(_dt: float) -> void:
-	# Nur zeigen, wenn die Axt in der Hand ist und nicht gerade der gebackene
-	# Schlag laeuft (sonst haette Jack zwei Aexte).
+	if player == null:
+		return
+	# Im Tuning-Modus immer zeigen; sonst nur wenn die Axt gewaehlt ist und
+	# nicht gerade der gebackene Schlag laeuft (kein Doppel-Axt-Effekt).
 	var swinging := String(_sprite.animation).begins_with("axe_")
-	if player == null or not player.has_axe or swinging:
+	if not _tuning and (not player.has_axe or swinging):
 		visible = false
 		return
-	var f: String = player.facing
-	var a: Dictionary = hand.get(f, hand["south"])
+	var a: Dictionary = hand.get(player.facing, hand["south"])
 	texture = ItemDB.icon(_tool_id)
-	position = a["pos"]
+	scale = Vector2(held_scale, held_scale)
+	# Beim Ziehen folgt die Position der Maus, sonst dem Anker.
+	if not (_tuning and _dragging):
+		position = a["pos"]
 	flip_h = bool(a["flip"])
 	z_index = 1 if a["front"] else -1
 	visible = true
 
 
-## Live-Justierung der aktuell sichtbaren Richtung ueber den Numpad.
-func _unhandled_input(event: InputEvent) -> void:
-	if not visible or not (event is InputEventKey) or not event.pressed:
+func _input(event: InputEvent) -> void:
+	# In _input (nicht _unhandled_input), damit die Maus im Tuning-Modus die
+	# Lauf-/Interaktionslogik nicht ausloest.
+	# F8: Tuning-Modus umschalten.
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.keycode == KEY_F8:
+		_tuning = not _tuning
+		_dragging = false
+		print("[HeldTool] Justier-Modus: %s" % ("AN" if _tuning else "aus"))
+		if not _tuning:
+			_save_anchors()
+		get_viewport().set_input_as_handled()
 		return
-	var f: String = player.facing
-	var a: Dictionary = hand[f]
-	match event.keycode:
-		KEY_KP_4: a["pos"].x -= 1
-		KEY_KP_6: a["pos"].x += 1
-		KEY_KP_8: a["pos"].y -= 1
-		KEY_KP_2: a["pos"].y += 1
-		KEY_KP_7: a["front"] = not a["front"]
-		KEY_KP_9: a["flip"] = not a["flip"]
-		_: return
-	hand[f] = a
-	print('\t"%s": {"pos": Vector2(%d, %d), "front": %s, "flip": %s},' % [
-		f, int(a["pos"].x), int(a["pos"].y),
+	if not _tuning:
+		return
+
+	var a: Dictionary = hand[player.facing]
+
+	# Maus-Ziehen setzt die Position der aktuellen Richtung.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		_dragging = event.pressed
+		if not event.pressed:
+			a["pos"] = (get_global_mouse_position() - player.global_position).round()
+			hand[player.facing] = a
+			_report(); _save_anchors()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventMouseMotion and _dragging:
+		position = (get_global_mouse_position() - player.global_position).round()
+		a["pos"] = position
+		hand[player.facing] = a
+		get_viewport().set_input_as_handled()
+		return
+
+	# Mausrad = Groesse.
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			held_scale = minf(held_scale + 0.02, 2.0); _report(); _save_anchors()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			held_scale = maxf(held_scale - 0.02, 0.1); _report(); _save_anchors()
+			get_viewport().set_input_as_handled()
+
+	# Feintuning per Numpad: 4/6 x, 8/2 y, 7 vor/hinter, 9 spiegeln.
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_KP_4: a["pos"].x -= 1
+			KEY_KP_6: a["pos"].x += 1
+			KEY_KP_8: a["pos"].y -= 1
+			KEY_KP_2: a["pos"].y += 1
+			KEY_KP_7: a["front"] = not a["front"]
+			KEY_KP_9: a["flip"] = not a["flip"]
+			_: return
+		hand[player.facing] = a
+		_report(); _save_anchors()
+		get_viewport().set_input_as_handled()
+
+
+## Aktuelle Zeile ins Log drucken (zum spaeteren Fest-Einbacken).
+func _report() -> void:
+	var a: Dictionary = hand[player.facing]
+	print('[HeldTool] scale=%.2f  "%s": {"pos": Vector2(%d, %d), "front": %s, "flip": %s},' % [
+		held_scale, player.facing, int(a["pos"].x), int(a["pos"].y),
 		str(a["front"]).to_lower(), str(a["flip"]).to_lower()])
-	get_viewport().set_input_as_handled()
+
+
+func _save_anchors() -> void:
+	var out := {"held_scale": held_scale, "hand": {}}
+	for k in hand:
+		var a: Dictionary = hand[k]
+		out["hand"][k] = {"x": int(a["pos"].x), "y": int(a["pos"].y),
+			"front": bool(a["front"]), "flip": bool(a["flip"])}
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(out, "\t"))
+
+
+func _load_anchors() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	held_scale = float(data.get("held_scale", held_scale))
+	var h: Variant = data.get("hand", {})
+	if typeof(h) == TYPE_DICTIONARY:
+		for k in h:
+			if hand.has(k):
+				var e: Dictionary = h[k]
+				hand[k] = {"pos": Vector2(float(e.get("x", 0)), float(e.get("y", 0))),
+					"front": bool(e.get("front", true)), "flip": bool(e.get("flip", false))}
