@@ -16,3 +16,4 @@ Desktop.ini
 # PixelLab-Quellframes (nur zum deer_frames.tres-Bau, siehe tools/build_deer_frames.gd)
 .deer_src/
 /build/
+assets/characters/character_creator/
