@@ -147,6 +147,13 @@ var _last_pos := Vector2.ZERO
 var _move_cooldown := 0.0
 
 
+## Aussehen zur Laufzeit aus den Layer-Sheets (Customaizable Character). Preload
+## statt class_name wegen der Auto-Updater-Regel.
+const CCFrames := preload("res://scripts/cc_frames.gd")
+const AppearanceStore := preload("res://scripts/appearance_store.gd")
+const UIState := preload("res://scripts/ui_state.gd")
+
+
 func _ready() -> void:
 	# Jack haengt sich zur Laufzeit in die TileMapLayer um, deshalb ist er
 	# ueber den festen Szenenpfad nicht mehr auffindbar -> Gruppe.
@@ -154,6 +161,8 @@ func _ready() -> void:
 	z_index = 0        # den z_index bringt der Props-Container mit
 	_day_night = get_tree().get_first_node_in_group("day_night")
 	world = get_node(world_path) as IsoWorld
+	# Figur aus dem gewaehlten Aussehen bauen (statt festem jack_frames.tres).
+	sprite.sprite_frames = CCFrames.build(AppearanceStore.local())
 	sprite.offset = sprite_offset
 	# Ruhelagen der sichtbaren Kinder merken - darauf wird der Stufen-Versatz
 	# addiert (siehe _step_lag).
@@ -177,6 +186,18 @@ func _ready() -> void:
 	_ws = get_parent().get_node_or_null(^"WorldSync")
 	# Umhaengen ist waehrend _ready nicht erlaubt -> auf den naechsten Frame legen
 	_snap_to_cell.call_deferred(start_cell)
+	_play("idle")
+
+
+## Baut die Figur aus einem neuen Aussehen neu auf (Görünüm-Editor). Die
+## laufende Animation wird beibehalten.
+func apply_look(look: Dictionary) -> void:
+	var a := sprite.animation
+	sprite.sprite_frames = CCFrames.build(look)
+	if sprite.sprite_frames.has_animation(a):
+		sprite.play(a)
+	else:
+		_play("idle")
 
 
 ## Setzt Jack auf den obersten Block einer Zelle.
@@ -267,6 +288,9 @@ func _physics_process(delta: float) -> void:
 	# Steuerung annehmen. Ueber den Fokus statt ein Flag - so kann nichts
 	# "haengen bleiben" und die Steuerung dauerhaft blockieren.
 	if get_viewport().gui_get_focus_owner() is LineEdit:
+		return
+	# ESC-Menü offen? Keine Steuerung annehmen.
+	if UIState.pause_open:
 		return
 	var input := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
@@ -388,6 +412,8 @@ func _reparent_to_level() -> void:
 # --- Animation ---------------------------------------------------------
 
 func _play(state: String) -> void:
+	# Die Sheets zeigen nur die Westseite - Osten wird gespiegelt gezeichnet.
+	sprite.flip_h = CCFrames.flipped(facing)
 	var anim := "%s_%s" % [state, facing.replace("-", "_")]
 	if sprite.animation == anim and sprite.is_playing():
 		return
@@ -403,6 +429,7 @@ func _play(state: String) -> void:
 
 func _start_axe() -> void:
 	busy = true
+	sprite.flip_h = CCFrames.flipped(facing)
 	sprite.play("axe_%s" % facing.replace("-", "_"))
 	# Ein Schlag = ein Dayaniklilik-Punkt. Das Inventar bucht ihn ab und
 	# setzt has_axe auf false, sobald die Axt zerbricht (siehe unten).
@@ -639,6 +666,7 @@ func _lie_down(cell: Vector2i) -> void:
 	_reparent_to_level()
 	_sleeping = true
 	facing = BED_FACING_FLIPPED if bed.flip_h else BED_FACING
+	sprite.flip_h = CCFrames.flipped(facing)
 	sprite.play("sleep_%s" % facing.replace("-", "_"))
 	# Bild auf die Matratze heben; beim gespiegelten Bett den x-Versatz spiegeln.
 	var off: Vector2 = BED_SLEEP_OFFSETS.get(bed.id, BED_SLEEP_OFFSET)

@@ -11,7 +11,9 @@ class_name RemotePlayer
 ## Haengt im y-sortierten Props-Container der Welt, damit sie korrekt zwischen
 ## Baeumen ein- und ausgeblendet wird.
 
-const FRAMES := preload("res://resources/jack_frames.tres")
+const CCFrames := preload("res://scripts/cc_frames.gd")
+const CCCatalog := preload("res://scripts/cc_catalog.gd")
+const AppearanceStore := preload("res://scripts/appearance_store.gd")
 ## Gleicher Fusspunkt-Versatz wie beim echten Player (siehe player.gd).
 const SPRITE_OFFSET := Vector2(0, -18)
 
@@ -44,7 +46,7 @@ func _ready() -> void:
 	add_child(shadow)
 
 	_sprite = AnimatedSprite2D.new()
-	_sprite.sprite_frames = FRAMES
+	_sprite.sprite_frames = CCFrames.build(_look)
 	_sprite.animation = &"idle_south"
 	_sprite.offset = SPRITE_OFFSET
 	_sprite.play(&"idle_south")
@@ -62,6 +64,20 @@ func _ready() -> void:
 	_footsteps.max_distance = FOOTSTEP_MAX_DISTANCE
 	_footsteps.attenuation = FOOTSTEP_ATTENUATION
 	add_child(_footsteps)
+
+
+## Aussehen dieses Mitspielers. Standard, bis das echte über das Netz kommt.
+var _look: Dictionary = CCCatalog.default_look()
+
+
+## Übernimmt ein über das Netz empfangenes Aussehen und baut die Figur neu.
+func set_look(look: Dictionary) -> void:
+	_look = AppearanceStore.sanitize(look)
+	if _sprite:
+		var a := _sprite.animation
+		_sprite.sprite_frames = CCFrames.build(_look)
+		if _sprite.sprite_frames.has_animation(a):
+			_sprite.play(a)
 
 
 var pname := ""
@@ -86,7 +102,9 @@ func apply_state(pos: Vector2, anim: StringName, frame: int) -> void:
 	_target = pos
 	if _sprite == null:
 		return
-	if _sprite.animation != anim and FRAMES.has_animation(anim):
+	# Ost-Richtungen werden gespiegelt gezeichnet (siehe cc_frames.gd).
+	_sprite.flip_h = String(anim).ends_with("east")
+	if _sprite.animation != anim and _sprite.sprite_frames.has_animation(anim):
 		_sprite.play(anim)
 	_sprite.frame = frame
 	# Schlaeft der Mitspieler, denselben Zzz-Effekt zeigen wie bei der eigenen

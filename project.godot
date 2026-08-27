@@ -31,14 +31,11 @@ window/stretch/mode="canvas_items"
 
 [gui]
 
-; Ein Pixel-Font fuer die gesamte Oberflaeche. 22 = die doppelte
-; Rastergroesse der Vorlage (11 px), damit jedes Schriftpixel genau zwei
-; Bildschirmpixel breit ist und nichts verwaschen wirkt.
 theme/custom="res://resources/pixel_theme.tres"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-textures/canvas_textures/default_texture_filter=0
 environment/defaults/default_clear_color=Color(0.1, 0.11, 0.15, 1)

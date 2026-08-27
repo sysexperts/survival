@@ -17,12 +17,14 @@ extends Node
 
 const RemotePlayerScript := preload("res://scripts/remote_player.gd")
 const AdminsScript := preload("res://scripts/admins.gd")
+const AppearanceStore := preload("res://scripts/appearance_store.gd")
 ## Wie oft pro Sekunde der eigene Zustand verschickt wird.
 const SEND_HZ := 15.0
 
 var _local: Player
 var _world: IsoWorld
 var _avatars: Dictionary = {}     ## owner_id -> RemotePlayer
+var _looks: Dictionary = {}       ## owner_id -> Aussehen-Dictionary
 var _accum := 0.0
 
 ## TAB-Spielerliste (wie in Minecraft), nur solange TAB gehalten wird.
@@ -49,6 +51,34 @@ func _ready() -> void:
 
 	if not Net.is_dedicated:
 		_build_tab_list()
+		# Eigenes Aussehen bekanntgeben und bei jedem neuen Mitspieler erneut
+		# senden, damit auch spätere Beitretende die richtige Figur sehen.
+		multiplayer.peer_connected.connect(func(_id): broadcast_look())
+		broadcast_look.call_deferred()
+
+
+## Sendet das Aussehen des lokalen Spielers an alle. Ruft die UI nach jeder
+## Änderung im Görünüm-Editor auf.
+func broadcast_look() -> void:
+	if Net.is_dedicated or not Net.active:
+		return
+	_recv_look.rpc(multiplayer.get_unique_id(), AppearanceStore.local())
+
+
+## Aussehen eines Spielers. Selten - deshalb reliable.
+@rpc("any_peer", "reliable")
+func _recv_look(owner_id: int, look: Dictionary) -> void:
+	if Net.is_dedicated:
+		for pid in multiplayer.get_peers():
+			if pid != owner_id:
+				_recv_look.rpc_id(pid, owner_id, look)
+		return
+	if owner_id == multiplayer.get_unique_id():
+		return
+	_looks[owner_id] = look
+	var av: RemotePlayer = _avatars.get(owner_id)
+	if av and is_instance_valid(av):
+		av.set_look(look)
 
 
 # --- TAB-Spielerliste ----------------------------------------------------
@@ -169,6 +199,9 @@ func _spawn_avatar(id: int) -> RemotePlayer:
 	var av: RemotePlayer = RemotePlayerScript.new()
 	_world.props_root.add_child(av)
 	_avatars[id] = av
+	# Aussehen schon bekannt? Dann direkt anwenden.
+	if _looks.has(id):
+		av.set_look(_looks[id])
 	return av
 
 
