@@ -23,6 +23,17 @@ const LOOPING := ["idle", "walk", "run", "sleep"]
 const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0}
 const DEFAULT_FPS := 10.0
 
+## Mit Axt in der Hand: eigene Körperposen für idle/walk (Hand greift die Axt);
+## run/axe nutzen dieselbe Pose, nur mit Axt-Layern. sleep hat keine Axt.
+const STATE_DIR_ARMED := {
+	"idle": "idle_hold", "walk": "walk_hold",
+	"run": "run", "axe": "axe", "sleep": "sleep",
+}
+## Zustände, die im bewaffneten Modus die Axt-Layer bekommen.
+const AXE_STATES := ["idle", "walk", "run", "axe"]
+## Axt-Ausführung (Metall). Die Layer liegen in cc_scaled/<dir>/ neben dem Körper.
+const AXE_METAL := "Iron"
+
 ## Fertige SpriteFrames je Aussehen zwischenspeichern - mehrere Mitspieler mit
 ## gleichem Look teilen sich dann eine Instanz.
 static var _cache: Dictionary = {}
@@ -33,15 +44,15 @@ static func flipped(facing: String) -> bool:
 	return facing.ends_with("east")
 
 
-static func _key(look: Dictionary) -> String:
-	var parts: Array = []
+static func _key(look: Dictionary, armed: bool) -> String:
+	var parts: Array = ["armed=%s" % armed]
 	for slot in CCCatalog.DRAW_ORDER:
 		parts.append("%s=%s" % [slot, look.get(slot, "")])
 	return "|".join(parts)
 
 
-static func build(look: Dictionary) -> SpriteFrames:
-	var key := _key(look)
+static func build(look: Dictionary, armed: bool = false) -> SpriteFrames:
+	var key := _key(look, armed)
 	if _cache.has(key):
 		return _cache[key]
 
@@ -51,7 +62,9 @@ static func build(look: Dictionary) -> SpriteFrames:
 
 	for state in CCCatalog.STATE_COLS:
 		var cols: int = CCCatalog.STATE_COLS[state]
-		var tex := _composite(state, cols, look)
+		var dir_name: String = STATE_DIR_ARMED[state] if armed else String(state)
+		var with_axe: bool = armed and (String(state) in AXE_STATES)
+		var tex := _composite(dir_name, cols, look, with_axe)
 		if tex == null:
 			continue
 		for facing in ROW_OF:
@@ -73,18 +86,28 @@ static func build(look: Dictionary) -> SpriteFrames:
 	return sf
 
 
-## Blendet die gewählten Layer eines Zustands zu einer Textur zusammen.
-static func _composite(state: String, cols: int, look: Dictionary) -> Texture2D:
+## Blendet die gewählten Layer eines Zustands zu einer Textur zusammen. `dir_name`
+## ist der cc_scaled-Ordner (z. B. "idle" oder "idle_hold"). Mit `with_axe` wird
+## die Pack-Axt unter (NegativeLayer1) und über (Layer13) dem Körper eingefügt.
+static func _composite(dir_name: String, cols: int, look: Dictionary, with_axe: bool) -> Texture2D:
 	var cell: int = CCCatalog.CELL
 	var w := cols * cell
 	var h := CCCatalog.ROWS * cell
 	var canvas := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var any := false
+	# Reihenfolge: Axt-Rückseite ganz unten, dann Körper/Kleidung, Axt vorn oben.
+	var order: Array = []
+	if with_axe:
+		order.append("NegativeLayer1_Axe_" + AXE_METAL)
 	for slot in CCCatalog.DRAW_ORDER:
-		var token := String(look.get(slot, ""))
+		order.append(String(look.get(slot, "")))
+	if with_axe:
+		order.append("Layer13_Axe_" + AXE_METAL)
+	for token_v in order:
+		var token := String(token_v)
 		if token == "":
 			continue
-		var path := DIR + state + "/" + token + ".png"
+		var path := DIR + dir_name + "/" + token + ".png"
 		if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
 			continue
 		var layer_tex: Texture2D = load(path)

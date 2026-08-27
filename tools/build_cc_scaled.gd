@@ -19,13 +19,18 @@ const CELL_DST := 48
 const CELL_SRC := 460
 const ROWS := 5
 
-## Spielzustand -> (Quellordner, Spaltenzahl).
+## Spielzustand -> (Quellordner, Spaltenzahl). Die "_hold"-Sätze tragen die
+## Körperpose mit Werkzeug in der Hand (inkl. Layer13_Axe / NegativeLayer1_Axe).
+## run/axe brauchen keinen eigenen _hold-Satz: dieselbe Körperpose, und die
+## Axt-Layer liegen bereits in cc_scaled/run bzw. /axe.
 const ACTIONS := {
 	"idle":  ["Idle", 8],
 	"walk":  ["Walk", 6],
 	"run":   ["Run(HoldingToolOrNot)", 4],
 	"axe":   ["Swing", 6],
 	"sleep": ["Sit", 4],
+	"idle_hold": ["IdleHoldingTool", 8],
+	"walk_hold": ["WalkHoldingTool", 6],
 }
 
 

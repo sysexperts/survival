@@ -91,7 +91,10 @@ var world: IsoWorld
 ## Haelt Jack gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
 ## danach, was in der Hotbar ausgewaehlt ist. Ohne Axt kein Baum.
 var has_axe := false
-var _held: Sprite2D               ## Overlay: gehaltenes Werkzeug an der Hand
+## Gewaehltes Aussehen (fuer Neuaufbau bei Axt-Wechsel).
+var _look: Dictionary = {}
+## Werden gerade die bewaffneten Frames (Axt in der Hand) gezeigt?
+var _armed_shown := false
 var level := 0                   ## Ebene des Blocks, auf dem Jack steht
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
@@ -162,7 +165,8 @@ func _ready() -> void:
 	_day_night = get_tree().get_first_node_in_group("day_night")
 	world = get_node(world_path) as IsoWorld
 	# Figur aus dem gewaehlten Aussehen bauen (statt festem jack_frames.tres).
-	sprite.sprite_frames = CCFrames.build(AppearanceStore.local())
+	_look = AppearanceStore.local()
+	sprite.sprite_frames = CCFrames.build(_look, has_axe)
 	sprite.offset = sprite_offset
 	# Ruhelagen der sichtbaren Kinder merken - darauf wird der Stufen-Versatz
 	# addiert (siehe _step_lag).
@@ -174,11 +178,8 @@ func _ready() -> void:
 	# Umriss-Anzeige zur Laufzeit anhaengen - so bleibt player.tscn unberuehrt.
 	add_child(OcclusionOutline.create(self, sprite, world))
 	add_child(CastShadow.create(sprite))
-	# Gehaltenes Werkzeug an der Hand (Overlay). Preload statt class_name wegen
-	# der Auto-Updater-Regel. Zeigt die Axt, solange sie gewaehlt ist.
-	_held = preload("res://scripts/held_tool.gd").new()
-	add_child(_held)
-	_held.setup(self, sprite)
+	# Die Axt ist Teil des Charakters (Pack-Layer), kein Overlay mehr - siehe
+	# _sync_armed(): bei has_axe werden die "_hold"-Frames mit Axt gezeigt.
 	sprite.frame_changed.connect(_on_frame_changed)
 	_setup_footsteps()
 	# WorldSync fuer die geteilte Baum-HP (Multiplayer). Einmal cachen - der
@@ -192,12 +193,26 @@ func _ready() -> void:
 ## Baut die Figur aus einem neuen Aussehen neu auf (Görünüm-Editor). Die
 ## laufende Animation wird beibehalten.
 func apply_look(look: Dictionary) -> void:
+	_look = look
 	var a := sprite.animation
-	sprite.sprite_frames = CCFrames.build(look)
+	sprite.sprite_frames = CCFrames.build(_look, has_axe)
+	_armed_shown = has_axe
 	if sprite.sprite_frames.has_animation(a):
 		sprite.play(a)
 	else:
 		_play("idle")
+
+
+## Wechselt zwischen unbewaffneten und bewaffneten Frames, sobald sich has_axe
+## ändert. Die laufende Animation (gleicher Name in beiden Sätzen) läuft weiter.
+func _sync_armed() -> void:
+	if _armed_shown == has_axe:
+		return
+	_armed_shown = has_axe
+	var a := sprite.animation
+	sprite.sprite_frames = CCFrames.build(_look, has_axe)
+	if sprite.sprite_frames.has_animation(a):
+		sprite.play(a)
 
 
 ## Setzt Jack auf den obersten Block einer Zelle.
@@ -412,6 +427,7 @@ func _reparent_to_level() -> void:
 # --- Animation ---------------------------------------------------------
 
 func _play(state: String) -> void:
+	_sync_armed()
 	# Die Sheets zeigen nur die Westseite - Osten wird gespiegelt gezeichnet.
 	sprite.flip_h = CCFrames.flipped(facing)
 	var anim := "%s_%s" % [state, facing.replace("-", "_")]
@@ -429,6 +445,7 @@ func _play(state: String) -> void:
 
 func _start_axe() -> void:
 	busy = true
+	_sync_armed()
 	sprite.flip_h = CCFrames.flipped(facing)
 	sprite.play("axe_%s" % facing.replace("-", "_"))
 	# Ein Schlag = ein Dayaniklilik-Punkt. Das Inventar bucht ihn ab und

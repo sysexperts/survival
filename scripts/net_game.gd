@@ -157,17 +157,17 @@ func _process(delta: float) -> void:
 	if sprite == null:
 		return
 	_recv_state.rpc(multiplayer.get_unique_id(), Net.player_name,
-		_local.global_position, sprite.animation, sprite.frame)
+		_local.global_position, sprite.animation, sprite.frame, _local.has_axe)
 
 
 ## Zustand eines Spielers. Unreliable - bei 15 Paketen/s ist ein verlorenes egal.
 @rpc("any_peer", "unreliable")
-func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, frame: int) -> void:
+func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, frame: int, armed: bool) -> void:
 	# Server: an alle anderen Clients weiterreichen, selbst nichts anzeigen.
 	if Net.is_dedicated:
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
-				_recv_state.rpc_id(pid, owner_id, pname, pos, anim, frame)
+				_recv_state.rpc_id(pid, owner_id, pname, pos, anim, frame, armed)
 		return
 
 	if owner_id == multiplayer.get_unique_id():
@@ -178,7 +178,7 @@ func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, f
 		if av == null:
 			return
 	av.set_player_name(pname)
-	av.apply_state(pos, anim, frame)
+	av.apply_state(pos, anim, frame, armed)
 
 
 ## Weltpositionen aller sichtbaren Spieler (eigener + Mitspieler). Der
