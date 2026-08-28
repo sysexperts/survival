@@ -11,6 +11,9 @@ var _ip_edit: LineEdit
 var _status: Label
 
 
+const UiCursor := preload("res://scripts/ui_cursor.gd")
+
+
 func _ready() -> void:
 	# Als dedizierter Server gestartet? Dann kein Menue, sondern sofort hosten.
 	# Erkennung ueber das dedizierte Server-Build-Feature ODER die Flag
@@ -20,6 +23,9 @@ func _ready() -> void:
 	if OS.has_feature("dedicated_server") or args.has("--server") or args.has("server"):
 		Net.start_dedicated_server()
 		return
+
+	# Maus-Cursor aufs Pack setzen (bleibt für die ganze Sitzung, auch im Spiel).
+	UiCursor.apply()
 
 	# Aktuelle Version immer oben sichtbar. Nach einem Auto-Update liegt die
 	# neue version.txt aus der game.pck ueber res:// - hier steht also der
