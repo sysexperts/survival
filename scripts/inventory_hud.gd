@@ -114,6 +114,10 @@ var _out: TextureRect = null               ## Ergebnis (grosse Box, erst nach de
 var _craft_btn: Button = null
 var _craft_pending := ""                   ## Ergebnis-Id, das nach dem Bauen erscheinen soll
 
+## Groesse der Rezeptliste links - am InventoryHUD-Knoten im Inspector einstellbar.
+@export var craft_row_height := 40
+@export var craft_icon_size := 36
+
 
 func setup(p_inventory: Inventory) -> void:
 	inventory = p_inventory
@@ -423,7 +427,7 @@ func _fill_craft_list() -> void:
 
 func _craft_row(recipe: Dictionary) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, 40)
+	b.custom_minimum_size = Vector2(0, craft_row_height)
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
@@ -449,7 +453,7 @@ func _craft_row(recipe: Dictionary) -> Button:
 	# Icon rechts, auf Slot-Groesse begrenzt (nie groesser als die Box).
 	var ic := TextureRect.new()
 	ic.texture = ItemDB.icon(recipe["out"])
-	ic.custom_minimum_size = Vector2(36, 36)
+	ic.custom_minimum_size = Vector2(craft_icon_size, craft_icon_size)
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	ic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
