@@ -135,8 +135,9 @@ func _bind() -> void:
 	# Itemleisten-Extras (EXP-Leiste + Stern).
 	_exp_left = $Root/LevelBar/ExpLeft
 	_exp_right = $Root/LevelBar/ExpRight
-	_level_label = $Root/LevelBar/LevelLabel
 	_level_star = $Root/LevelBar/LevelStar
+	_level_label = _level_star.get_node("LevelLabel")
+	_start_shimmer()
 
 	# Hotbar + LevelBar in der Zeichenreihenfolge nach oben - sonst laegen sie
 	# unter der Sperrflaeche (Dim) und man koennte bei offener Tasche nichts
@@ -330,6 +331,20 @@ func _refresh_level() -> void:
 		var tier: int = clampi(lvl / 5, 0, STAR_CELLS.size() - 1)
 		_level_star.texture = UiAtlas.cell("icons", STAR_CELLS[tier].x, STAR_CELLS[tier].y)
 		_last_level = lvl
+
+
+## Leichtes, endloses Schimmern der gefuellten Leiste (heller/dunkler pulsen).
+func _start_shimmer() -> void:
+	var bright := Color(1.35, 1.3, 1.05)
+	var base := Color(1, 1, 1)
+	_exp_left.tint_progress = base
+	_exp_right.tint_progress = base
+	var sh := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Aufhellen (beide zugleich), dann wieder zurueck - endlos.
+	sh.tween_property(_exp_left, "tint_progress", bright, 0.9)
+	sh.parallel().tween_property(_exp_right, "tint_progress", bright, 0.9)
+	sh.tween_property(_exp_left, "tint_progress", base, 0.9)
+	sh.parallel().tween_property(_exp_right, "tint_progress", base, 0.9)
 
 
 ## Animiert beide Leisten-Haelften auf ihre Zielwerte (0..100).

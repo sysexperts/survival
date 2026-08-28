@@ -128,9 +128,9 @@ mouse_filter = 2
 
 [node name="ExpLeft" type="TextureProgressBar" parent="Root/LevelBar" unique_id=710651723]
 layout_mode = 0
-offset_top = 6.0
+offset_top = 3.0
 offset_right = 200.0
-offset_bottom = 18.0
+offset_bottom = 21.0
 mouse_filter = 2
 value = 50.0
 nine_patch_stretch = true
@@ -144,9 +144,9 @@ texture_progress = ExtResource("7")
 [node name="ExpRight" type="TextureProgressBar" parent="Root/LevelBar" unique_id=771957791]
 layout_mode = 0
 offset_left = 246.0
-offset_top = 6.0
+offset_top = 3.0
 offset_right = 446.0
-offset_bottom = 18.0
+offset_bottom = 21.0
 mouse_filter = 2
 value = 50.0
 nine_patch_stretch = true
@@ -167,12 +167,13 @@ mouse_filter = 2
 texture = SubResource("StarFull")
 stretch_mode = 5
 
-[node name="LevelLabel" type="Label" parent="Root/LevelBar" unique_id=836929073]
-layout_mode = 0
-offset_left = 204.0
-offset_top = 4.0
-offset_right = 240.0
-offset_bottom = 28.181818
+[node name="LevelLabel" type="Label" parent="Root/LevelBar/LevelStar" unique_id=836929073]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 2.0
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7176471)
 theme_override_font_sizes/font_size = 15

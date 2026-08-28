@@ -19,7 +19,12 @@ var _scroll: ScrollContainer
 var _history: VBoxContainer
 var _entry: LineEdit
 var _hint: Label
+var _panel: PanelContainer            ## der dunkle Kasten hinter dem Verlauf
+var _hide_timer: Timer                ## blendet den Kasten nach Ruhe aus
 var _open := false
+
+## Wie lange der Kasten nach einer Nachricht (bei geschlossener Eingabe) bleibt.
+const IDLE_HIDE := 5.0
 
 
 func _ready() -> void:
@@ -42,16 +47,17 @@ func _ready() -> void:
 
 	# Dunkler, halbtransparenter Kasten hinter dem Verlauf - sonst verschwindet
 	# heller Text im hellen Gras.
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _bg_style(Color(0, 0, 0, 0.55)))
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(panel)
+	_panel = PanelContainer.new()
+	_panel.add_theme_stylebox_override("panel", _bg_style(Color(0, 0, 0, 0.55)))
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.visible = false          # nur bei Tippen oder eingehender Nachricht
+	col.add_child(_panel)
 
 	_scroll = ScrollContainer.new()
 	_scroll.custom_minimum_size = Vector2(480, 156)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(_scroll)
+	_panel.add_child(_scroll)
 
 	_history = VBoxContainer.new()
 	_history.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -81,7 +87,19 @@ func _ready() -> void:
 	_hint.modulate = Color(1, 1, 1, 0.7)
 	col.add_child(_hint)
 
+	# Blendet den Kasten nach Ruhe wieder aus (nur bei geschlossener Eingabe).
+	_hide_timer = Timer.new()
+	_hide_timer.one_shot = true
+	_hide_timer.wait_time = IDLE_HIDE
+	_hide_timer.timeout.connect(_on_hide_timeout)
+	add_child(_hide_timer)
+
 	_apply_open_state()
+
+
+func _on_hide_timeout() -> void:
+	if not _open and _panel:
+		_panel.visible = false
 
 
 ## Abgerundeter, halbtransparenter Hintergrund.
@@ -130,8 +148,17 @@ func _apply_open_state() -> void:
 	# Offen: voll sichtbar und scrollbar. Zu: gedimmter Verlauf, kein Fokusklau.
 	_scroll.modulate.a = 1.0 if _open else 0.85
 	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS if _open else Control.MOUSE_FILTER_IGNORE
-	if not _open:
+	if _open:
+		# Beim Tippen ist der Kasten immer da.
+		_panel.visible = true
+		_hide_timer.stop()
+	else:
 		_entry.text = ""
+		# Beim Schliessen: kurz sichtbar lassen (falls Verlauf da), dann weg.
+		if _history and _history.get_child_count() > 0:
+			_hide_timer.start()
+		else:
+			_panel.visible = false
 
 
 func _on_focus_lost() -> void:
@@ -182,6 +209,11 @@ func _add_line(sender: String, text: String) -> void:
 	_history.add_child(line)
 	while _history.get_child_count() > MAX_HISTORY:
 		_history.get_child(0).free()
+	# Neue Nachricht: Kasten zeigen. Bei geschlossener Eingabe nach IDLE_HIDE
+	# wieder ausblenden; offen bleibt er stehen.
+	_panel.visible = true
+	if not _open and _hide_timer:
+		_hide_timer.start()
 	_scroll_to_bottom()
 
 
