@@ -42,7 +42,9 @@ const POINTS_CENTER := Vector2(58, 116)
 const INFO_FONT := 11
 
 ## Pack-Grafiken für Tabs/Lesezeichen (aus Book_UI) und Icons (aus UI_Icons).
-const TAB_BG := Rect2i(590, 78, 20, 18)          ## tan Top-Tab
+const TAB_BG := Rect2i(590, 78, 20, 18)          ## tan Top-Tab (inaktiv)
+const TAB_BG_ACTIVE := Rect2i(623, 76, 20, 21)   ## laengerer Reiter (aktiv, ragt oben raus)
+const TAB_SCALE := 3
 const RIBBON_BG := [                               ## farbige Lesezeichen (rechts)
 	Rect2i(750, 79, 28, 18),   # rot
 	Rect2i(798, 79, 28, 18),   # blau
@@ -88,6 +90,13 @@ var _poll := 0.0
 ## Laeuft, waehrend sich die EXP-Leiste animiert fuellt.
 var _exp_tween: Tween = null
 
+## Buch-Reiter (oben) und Seiten.
+var _tab_bgs: Array[TextureRect] = []      ## Hintergrund je Reiter (fuer aktiv/inaktiv)
+var _active_tab := 0
+var _rucksack_nodes: Array[Node] = []      ## Inhalt der Rucksack-Seite (zum Ein-/Ausblenden)
+var _page_craft: Control = null            ## Basic-Crafts-Seite (Platzhalter)
+var _page_settings: Control = null         ## Einstellungen-Seite (Platzhalter)
+
 
 func setup(p_inventory: Inventory) -> void:
 	inventory = p_inventory
@@ -129,8 +138,10 @@ func _bind() -> void:
 	# darum hier keine Font-Overrides mehr.
 	_wire_left_page()
 	_wire_right_page()
-	# Tabs/Lesezeichen (bleiben im Code - werden hier an das Buch gehaengt).
+	# Klickbare Reiter oben + Seiten-Umschaltung (Rucksack/Basic Crafts/Ayarlar).
 	_build_tabs(_bag, int(_bag.custom_minimum_size.x))
+	_setup_pages()
+	_select_tab(0)
 
 	# Itemleisten-Extras (EXP-Leiste + Stern).
 	_exp_left = $Root/LevelBar/ExpLeft
@@ -256,18 +267,112 @@ func _slot_style(i: int) -> StyleBox:
 
 # --- Tabs/Lesezeichen (Code, an das Buch gehaengt) ----------------------
 
-## Tabs wie im Referenzbild: oben Icon-Reiter, rechts farbige Lesezeichen.
+## Klickbare Icon-Reiter oben. Der aktive nutzt das laengere Bookmark-Asset und
+## ragt oben raus; ein Klick schaltet die Seite um (_select_tab).
 func _build_tabs(book: Control, book_w: int) -> void:
+	_tab_bgs.clear()
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 6)
-	tabs.position = Vector2(18 * BOOK_SCALE, -18 * BOOK_SCALE)
+	# Ueber dem Buch; Zeilenhoehe = aktive (hoehere) Variante, damit alle sitzen.
+	tabs.position = Vector2(18 * BOOK_SCALE, -21 * TAB_SCALE)
 	book.add_child(tabs)
-	for entry in TOP_TABS:
-		var tab := _icon_tab(TAB_BG, entry[0], 3, 2)
-		tab.tooltip_text = String(entry[1])
-		tab.mouse_filter = Control.MOUSE_FILTER_STOP   # damit der Tooltip erscheint
-		tabs.add_child(tab)
-	# Farbige Lesezeichen rechts vom Buch entfernt (auf Nutzerwunsch).
+	for i in TOP_TABS.size():
+		tabs.add_child(_make_tab(TOP_TABS[i][0], String(TOP_TABS[i][1]), i))
+
+
+## Ein anklickbarer Reiter: Hintergrund (aktiv/inaktiv) + zentriertes Icon.
+func _make_tab(icon_cell: Vector2i, tip: String, index: int) -> Control:
+	var tab := Control.new()
+	tab.custom_minimum_size = Vector2(20 * TAB_SCALE, 21 * TAB_SCALE)
+	tab.tooltip_text = tip
+	tab.mouse_filter = Control.MOUSE_FILTER_STOP
+	tab.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			_select_tab(index))
+	var bg := TextureRect.new()
+	bg.name = "Bg"
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tab.add_child(bg)
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.texture = UiAtlas.cell("icons", icon_cell.x, icon_cell.y)
+	icon.size = Vector2(32, 32)
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tab.add_child(icon)
+	_tab_bgs.append(bg)
+	return tab
+
+
+## Reiter-Optik setzen: aktiv = laengeres Bookmark (ragt oben raus), inaktiv =
+## kuerzeres, unten buendig. Icon jeweils in der sichtbaren Flaeche zentrieren.
+func _update_tab_visual(bg: TextureRect, active: bool) -> void:
+	var icon: TextureRect = bg.get_parent().get_node("Icon")
+	if active:
+		bg.texture = UiAtlas.tex("book", TAB_BG_ACTIVE)
+		bg.size = Vector2(20 * TAB_SCALE, 21 * TAB_SCALE)
+		bg.position = Vector2.ZERO
+	else:
+		bg.texture = UiAtlas.tex("book", TAB_BG)
+		bg.size = Vector2(20 * TAB_SCALE, 18 * TAB_SCALE)
+		bg.position = Vector2(0, 3 * TAB_SCALE)
+	icon.position = Vector2((bg.size.x - icon.size.x) * 0.5,
+		bg.position.y + (bg.size.y - icon.size.y) * 0.5)
+
+
+## Sammelt die Rucksack-Inhalte und legt Platzhalter fuer die anderen Seiten an.
+func _setup_pages() -> void:
+	for n in ["HeaderLeft", "HeaderRight", "StatIcon0", "StatIcon1", "StatIcon2",
+			"StatIcon3", "StatValue0", "StatValue1", "StatValue2", "StatValue3",
+			"Plus0", "Plus1", "Plus2", "Plus3", "Minus0", "Minus1", "Minus2", "Minus3",
+			"BagGrid"]:
+		var node := _bag.get_node_or_null(n)
+		if node:
+			_rucksack_nodes.append(node)
+	# Im Code erzeugte Rucksack-Teile.
+	if _points_label:
+		_rucksack_nodes.append(_points_label)
+	if _bag_scroll:
+		_rucksack_nodes.append(_bag_scroll)
+	_page_craft = _placeholder_page("Basic Crafts")
+	_page_settings = _placeholder_page("Ayarlar")
+
+
+## Leere Seite mit Titel (bis die echten Grafiken kommen).
+func _placeholder_page(title: String) -> Control:
+	var page := Control.new()
+	page.set_anchors_preset(Control.PRESET_FULL_RECT)
+	page.anchor_right = 1.0
+	page.anchor_bottom = 1.0
+	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.visible = false
+	_bag.add_child(page)
+	var lbl := Label.new()
+	lbl.text = "%s — yakında" % title
+	lbl.add_theme_font_override("font", UiAtlas.font())
+	lbl.add_theme_font_size_override("font_size", 20)
+	lbl.add_theme_color_override("font_color", Color("4a2f1c"))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(lbl)
+	return page
+
+
+## Reiter/Seite wechseln.
+func _select_tab(index: int) -> void:
+	_active_tab = index
+	for n in _rucksack_nodes:
+		if is_instance_valid(n):
+			n.visible = index == 0
+	if _page_craft:
+		_page_craft.visible = index == 1
+	if _page_settings:
+		_page_settings.visible = index == 2
+	for t in range(_tab_bgs.size()):
+		_update_tab_visual(_tab_bgs[t], t == index)
 
 
 ## Ein Tab/Lesezeichen: Pack-Hintergrund + zentriertes Icon.
@@ -303,10 +408,11 @@ func _refresh_stats() -> void:
 			CharStats.LABELS.get(key, key), int(CharStats.values.get(key, 0))]
 	if _points_label:
 		_points_label.text = "Kalan Puan: %d" % CharStats.points
-	# +/- verschwinden, sobald alle Punkte verteilt sind.
-	var has_points := CharStats.points > 0
+	# +/- verschwinden, sobald alle Punkte verteilt sind - und nur auf der
+	# Rucksack-Seite (sonst wuerden sie auf anderen Reitern auftauchen).
+	var show_btns := CharStats.points > 0 and _active_tab == 0
 	for b in _stat_buttons:
-		b.visible = has_points
+		b.visible = show_btns
 
 
 ## Stern-Grafik je Level-Stufe (alle 5 Level eine andere). Leicht erweiterbar:
