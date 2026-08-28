@@ -22,21 +22,26 @@ const PAD := 4
 
 ## --- Buch-Layout (fertiges Bild inventar2 + überlagerte dynamische Teile) ---
 const BOOK_SCALE := 3
-const BOOK_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/inventar2.png"
+## Blankes Buch (Kacheln, ohne Text/Icons) - Text/Icons legen wir selbst drauf.
+const BOOK_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/inventar1.png"
 const BOOK_W_PX := 230
 const BOOK_H_PX := 138
-## ENVANTER-Vertiefung (rechte Seite).
+## ENVANTER-Vertiefung (rechte Seite) - Ankerbereich der Scrollleiste.
 const WELL := Rect2i(120, 30, 100, 98)
-## Die gezeichneten Kacheln: 4x4 sichtbar. Die Items liegen transparent GENAU
-## darauf; eine Scrollleiste schiebt, welche 16 der Taschen-Slots gezeigt werden.
+## Die gezeichneten Kacheln: 4x4 sichtbar. Items liegen transparent GENAU darauf;
+## eine Scrollleiste schiebt, welche 16 der Taschen-Slots gezeigt werden.
 const VIEW_COLS := 4
 const VIEW_ROWS := 4
-const CELL0 := Vector2(135.5, 44.5)   ## Quell-Mitte der ersten Kachel
-const CELL_PITCH := 23.0
-const SLOT_VIEW := 22                  ## Slot-Kantenlänge in Quell-px
-## STATS (linke Seite): y-Mitte der vier Icon-Zeilen und x der Wert-Schrift.
-const STAT_ROW_Y := [23, 40, 56, 74]
-const STAT_VALUE_X := 34
+const CELL0 := Vector2(135.0, 46.0)   ## Quell-Mitte der ersten Kachel
+const CELL_PITCH := 22.3
+const SLOT_VIEW := 20                  ## Slot-Kantenlänge in Quell-px
+## Header-Positionen (Quell-Mitte).
+const HEADER_LEFT := Vector2(58, 13)
+const HEADER_RIGHT := Vector2(168, 13)
+## STATS (links): Mitte der 4 Icon-Boxen + x der Wert-Schrift (Quell-px).
+const ICON_BOX := [Vector2(21, 20), Vector2(21, 36), Vector2(21, 51), Vector2(21, 63)]
+const STAT_ICON_SRC := 13
+const STAT_VALUE_X := 33
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
@@ -310,21 +315,52 @@ const BANNER_HEADER := Rect2i(90, 32, 92, 25)
 const BANNER_SMALL := Rect2i(1, 33, 78, 24)
 
 
-## Linke Seite (STATS): die Werte über die im Bild gezeichneten Zeilen legen.
+## Linke Seite (STATS): Header + Icons in den gezeichneten Boxen (mit Hover-
+## Vergrößerung) + Werte daneben.
 func _build_left_page(book: Control) -> void:
+	_header(book, "İstatik", HEADER_LEFT)
 	for i in range(CharStats.ORDER.size()):
-		if i >= STAT_ROW_Y.size():
+		if i >= ICON_BOX.size():
 			break
 		var key := String(CharStats.ORDER[i])
+		var isz: float = STAT_ICON_SRC * BOOK_SCALE
+		# Icon in der Box, zentriert, mit Hover-Vergrößerung.
+		var icon := TextureRect.new()
+		icon.texture = UiAtlas.cell("icons", STAT_ICONS[key].x, STAT_ICONS[key].y)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.size = Vector2(isz, isz)
+		icon.position = ICON_BOX[i] * BOOK_SCALE - Vector2(isz, isz) * 0.5
+		icon.pivot_offset = Vector2(isz, isz) * 0.5
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		icon.mouse_entered.connect(func(): icon.scale = Vector2(1.3, 1.3); icon.z_index = 1)
+		icon.mouse_exited.connect(func(): icon.scale = Vector2.ONE; icon.z_index = 0)
+		book.add_child(icon)
+
 		var lbl := Label.new()
 		lbl.add_theme_font_override("font", UiAtlas.font())
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", Color("4a2f1c"))
-		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, (STAT_ROW_Y[i] - 6) * BOOK_SCALE)
+		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, (ICON_BOX[i].y - 6) * BOOK_SCALE)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		book.add_child(lbl)
 		_stat_value_labels[key] = lbl
 	_refresh_stats()
+
+
+## Seiten-Überschrift (selbst geschrieben), zentriert um `center` (Quell-px).
+func _header(book: Control, text: String, center: Vector2) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_override("font", UiAtlas.font())
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color("4a2f1c"))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size = Vector2(120, 20)
+	lbl.position = center * BOOK_SCALE - Vector2(60, 10)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	book.add_child(lbl)
 
 
 ## Banner-Zeile: Pack-Banner (9-Patch) + zentrierte Schrift. Gibt [Control, Label].
@@ -359,6 +395,7 @@ func _banner_row(region: Rect2i, height: int, text: String, fsize: int) -> Array
 ## Rechte Seite (ENVANTER): 16 transparente Slots GENAU auf den gezeichneten
 ## Kacheln; eine Scrollleiste schiebt das Fenster über alle Taschen-Slots.
 func _build_right_page(book: Control) -> void:
+	_header(book, "Envanter", HEADER_RIGHT)
 	var sv := SLOT_VIEW * BOOK_SCALE
 	for r in range(VIEW_ROWS):
 		for c in range(VIEW_COLS):
