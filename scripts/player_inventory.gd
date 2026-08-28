@@ -55,7 +55,10 @@ var _notice_left := 0.0
 
 func _ready() -> void:
 	inventory = Inventory.new(hotbar_size, bag_rows, bag_slots)
-	hud = InventoryHUD.new()
+	# HUD ist jetzt eine echte Szene (Layout im Editor schiebbar), statt im Code
+	# zusammengebaut. Preload statt class_name-Instanz - der Auto-Updater ersetzt
+	# das PackedScene in der game.pck, kennt aber neue class_names nicht.
+	hud = load("res://scenes/inventory_hud.tscn").instantiate()
 	add_child(hud)
 	hud.setup(inventory)
 
