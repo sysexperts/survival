@@ -8,6 +8,7 @@ extends Node
 ## Anzeige das Fäll-Level; die Anbindung an den Skills-Tab folgt beim Aktivieren.
 
 const Features := preload("res://scripts/features.gd")
+const XpParticles := preload("res://scripts/xp_particles.gd")
 
 ## Skill-Schlüssel -> XP (roh). Level = floor(sqrt(xp / 10)).
 static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0}
@@ -41,8 +42,20 @@ func _hook_player() -> void:
 		_player.felled.connect(_on_felled)
 
 
-func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:
+func _on_felled(cell: Vector2i, level: int, _atlas: Vector2i) -> void:
 	xp["woodcutting"] += XP_PER_FELL
+	_xp_fx(cell, level)
+
+
+## Gelbe XP-Teilchen vom (Baum-)Ort zum Spieler. Immer, wenn XP dazukommt.
+func _xp_fx(cell: Vector2i, level: int) -> void:
+	if _player == null or not is_instance_valid(_player):
+		return
+	var w = _player.world
+	if w == null:
+		return
+	var from: Vector2 = w.cell_to_world(cell, level)
+	XpParticles.spawn(_player.get_parent(), from, _player, 8)
 
 
 func _on_chop() -> void:

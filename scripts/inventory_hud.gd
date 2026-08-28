@@ -15,9 +15,6 @@ const UiAtlas := preload("res://scripts/ui_atlas.gd")
 const CharStats := preload("res://scripts/char_stats.gd")
 const SkillsXP := preload("res://scripts/skills_xp.gd")
 
-## Slot-Grafik aus der neuen Itemleiste (leiste.png), als 9-Patch-Stylebox.
-const SLOT_TEX := "res://assets/UI/Cute_Fantasy_UI/UI/leiste_slot.png"
-
 ## Referenzen für die verstellbaren Stats (linke Buchseite).
 var _stat_value_labels: Dictionary = {}
 ## Alle +/- Buttons (zum Ausblenden, sobald keine Punkte mehr uebrig sind).
@@ -85,11 +82,11 @@ var _exp_left: TextureProgressBar
 var _exp_right: TextureProgressBar
 var _level_label: Label
 var _level_star: TextureRect
-## Gemeinsamer Slot-Grafik-Stil (einmal gebaut).
-var _slot_style_tex: StyleBoxTexture = null
 ## Level, bei dem die EXP-Leiste zuletzt gezeichnet wurde (Poll-Vergleich).
 var _last_level := -1
 var _poll := 0.0
+## Laeuft, waehrend sich die EXP-Leiste animiert fuellt.
+var _exp_tween: Tween = null
 
 
 func setup(p_inventory: Inventory) -> void:
@@ -158,7 +155,7 @@ func _init_slot(panel: InventorySlot, index: int, boxed: bool) -> void:
 	panel.index = index
 	var sz: float = panel.custom_minimum_size.x
 	if boxed:
-		panel.add_theme_stylebox_override("panel", _slot_tex())
+		panel.add_theme_stylebox_override("panel", _style(false))
 	else:
 		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -249,20 +246,11 @@ func _book_slot_style() -> StyleBoxFlat:
 	return sb
 
 
-## Slot-Grafik (leiste.png) als 9-Patch-Stylebox, einmal gebaut.
-func _slot_tex() -> StyleBoxTexture:
-	if _slot_style_tex == null:
-		_slot_style_tex = StyleBoxTexture.new()
-		_slot_style_tex.texture = load(SLOT_TEX)
-		_slot_style_tex.set_texture_margin_all(6)   # runde Ecken nicht verzerren
-	return _slot_style_tex
-
-
-## Passenden Slot-Stil je Index: Hotbar = Grafik, Tasche transparent.
+## Passenden Slot-Stil je Index: Hotbar dunkel (ausgewaehlt heller), Tasche leer.
 func _slot_style(i: int) -> StyleBox:
 	if i >= inventory.hotbar_size or i < 0:
 		return StyleBoxEmpty.new()
-	return _slot_tex()
+	return _style(i == selected)
 
 
 # --- Tabs/Lesezeichen (Code, an das Buch gehaengt) ----------------------
@@ -330,15 +318,29 @@ func _refresh_level() -> void:
 	if _exp_left == null:
 		return
 	var lvl := SkillsXP.player_level()
-	var prog := SkillsXP.level_progress() * 100.0
-	_exp_left.value = prog
-	_exp_right.value = prog
+	var prog := SkillsXP.level_progress()
+	# EINE durchgehende Leiste: erst fuellt sich die linke Haelfte (0..0.5),
+	# dann laeuft es rechts weiter (0.5..1). Sanft animiert.
+	var left_t := clampf(prog * 2.0, 0.0, 1.0) * 100.0
+	var right_t := clampf((prog - 0.5) * 2.0, 0.0, 1.0) * 100.0
+	_animate_exp(left_t, right_t)
 	_level_label.text = str(lvl)
 	# Stern-Grafik nur bei Levelwechsel neu setzen (spart Arbeit).
 	if lvl != _last_level:
 		var tier: int = clampi(lvl / 5, 0, STAR_CELLS.size() - 1)
 		_level_star.texture = UiAtlas.cell("icons", STAR_CELLS[tier].x, STAR_CELLS[tier].y)
 		_last_level = lvl
+
+
+## Animiert beide Leisten-Haelften auf ihre Zielwerte (0..100).
+func _animate_exp(left_t: float, right_t: float) -> void:
+	if is_equal_approx(_exp_left.value, left_t) and is_equal_approx(_exp_right.value, right_t):
+		return
+	if _exp_tween != null and _exp_tween.is_valid():
+		_exp_tween.kill()
+	_exp_tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_exp_tween.tween_property(_exp_left, "value", left_t, 0.35)
+	_exp_tween.tween_property(_exp_right, "value", right_t, 0.35)
 
 
 ## XP aendert sich zur Laufzeit (Faellen/Handwerk) ohne Signal - leichter Poll.
@@ -380,8 +382,6 @@ func _refresh() -> void:
 	for panel in _slot_nodes:
 		_refresh_slot(panel)
 		panel.add_theme_stylebox_override("panel", _slot_style(panel.index))
-		# Ausgewaehltes Hotbar-Feld heller (alle nutzen dieselbe Grafik).
-		panel.self_modulate = Color(1.35, 1.3, 1.0) if panel.index == selected else Color(1, 1, 1)
 	for view in _bag_views:
 		_refresh_slot(view)
 	var sel: Dictionary = inventory.slots[selected]
