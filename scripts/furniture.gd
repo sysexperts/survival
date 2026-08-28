@@ -45,6 +45,9 @@ const CONFIG := {
 	"ileri_uretim_masasi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	"dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	"ileri_dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"uretim_masasi_v2": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"ileri_uretim_masasi_v2": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	"ustun_uretim_masasi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	"eritme_firini": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 }
 

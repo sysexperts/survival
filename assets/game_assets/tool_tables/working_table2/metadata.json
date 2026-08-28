@@ -1,0 +1,73 @@
+{
+  "group_id": "31db793e-33cc-45c7-86e0-186d89893240",
+  "objects": [
+    {
+      "id": "8edf99c6-0ad4-4f6a-8277-35308b05d1a2",
+      "name": "base",
+      "prompt": "create a wooden pixelart isometric workingtable with no metal parts.",
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    },
+    {
+      "id": "a1bd64f4-6eaa-41fa-81d6-15aaac497674",
+      "name": "make a more modern v",
+      "prompt": "create a wooden pixelart isometric workingtable with no metal parts.",
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    },
+    {
+      "id": "cd5291cc-ed28-4059-88d8-c799aee0d397",
+      "name": "make a high end wood",
+      "prompt": "create a wooden pixelart isometric workingtable with no metal parts.",
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "directions": 8,
+      "view": "high top-down",
+      "rotations": {
+        "south": "rotations/south.png",
+        "south-east": "rotations/south-east.png",
+        "east": "rotations/east.png",
+        "north-east": "rotations/north-east.png",
+        "north": "rotations/north.png",
+        "north-west": "rotations/north-west.png",
+        "west": "rotations/west.png",
+        "south-west": "rotations/south-west.png"
+      },
+      "animations": {}
+    }
+  ],
+  "export_version": "1.1",
+  "export_date": "2026-08-28T03:05:40.910620"
+}

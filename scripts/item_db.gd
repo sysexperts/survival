@@ -187,6 +187,10 @@ const FURNITURE := {
 	# ist nur Fallback und wird von has_dirs()/dir_texture() ueberstochen.
 	"ileri_uretim_masasi": ["Ileri Üretim Masasi", Vector2i(0, 1)],
 	"ileri_dokuma_tezgahi": ["Ileri Dokuma Tezgahi", Vector2i(3, 1)],
+	# working_table2 - alternative Stile zum Vergleichen (Richtungs-Sprites).
+	"uretim_masasi_v2": ["Üretim Masasi 2", Vector2i(0, 1)],
+	"ileri_uretim_masasi_v2": ["Ileri Üretim Masasi 2", Vector2i(0, 1)],
+	"ustun_uretim_masasi": ["Üstün Üretim Masasi", Vector2i(0, 1)],
 }
 
 
@@ -200,6 +204,9 @@ const DIRSPRITES := {
 	"dokuma_tezgahi": "res://assets/game_assets/tool_tables/loom_table/loom_table/rotations",
 	"ileri_dokuma_tezgahi": "res://assets/game_assets/tool_tables/loom_table/make_a_advaned_loom/rotations",
 	"eritme_firini": "res://assets/game_assets/tool_tables/melting_oven/isometric_pixelart/rotations",
+	"uretim_masasi_v2": "res://assets/game_assets/tool_tables/working_table2/uretim_masasi/rotations",
+	"ileri_uretim_masasi_v2": "res://assets/game_assets/tool_tables/working_table2/ileri_uretim_masasi_v2/rotations",
+	"ustun_uretim_masasi": "res://assets/game_assets/tool_tables/working_table2/ustun_uretim_masasi/rotations",
 }
 
 ## orient 0..7 -> Dateiname der Richtung, im Uhrzeigersinn ab Sued. Alle acht
