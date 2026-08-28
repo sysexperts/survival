@@ -235,6 +235,7 @@ offset_top = 49.0
 offset_right = 237.0
 offset_bottom = 77.0
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_font_sizes/font_size = 20
 text = "CAN"
 vertical_alignment = 1
 
@@ -245,6 +246,7 @@ offset_top = 88.0
 offset_right = 237.0
 offset_bottom = 116.0
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_font_sizes/font_size = 20
 text = "GÜC"
 vertical_alignment = 1
 
@@ -255,6 +257,7 @@ offset_top = 127.0
 offset_right = 237.0
 offset_bottom = 155.0
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_font_sizes/font_size = 20
 text = "SAVUNMA"
 vertical_alignment = 1
 
@@ -263,9 +266,8 @@ layout_mode = 0
 offset_left = 97.0
 offset_top = 167.0
 offset_right = 237.0
-offset_bottom = 192.45454
+offset_bottom = 195.0
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
 theme_override_font_sizes/font_size = 20
 text = "ENERJI"
 vertical_alignment = 1
@@ -375,7 +377,6 @@ icon = SubResource("PlusIcon")
 expand_icon = true
 
 [node name="BagGrid" type="Control" parent="Root/Center/Book" unique_id=1858956706]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

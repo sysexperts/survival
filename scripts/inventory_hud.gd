@@ -16,6 +16,8 @@ const CharStats := preload("res://scripts/char_stats.gd")
 
 ## Referenzen für die verstellbaren Stats (linke Buchseite).
 var _stat_value_labels: Dictionary = {}
+## Alle +/- Buttons (zum Ausblenden, sobald keine Punkte mehr uebrig sind).
+var _stat_buttons: Array[Button] = []
 var _points_label: Label = null
 
 const SLOT := 46
@@ -160,9 +162,13 @@ func _wire_left_page() -> void:
 		# Textart der Stat-Werte im Editor (Inspector -> Theme Overrides) aendern.
 		_stat_value_labels[key] = lbl
 		# +/- Buttons liegen jetzt als Knoten in der Szene (im Editor schiebbar) -
-		# hier nur noch die Aktion verdrahten.
-		(_bag.get_node("Plus%d" % i) as Button).pressed.connect(_on_stat.bind(key, 1))
-		(_bag.get_node("Minus%d" % i) as Button).pressed.connect(_on_stat.bind(key, -1))
+		# hier nur noch die Aktion verdrahten und fuer das spaetere Ausblenden merken.
+		var plus: Button = _bag.get_node("Plus%d" % i)
+		var minus: Button = _bag.get_node("Minus%d" % i)
+		plus.pressed.connect(_on_stat.bind(key, 1))
+		minus.pressed.connect(_on_stat.bind(key, -1))
+		_stat_buttons.append(plus)
+		_stat_buttons.append(minus)
 
 	# Restpunkte-Anzeige (unterer Balken).
 	_points_label = Label.new()
@@ -238,13 +244,7 @@ func _build_tabs(book: Control, book_w: int) -> void:
 		tab.tooltip_text = String(entry[1])
 		tab.mouse_filter = Control.MOUSE_FILTER_STOP   # damit der Tooltip erscheint
 		tabs.add_child(tab)
-
-	var ry := 14 * BOOK_SCALE
-	for i in RIBBON_BG.size():
-		var ribbon := _icon_tab(RIBBON_BG[i], RIBBON_ICONS[i], 3, 2)
-		ribbon.position = Vector2(book_w - 10 * BOOK_SCALE, ry)
-		book.add_child(ribbon)
-		ry += ribbon.custom_minimum_size.y + 6
+	# Farbige Lesezeichen rechts vom Buch entfernt (auf Nutzerwunsch).
 
 
 ## Ein Tab/Lesezeichen: Pack-Hintergrund + zentriertes Icon.
@@ -280,6 +280,10 @@ func _refresh_stats() -> void:
 			CharStats.LABELS.get(key, key), int(CharStats.values.get(key, 0))]
 	if _points_label:
 		_points_label.text = "Kalan Puan: %d" % CharStats.points
+	# +/- verschwinden, sobald alle Punkte verteilt sind.
+	var has_points := CharStats.points > 0
+	for b in _stat_buttons:
+		b.visible = has_points
 
 
 # --- Fenster-Scrolling der Tasche ---------------------------------------
