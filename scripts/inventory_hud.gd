@@ -28,8 +28,8 @@ const BOOK_REGION := Rect2i(8, 6, 224, 140)
 const LEFT_PAGE := Rect2i(14, 12, 90, 114)
 ## Rechte Seite breiter genutzt und flacher - das Raster wird breiter+kürzer.
 const RIGHT_PAGE := Rect2i(116, 14, 102, 104)
-const BAG_COLS := 8
-const BAG_SLOT := 33
+const BAG_COLS := 7
+const BAG_SLOT := 34
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
