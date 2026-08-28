@@ -14,6 +14,11 @@ class_name InventoryHUD
 const UiAtlas := preload("res://scripts/ui_atlas.gd")
 const CharStats := preload("res://scripts/char_stats.gd")
 const SkillsXP := preload("res://scripts/skills_xp.gd")
+const RecipeDB := preload("res://scripts/recipe_db.gd")
+
+## Buch-Hintergruende je Seite.
+const BOOK_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/inventar1.png"
+const CRAFT_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/basic_craft.png"
 
 ## Referenzen für die verstellbaren Stats (linke Buchseite).
 var _stat_value_labels: Dictionary = {}
@@ -94,8 +99,14 @@ var _exp_tween: Tween = null
 var _tab_bgs: Array[TextureRect] = []      ## Hintergrund je Reiter (fuer aktiv/inaktiv)
 var _active_tab := 0
 var _rucksack_nodes: Array[Node] = []      ## Inhalt der Rucksack-Seite (zum Ein-/Ausblenden)
-var _page_craft: Control = null            ## Basic-Crafts-Seite (Platzhalter)
+var _page_craft: Control = null            ## Basic-Crafts-Seite
 var _page_settings: Control = null         ## Einstellungen-Seite (Platzhalter)
+var _book_bg: TextureRect = null           ## Buch-Hintergrund (wechselt je Seite)
+
+## Grundhandwerk auf der Basic-Crafts-Seite.
+var craft_queue: CraftQueue = null
+var _craft_detail: Control = null          ## rechte Bauplan-Ansicht
+var _craft_selected: Dictionary = {}       ## aktuell gewaehltes Rezept
 
 
 func setup(p_inventory: Inventory) -> void:
@@ -126,6 +137,7 @@ func _bind() -> void:
 	_name_label = $Root/NameLabel
 	_hint_label = $Root/HintLabel
 	_bag = $Root/Center/Book
+	_book_bg = _bag.get_node("BookBg")
 
 	# Taschen-Felder (4x5) - transparent, Index wird beim Scrollen gesetzt.
 	_bag_views.clear()
@@ -335,7 +347,14 @@ func _setup_pages() -> void:
 		_rucksack_nodes.append(_points_label)
 	if _bag_scroll:
 		_rucksack_nodes.append(_bag_scroll)
-	_page_craft = _placeholder_page("Basic Crafts")
+	# Basic Crafts wird von attach_crafting() gefuellt (Rezeptliste + Bauplan).
+	_page_craft = Control.new()
+	_page_craft.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_page_craft.anchor_right = 1.0
+	_page_craft.anchor_bottom = 1.0
+	_page_craft.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_page_craft.visible = false
+	_bag.add_child(_page_craft)
 	_page_settings = _placeholder_page("Ayarlar")
 
 
@@ -364,6 +383,9 @@ func _placeholder_page(title: String) -> Control:
 ## Reiter/Seite wechseln.
 func _select_tab(index: int) -> void:
 	_active_tab = index
+	# Buch-Hintergrund je Seite (Basic Crafts hat ein eigenes Bild).
+	if _book_bg:
+		_book_bg.texture = load(CRAFT_IMG) if index == 1 else load(BOOK_IMG)
 	for n in _rucksack_nodes:
 		if is_instance_valid(n):
 			n.visible = index == 0
@@ -373,6 +395,164 @@ func _select_tab(index: int) -> void:
 		_page_settings.visible = index == 2
 	for t in range(_tab_bgs.size()):
 		_update_tab_visual(_tab_bgs[t], t == index)
+
+
+# --- Basic Crafts (Grundhandwerk im Buch, loest die C-Taste ab) ---------
+
+## Wird von player_inventory nach dem Anlegen der CraftQueue aufgerufen.
+func attach_crafting(q: CraftQueue) -> void:
+	craft_queue = q
+	if craft_queue and not craft_queue.changed.is_connected(_refresh_craft_detail):
+		craft_queue.changed.connect(_refresh_craft_detail)
+	_build_craft_page()
+
+
+## Oeffnet das Buch direkt auf der Basic-Crafts-Seite (fuer die C-Taste).
+func open_craft_page() -> void:
+	if not bag_open():
+		toggle_bag()
+	_select_tab(1)
+
+
+func _build_craft_page() -> void:
+	if _page_craft == null:
+		return
+	for c in _page_craft.get_children():
+		c.queue_free()
+
+	# Linke Seite: scrollbare Rezeptliste (Grundhandwerk = Station HAND).
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(36, 54)
+	scroll.custom_minimum_size = Vector2(300, 316)
+	scroll.size = Vector2(300, 316)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	_page_craft.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 3)
+	scroll.add_child(list)
+	for r in RecipeDB.RECIPES:
+		if String(r.get("station", "")) == RecipeDB.HAND:
+			list.add_child(_craft_row(r))
+
+	# Rechte Seite: Bauplan der Auswahl.
+	_craft_detail = Control.new()
+	_craft_detail.position = Vector2(372, 66)
+	_craft_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_page_craft.add_child(_craft_detail)
+	_refresh_craft_detail()
+
+
+## Eine Zeile in der Rezeptliste: Icon + Name, anklickbar.
+func _craft_row(recipe: Dictionary) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(288, 34)
+	b.focus_mode = Control.FOCUS_NONE
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_theme_font_override("font", UiAtlas.font())
+	b.add_theme_font_size_override("font_size", 14)
+	b.add_theme_color_override("font_color", Color("3a2418"))
+	b.add_theme_color_override("font_hover_color", Color("2a1a10"))
+	b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	var hov := StyleBoxFlat.new()
+	hov.bg_color = Color(0, 0, 0, 0.12)
+	hov.set_corner_radius_all(4)
+	b.add_theme_stylebox_override("hover", hov)
+	b.add_theme_stylebox_override("pressed", hov)
+	b.icon = ItemDB.icon(recipe["out"])
+	b.text = "  " + ItemDB.display_name(recipe["out"])
+	b.pressed.connect(_select_craft.bind(recipe))
+	return b
+
+
+func _select_craft(recipe: Dictionary) -> void:
+	_craft_selected = recipe
+	_refresh_craft_detail()
+
+
+## Baut die rechte Bauplan-Ansicht neu: Zutaten -> Ergebnis + Bauen-Knopf.
+func _refresh_craft_detail() -> void:
+	if _craft_detail == null:
+		return
+	for c in _craft_detail.get_children():
+		c.queue_free()
+	if _craft_selected.is_empty():
+		return
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_craft_detail.add_child(box)
+
+	var title := Label.new()
+	title.text = ItemDB.display_name(_craft_selected["out"])
+	title.add_theme_font_override("font", UiAtlas.font())
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color("3a2418"))
+	box.add_child(title)
+
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 8)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(line)
+	var cost: Dictionary = _craft_selected.get("cost", {})
+	var affordable := true
+	for ing in cost:
+		var need := int(cost[ing])
+		var have := inventory.count_of(String(ing))
+		if have < need:
+			affordable = false
+		line.add_child(_cost_chip(String(ing), need, have))
+	var arrow := Label.new()
+	arrow.text = "→"
+	arrow.add_theme_font_size_override("font_size", 20)
+	arrow.add_theme_color_override("font_color", Color("3a2418"))
+	arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.add_child(arrow)
+	line.add_child(_cost_chip(String(_craft_selected["out"]), int(_craft_selected.get("count", 1)), -1))
+
+	var btn := Button.new()
+	btn.text = "Yap"
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.add_theme_font_override("font", UiAtlas.font())
+	btn.add_theme_font_size_override("font_size", 15)
+	btn.custom_minimum_size = Vector2(120, 34)
+	btn.disabled = not affordable
+	btn.pressed.connect(func():
+		if craft_queue:
+			craft_queue.enqueue(_craft_selected, 1)
+			_refresh_craft_detail())
+	box.add_child(btn)
+
+	if craft_queue and craft_queue.is_busy():
+		var pl := Label.new()
+		pl.text = "Yapılıyor… %d%%" % int(craft_queue.progress() * 100.0)
+		pl.add_theme_font_override("font", UiAtlas.font())
+		pl.add_theme_font_size_override("font_size", 12)
+		pl.add_theme_color_override("font_color", Color("3a2418"))
+		box.add_child(pl)
+
+
+## Icon + "xN" (rot, wenn zu wenig; have<0 = Ergebnis, immer normal).
+func _cost_chip(id: String, count: int, have: int) -> Control:
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ic := TextureRect.new()
+	ic.texture = ItemDB.icon(id)
+	ic.custom_minimum_size = Vector2(40, 40)
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(ic)
+	var l := Label.new()
+	l.text = "x%d" % count
+	l.add_theme_font_override("font", UiAtlas.font())
+	l.add_theme_font_size_override("font_size", 12)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_color_override("font_color", Color("b03030") if (have >= 0 and have < count) else Color("3a2418"))
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(l)
+	return v
 
 
 ## Ein Tab/Lesezeichen: Pack-Hintergrund + zentriertes Icon.

@@ -69,6 +69,8 @@ func _ready() -> void:
 	queue = CraftQueue.new()
 	queue.setup(inventory)
 	add_child(queue)
+	# Grundhandwerk lebt jetzt im Buch (Basic-Crafts-Reiter) statt im C-Fenster.
+	hud.attach_crafting(queue)
 
 	crafting = CraftingHUD.new()
 	add_child(crafting)
@@ -271,13 +273,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		hud.toggle_bag()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_C:
-		if hud.bag_open():
-			hud.toggle_bag()
-		# C ist das Grundhandwerk. Ein offenes Stationsfenster weicht ihm.
+		# C oeffnet das Grundhandwerk - jetzt als Basic-Crafts-Seite im Buch.
+		# Steht man an einer Station, hat deren Fenster weiterhin Vorrang.
 		var was_station := _open_station()
-		_close_all_crafting()
 		if was_station == null:
-			crafting.toggle()
+			_close_all_crafting()
+			hud.open_craft_page()
+		elif hud.bag_open():
+			hud.toggle_bag()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_F:
 		_use_selected()
