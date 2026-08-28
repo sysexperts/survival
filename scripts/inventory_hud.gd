@@ -20,16 +20,18 @@ var _brown_style: StyleBoxFlat = null
 const SLOT := 46
 const PAD := 4
 
-## --- Buch-Layout (Cute-Fantasy-UI) ---
+## --- Buch-Layout (fertiges Bild inventar2 + überlagerte dynamische Teile) ---
 const BOOK_SCALE := 3
-## Tan-Buch (Doppelseite) in Book_UI.png.
-const BOOK_REGION := Rect2i(8, 6, 224, 140)
-## Nutzbare Seitenflächen in Buch-lokalen Pixeln (innerhalb der Zierränder).
-const LEFT_PAGE := Rect2i(14, 12, 90, 114)
-## Rechte Seite breiter genutzt und flacher - das Raster wird breiter+kürzer.
-const RIGHT_PAGE := Rect2i(116, 14, 102, 104)
-const BAG_COLS := 7
-const BAG_SLOT := 34
+const BOOK_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/inventar2.png"
+const BOOK_W_PX := 230
+const BOOK_H_PX := 138
+## ENVANTER-Vertiefung (rechte Seite) - hier liegt das scrollbare Slot-Raster.
+const WELL := Rect2i(120, 30, 100, 98)
+const BAG_COLS := 4
+const BAG_SLOT := 20
+## STATS (linke Seite): y-Mitte der vier Icon-Zeilen und x der Wert-Schrift.
+const STAT_ROW_Y := [23, 40, 56, 74]
+const STAT_VALUE_X := 34
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
@@ -79,6 +81,16 @@ func _make_slot(index: int, size: int = SLOT) -> InventorySlot:
 	panel.add_theme_stylebox_override("panel", _style(false))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_slot_input.bind(index))
+	# Hover-Effekt: leicht aufhellen + „poppen" für mehr haptisches Gefühl.
+	panel.pivot_offset = Vector2(size, size) * 0.5
+	panel.mouse_entered.connect(func():
+		panel.modulate = Color(1.22, 1.22, 1.22)
+		panel.scale = Vector2(1.07, 1.07)
+		panel.z_index = 1)
+	panel.mouse_exited.connect(func():
+		panel.modulate = Color(1, 1, 1)
+		panel.scale = Vector2.ONE
+		panel.z_index = 0)
 
 	var icon := TextureRect.new()
 	icon.name = "Icon"
@@ -189,25 +201,25 @@ func _build() -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
 
-	# Buch (Tasche) - Hintergrund aus dem Cute-Fantasy-UI-Pack.
+	# Buch (Tasche) - fertiges Bild inventar2 als Hintergrund.
 	_bag = Control.new()
 	_bag.visible = false
-	var bw := BOOK_REGION.size.x * BOOK_SCALE
-	var bh := BOOK_REGION.size.y * BOOK_SCALE
+	var bw := BOOK_W_PX * BOOK_SCALE
+	var bh := BOOK_H_PX * BOOK_SCALE
 	_bag.custom_minimum_size = Vector2(bw, bh)
 	_bag.mouse_filter = Control.MOUSE_FILTER_STOP
 	center.add_child(_bag)
 
 	var book_bg := TextureRect.new()
-	book_bg.texture = UiAtlas.tex("book", BOOK_REGION)
+	book_bg.texture = load(BOOK_IMG)
 	book_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	book_bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	book_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bag.add_child(book_bg)
 
-	_build_tabs(_bag, bw)
 	_build_left_page(_bag)
 	_build_right_page(_bag)
+	_build_tabs(_bag, bw)
 
 	# Die Hotbar nach ganz oben holen. Sie wird als Erstes gebaut, laege
 	# also unter der Sperrflaeche - und damit koennte man bei offener
@@ -284,40 +296,20 @@ const BANNER_HEADER := Rect2i(90, 32, 92, 25)
 const BANNER_SMALL := Rect2i(1, 33, 78, 24)
 
 
-## Linke Seite, obere Hälfte: CHARAKTER-WERTE-Panel (Pack-Optik).
+## Linke Seite (STATS): die Werte über die im Bild gezeichneten Zeilen legen.
 func _build_left_page(book: Control) -> void:
-	var area := _page_area(book, LEFT_PAGE)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	col.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	col.offset_left = 6; col.offset_top = 6; col.offset_right = -6
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	area.add_child(col)
-
-	# Header-Banner.
-	col.add_child(_banner_row(BANNER_HEADER, 46, "CHARAKTER-WERTE", 17)[0])
-
-	# Dunkles Panel mit 4 Stat-Reihen.
-	var panel := PanelContainer.new()
-	var psb := StyleBoxFlat.new()
-	psb.bg_color = Color("232028")
-	psb.border_color = Color("6a4326")
-	psb.set_border_width_all(3)
-	psb.set_corner_radius_all(8)
-	psb.set_content_margin_all(8)
-	panel.add_theme_stylebox_override("panel", psb)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(panel)
-	var rows := VBoxContainer.new()
-	rows.add_theme_constant_override("separation", 6)
-	panel.add_child(rows)
-	for key in CharStats.ORDER:
-		rows.add_child(_stat_row(String(key)))
-
-	# Punkte-Banner.
-	var pr := _banner_row(BANNER_SMALL, 30, "", 12)
-	_points_label = pr[1]
-	col.add_child(pr[0])
+	for i in range(CharStats.ORDER.size()):
+		if i >= STAT_ROW_Y.size():
+			break
+		var key := String(CharStats.ORDER[i])
+		var lbl := Label.new()
+		lbl.add_theme_font_override("font", UiAtlas.font())
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_color_override("font_color", Color("4a2f1c"))
+		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, (STAT_ROW_Y[i] - 6) * BOOK_SCALE)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		book.add_child(lbl)
+		_stat_value_labels[key] = lbl
 	_refresh_stats()
 
 
@@ -350,18 +342,27 @@ func _banner_row(region: Rect2i, height: int, text: String, fsize: int) -> Array
 	return [c, lbl]
 
 
-## Rechte Seite: das Taschen-Raster (9 Spalten) oben in die Seite gesetzt.
+## Rechte Seite (ENVANTER): scrollbares Slot-Raster in der Vertiefung.
 func _build_right_page(book: Control) -> void:
-	var area := _page_area(book, RIGHT_PAGE)
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(WELL.position * BOOK_SCALE)
+	scroll.custom_minimum_size = Vector2(WELL.size * BOOK_SCALE)
+	scroll.size = Vector2(WELL.size * BOOK_SCALE)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.clip_contents = true
+	book.add_child(scroll)
+
+	var gap := 6
 	var grid := GridContainer.new()
 	grid.columns = BAG_COLS
-	grid.add_theme_constant_override("h_separation", 3)
-	grid.add_theme_constant_override("v_separation", 3)
-	var grid_w := BAG_COLS * BAG_SLOT + (BAG_COLS - 1) * 3
-	grid.position = Vector2(maxf(0.0, (area.size.x - grid_w) * 0.5), 10)
-	area.add_child(grid)
+	grid.add_theme_constant_override("h_separation", gap)
+	grid.add_theme_constant_override("v_separation", gap)
+	scroll.add_child(grid)
+
+	var well_w: int = WELL.size.x * BOOK_SCALE
+	var slot: int = int((well_w - (BAG_COLS + 1) * gap) / BAG_COLS)
 	for i in range(inventory.hotbar_size, inventory.slots.size()):
-		grid.add_child(_make_slot(i, BAG_SLOT))
+		grid.add_child(_make_slot(i, slot))
 
 
 # --- Buch-Bausteine -----------------------------------------------------
