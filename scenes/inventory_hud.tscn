@@ -1,15 +1,6 @@
 [gd_scene format=3 uid="uid://b0invhud0001"]
 
-; Inventar-HUD als echte Szene (Pilot). Der Buch-Aufbau steht hier als
-; editierbare Knoten - Icons, Kopfzeilen und die 4x5 Tasche lassen sich im
-; Godot-Editor mit der Maus verschieben. Die Logik (Scrolling, Drag & Drop,
-; Stat-Vergabe, +/- Buttons, Tabs) bleibt in inventory_hud.gd; setup() bindet
-; die Knoten und haengt die dynamischen Teile an.
-;
-; Koordinaten sind bereits x3 skaliert (BOOK_SCALE): das Buchbild ist 230x138,
-; hier also 690x414, damit man im Editor in echten Pixeln zieht.
-
-[ext_resource type="Script" path="res://scripts/inventory_hud.gd" id="1"]
+[ext_resource type="Script" uid="uid://cvhu4wbd4in3p" path="res://scripts/inventory_hud.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://b0invslot001" path="res://scenes/inventory_slot.tscn" id="2"]
 [ext_resource type="Texture2D" uid="uid://1wxijeh4slu7" path="res://assets/UI/Cute_Fantasy_UI/UI/inventar1.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://d51af15c020u" path="res://assets/UI/Cute_Fantasy_UI/UI/UI_Icons.png" id="4"]
@@ -30,18 +21,52 @@ region = Rect2(192, 0, 16, 16)
 atlas = ExtResource("4")
 region = Rect2(144, 0, 16, 16)
 
-[node name="InventoryHUD" type="CanvasLayer"]
+[sub_resource type="StyleBoxFlat" id="MinusStyle"]
+bg_color = Color(0.753, 0.224, 0.169, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.486, 0.145, 0.106, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="AtlasTexture" id="MinusIcon"]
+atlas = ExtResource("4")
+region = Rect2(48, 128, 16, 16)
+
+[sub_resource type="StyleBoxFlat" id="PlusStyle"]
+bg_color = Color(0.294, 0.62, 0.247, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.188, 0.4, 0.157, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="AtlasTexture" id="PlusIcon"]
+atlas = ExtResource("4")
+region = Rect2(0, 128, 16, 16)
+
+[node name="InventoryHUD" type="CanvasLayer" unique_id=148255838]
 layer = 110
 script = ExtResource("1")
 
-[node name="Root" type="Control" parent="."]
+[node name="Root" type="Control" parent="." unique_id=1149447685]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="Hotbar" type="HBoxContainer" parent="Root"]
+[node name="Hotbar" type="HBoxContainer" parent="Root" unique_id=419989960]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -53,34 +78,34 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 4
 
-[node name="H0" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H0" parent="Root/Hotbar" unique_id=605876719 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H1" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H1" parent="Root/Hotbar" unique_id=970277779 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H2" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H2" parent="Root/Hotbar" unique_id=1033616552 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H3" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H3" parent="Root/Hotbar" unique_id=1866158793 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H4" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H4" parent="Root/Hotbar" unique_id=502324566 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H5" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H5" parent="Root/Hotbar" unique_id=799255433 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H6" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H6" parent="Root/Hotbar" unique_id=1628665857 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H7" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H7" parent="Root/Hotbar" unique_id=273490625 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="H8" parent="Root/Hotbar" instance=ExtResource("2")]
-custom_minimum_size = Vector2(46, 46)
+[node name="H8" parent="Root/Hotbar" unique_id=390756175 instance=ExtResource("2")]
+layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Root"]
+[node name="NameLabel" type="Label" parent="Root" unique_id=709948133]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -90,11 +115,10 @@ anchor_bottom = 1.0
 offset_bottom = -66.0
 grow_horizontal = 2
 grow_vertical = 0
-mouse_filter = 2
 theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
 
-[node name="HintLabel" type="Label" parent="Root"]
+[node name="HintLabel" type="Label" parent="Root" unique_id=781619434]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -104,271 +128,418 @@ anchor_bottom = 1.0
 offset_bottom = -88.0
 grow_horizontal = 2
 grow_vertical = 0
-mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.92, 0.7, 1)
 theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
 
-[node name="Dim" type="ColorRect" parent="Root"]
-visible = false
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.4)
-
-[node name="Center" type="CenterContainer" parent="Root"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Book" type="Control" parent="Root/Center"]
-custom_minimum_size = Vector2(690, 414)
-layout_mode = 2
-
-[node name="BookBg" type="TextureRect" parent="Root/Center/Book"]
+[node name="Dim" type="ColorRect" parent="Root" unique_id=357235182]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="Center" type="CenterContainer" parent="Root" unique_id=1440248675]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Book" type="Control" parent="Root/Center" unique_id=1834426153]
+custom_minimum_size = Vector2(690, 414)
+layout_mode = 2
+
+[node name="BookBg" type="TextureRect" parent="Root/Center/Book" unique_id=249473883]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3")
 
-[node name="HeaderLeft" type="Label" parent="Root/Center/Book"]
+[node name="HeaderLeft" type="Label" parent="Root/Center/Book" unique_id=1857045319]
 layout_mode = 0
 offset_left = 114.0
 offset_top = 17.0
 offset_right = 234.0
 offset_bottom = 37.0
-mouse_filter = 2
-text = "İstatik"
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.24313726)
+text = "Istatik"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HeaderRight" type="Label" parent="Root/Center/Book"]
+[node name="HeaderRight" type="Label" parent="Root/Center/Book" unique_id=1400978886]
 layout_mode = 0
 offset_left = 444.0
 offset_top = 17.0
 offset_right = 564.0
 offset_bottom = 37.0
-mouse_filter = 2
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.33333334)
 text = "Envanter"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StatIcon0" type="TextureRect" parent="Root/Center/Book"]
-offset_left = 46.5
-offset_top = 45.0
-offset_right = 79.5
-offset_bottom = 78.0
+[node name="StatIcon0" type="TextureRect" parent="Root/Center/Book" unique_id=21803522]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 47.0
+offset_right = 91.0
+offset_bottom = 80.0
 mouse_filter = 2
 texture = SubResource("SI0")
 stretch_mode = 5
 
-[node name="StatIcon1" type="TextureRect" parent="Root/Center/Book"]
-offset_left = 46.5
-offset_top = 84.0
-offset_right = 79.5
-offset_bottom = 117.0
+[node name="StatIcon1" type="TextureRect" parent="Root/Center/Book" unique_id=170397446]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 86.0
+offset_right = 91.0
+offset_bottom = 119.0
 mouse_filter = 2
 texture = SubResource("SI1")
 stretch_mode = 5
 
-[node name="StatIcon2" type="TextureRect" parent="Root/Center/Book"]
-offset_left = 46.5
-offset_top = 123.0
-offset_right = 79.5
-offset_bottom = 156.0
+[node name="StatIcon2" type="TextureRect" parent="Root/Center/Book" unique_id=889919196]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 125.0
+offset_right = 91.0
+offset_bottom = 158.0
 mouse_filter = 2
 texture = SubResource("SI2")
 stretch_mode = 5
 
-[node name="StatIcon3" type="TextureRect" parent="Root/Center/Book"]
-offset_left = 46.5
-offset_top = 162.0
-offset_right = 79.5
-offset_bottom = 195.0
+[node name="StatIcon3" type="TextureRect" parent="Root/Center/Book" unique_id=685474943]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 164.0
+offset_right = 91.0
+offset_bottom = 197.0
 mouse_filter = 2
 texture = SubResource("SI3")
 stretch_mode = 5
 
-[node name="StatValue0" type="Label" parent="Root/Center/Book"]
-offset_left = 102.0
-offset_top = 49.5
-offset_right = 242.0
-offset_bottom = 73.5
-mouse_filter = 2
+[node name="StatValue0" type="Label" parent="Root/Center/Book" unique_id=1534796168]
+layout_mode = 0
+offset_left = 97.0
+offset_top = 49.0
+offset_right = 237.0
+offset_bottom = 77.0
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+text = "CAN"
 vertical_alignment = 1
 
-[node name="StatValue1" type="Label" parent="Root/Center/Book"]
-offset_left = 102.0
-offset_top = 88.5
-offset_right = 242.0
-offset_bottom = 112.5
-mouse_filter = 2
+[node name="StatValue1" type="Label" parent="Root/Center/Book" unique_id=989647941]
+layout_mode = 0
+offset_left = 97.0
+offset_top = 88.0
+offset_right = 237.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+text = "GÜC"
 vertical_alignment = 1
 
-[node name="StatValue2" type="Label" parent="Root/Center/Book"]
-offset_left = 102.0
-offset_top = 127.5
-offset_right = 242.0
-offset_bottom = 151.5
-mouse_filter = 2
+[node name="StatValue2" type="Label" parent="Root/Center/Book" unique_id=1691775244]
+layout_mode = 0
+offset_left = 97.0
+offset_top = 127.0
+offset_right = 237.0
+offset_bottom = 155.0
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+text = "SAVUNMA"
 vertical_alignment = 1
 
-[node name="StatValue3" type="Label" parent="Root/Center/Book"]
-offset_left = 102.0
-offset_top = 166.5
-offset_right = 242.0
-offset_bottom = 190.5
-mouse_filter = 2
+[node name="StatValue3" type="Label" parent="Root/Center/Book" unique_id=1113531137]
+layout_mode = 0
+offset_left = 97.0
+offset_top = 167.0
+offset_right = 237.0
+offset_bottom = 192.45454
+theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_font_sizes/font_size = 20
+text = "ENERJI"
 vertical_alignment = 1
 
-[node name="BagGrid" type="Control" parent="Root/Center/Book"]
+[node name="Minus0" type="Button" parent="Root/Center/Book" unique_id=858900144]
+layout_mode = 0
+offset_left = 234.0
+offset_top = 51.0
+offset_right = 258.0
+offset_bottom = 75.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("MinusStyle")
+theme_override_styles/pressed = SubResource("MinusStyle")
+theme_override_styles/hover = SubResource("MinusStyle")
+icon = SubResource("MinusIcon")
+expand_icon = true
+
+[node name="Plus0" type="Button" parent="Root/Center/Book" unique_id=2131636228]
+layout_mode = 0
+offset_left = 261.0
+offset_top = 51.0
+offset_right = 285.0
+offset_bottom = 75.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("PlusStyle")
+theme_override_styles/pressed = SubResource("PlusStyle")
+theme_override_styles/hover = SubResource("PlusStyle")
+icon = SubResource("PlusIcon")
+expand_icon = true
+
+[node name="Minus1" type="Button" parent="Root/Center/Book" unique_id=700897694]
+layout_mode = 0
+offset_left = 234.0
+offset_top = 90.0
+offset_right = 258.0
+offset_bottom = 114.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("MinusStyle")
+theme_override_styles/pressed = SubResource("MinusStyle")
+theme_override_styles/hover = SubResource("MinusStyle")
+icon = SubResource("MinusIcon")
+expand_icon = true
+
+[node name="Plus1" type="Button" parent="Root/Center/Book" unique_id=921611254]
+layout_mode = 0
+offset_left = 261.0
+offset_top = 90.0
+offset_right = 285.0
+offset_bottom = 114.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("PlusStyle")
+theme_override_styles/pressed = SubResource("PlusStyle")
+theme_override_styles/hover = SubResource("PlusStyle")
+icon = SubResource("PlusIcon")
+expand_icon = true
+
+[node name="Minus2" type="Button" parent="Root/Center/Book" unique_id=12926111]
+layout_mode = 0
+offset_left = 234.0
+offset_top = 129.0
+offset_right = 258.0
+offset_bottom = 153.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("MinusStyle")
+theme_override_styles/pressed = SubResource("MinusStyle")
+theme_override_styles/hover = SubResource("MinusStyle")
+icon = SubResource("MinusIcon")
+expand_icon = true
+
+[node name="Plus2" type="Button" parent="Root/Center/Book" unique_id=1651854953]
+layout_mode = 0
+offset_left = 261.0
+offset_top = 129.0
+offset_right = 285.0
+offset_bottom = 153.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("PlusStyle")
+theme_override_styles/pressed = SubResource("PlusStyle")
+theme_override_styles/hover = SubResource("PlusStyle")
+icon = SubResource("PlusIcon")
+expand_icon = true
+
+[node name="Minus3" type="Button" parent="Root/Center/Book" unique_id=515846542]
+layout_mode = 0
+offset_left = 234.0
+offset_top = 168.0
+offset_right = 258.0
+offset_bottom = 192.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("MinusStyle")
+theme_override_styles/pressed = SubResource("MinusStyle")
+theme_override_styles/hover = SubResource("MinusStyle")
+icon = SubResource("MinusIcon")
+expand_icon = true
+
+[node name="Plus3" type="Button" parent="Root/Center/Book" unique_id=1730395432]
+layout_mode = 0
+offset_left = 261.0
+offset_top = 168.0
+offset_right = 285.0
+offset_bottom = 192.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("PlusStyle")
+theme_override_styles/pressed = SubResource("PlusStyle")
+theme_override_styles/hover = SubResource("PlusStyle")
+icon = SubResource("PlusIcon")
+expand_icon = true
+
+[node name="BagGrid" type="Control" parent="Root/Center/Book" unique_id=1858956706]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="Bag0" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag0" parent="Root/Center/Book/BagGrid" unique_id=1103627298 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
+layout_mode = 0
 offset_left = 375.0
-offset_top = 42.0
+offset_top = 46.0
 offset_right = 435.0
-offset_bottom = 102.0
+offset_bottom = 106.0
 
-[node name="Bag1" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag1" parent="Root/Center/Book/BagGrid" unique_id=745410530 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 441.6
-offset_top = 42.0
-offset_right = 501.6
-offset_bottom = 102.0
+layout_mode = 0
+offset_left = 443.6
+offset_top = 46.0
+offset_right = 503.6
+offset_bottom = 106.0
 
-[node name="Bag2" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag2" parent="Root/Center/Book/BagGrid" unique_id=528029628 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 508.2
-offset_top = 42.0
-offset_right = 568.2
-offset_bottom = 102.0
+layout_mode = 0
+offset_left = 513.2
+offset_top = 46.0
+offset_right = 573.2
+offset_bottom = 106.0
 
-[node name="Bag3" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag3" parent="Root/Center/Book/BagGrid" unique_id=1287186089 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 574.8
-offset_top = 42.0
-offset_right = 634.8
-offset_bottom = 102.0
+layout_mode = 0
+offset_left = 582.8
+offset_top = 45.0
+offset_right = 642.8
+offset_bottom = 105.0
 
-[node name="Bag4" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag4" parent="Root/Center/Book/BagGrid" unique_id=1469427263 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
+layout_mode = 0
 offset_left = 375.0
-offset_top = 108.6
+offset_top = 110.600006
 offset_right = 435.0
-offset_bottom = 168.6
+offset_bottom = 170.6
 
-[node name="Bag5" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag5" parent="Root/Center/Book/BagGrid" unique_id=1924347158 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 441.6
-offset_top = 108.6
-offset_right = 501.6
-offset_bottom = 168.6
+layout_mode = 0
+offset_left = 443.6
+offset_top = 110.600006
+offset_right = 503.6
+offset_bottom = 170.6
 
-[node name="Bag6" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag6" parent="Root/Center/Book/BagGrid" unique_id=1533958474 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 508.2
-offset_top = 108.6
-offset_right = 568.2
-offset_bottom = 168.6
+layout_mode = 0
+offset_left = 513.2
+offset_top = 110.600006
+offset_right = 573.2
+offset_bottom = 170.6
 
-[node name="Bag7" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag7" parent="Root/Center/Book/BagGrid" unique_id=955469657 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 574.8
-offset_top = 108.6
-offset_right = 634.8
-offset_bottom = 168.6
+layout_mode = 0
+offset_left = 581.8
+offset_top = 110.600006
+offset_right = 641.8
+offset_bottom = 170.6
 
-[node name="Bag8" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag8" parent="Root/Center/Book/BagGrid" unique_id=44339072 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
+layout_mode = 0
 offset_left = 375.0
 offset_top = 175.2
 offset_right = 435.0
 offset_bottom = 235.2
 
-[node name="Bag9" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag9" parent="Root/Center/Book/BagGrid" unique_id=336061047 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 441.6
+layout_mode = 0
+offset_left = 443.6
 offset_top = 175.2
-offset_right = 501.6
+offset_right = 503.6
 offset_bottom = 235.2
 
-[node name="Bag10" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag10" parent="Root/Center/Book/BagGrid" unique_id=2021705027 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 508.2
+layout_mode = 0
+offset_left = 512.2
 offset_top = 175.2
-offset_right = 568.2
+offset_right = 572.2
 offset_bottom = 235.2
 
-[node name="Bag11" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag11" parent="Root/Center/Book/BagGrid" unique_id=1829048718 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 574.8
+layout_mode = 0
+offset_left = 581.8
 offset_top = 175.2
-offset_right = 634.8
+offset_right = 641.8
 offset_bottom = 235.2
 
-[node name="Bag12" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag12" parent="Root/Center/Book/BagGrid" unique_id=340121135 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
+layout_mode = 0
 offset_left = 375.0
-offset_top = 241.8
+offset_top = 239.8
 offset_right = 435.0
-offset_bottom = 301.8
+offset_bottom = 299.8
 
-[node name="Bag13" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag13" parent="Root/Center/Book/BagGrid" unique_id=488170028 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 441.6
-offset_top = 241.8
-offset_right = 501.6
-offset_bottom = 301.8
+layout_mode = 0
+offset_left = 443.6
+offset_top = 239.8
+offset_right = 503.6
+offset_bottom = 299.8
 
-[node name="Bag14" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag14" parent="Root/Center/Book/BagGrid" unique_id=1748386065 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 508.2
-offset_top = 241.8
-offset_right = 568.2
-offset_bottom = 301.8
+layout_mode = 0
+offset_left = 513.2
+offset_top = 239.8
+offset_right = 573.2
+offset_bottom = 299.8
 
-[node name="Bag15" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag15" parent="Root/Center/Book/BagGrid" unique_id=1862464439 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 574.8
-offset_top = 241.8
-offset_right = 634.8
-offset_bottom = 301.8
+layout_mode = 0
+offset_left = 581.8
+offset_top = 239.8
+offset_right = 641.8
+offset_bottom = 299.8
 
-[node name="Bag16" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag16" parent="Root/Center/Book/BagGrid" unique_id=875239248 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
+layout_mode = 0
 offset_left = 375.0
-offset_top = 308.4
+offset_top = 303.4
 offset_right = 435.0
-offset_bottom = 368.4
+offset_bottom = 363.4
 
-[node name="Bag17" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag17" parent="Root/Center/Book/BagGrid" unique_id=746123863 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 441.6
-offset_top = 308.4
-offset_right = 501.6
-offset_bottom = 368.4
+layout_mode = 0
+offset_left = 443.6
+offset_top = 303.4
+offset_right = 503.6
+offset_bottom = 363.4
 
-[node name="Bag18" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag18" parent="Root/Center/Book/BagGrid" unique_id=1318674944 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 508.2
-offset_top = 308.4
-offset_right = 568.2
-offset_bottom = 368.4
+layout_mode = 0
+offset_left = 513.2
+offset_top = 303.4
+offset_right = 573.2
+offset_bottom = 363.4
 
-[node name="Bag19" parent="Root/Center/Book/BagGrid" instance=ExtResource("2")]
+[node name="Bag19" parent="Root/Center/Book/BagGrid" unique_id=1943728492 instance=ExtResource("2")]
 custom_minimum_size = Vector2(60, 60)
-offset_left = 574.8
-offset_top = 308.4
-offset_right = 634.8
-offset_bottom = 368.4
+layout_mode = 0
+offset_left = 581.8
+offset_top = 303.4
+offset_right = 641.8
+offset_bottom = 363.4

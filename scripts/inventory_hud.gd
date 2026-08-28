@@ -111,6 +111,8 @@ func _bind() -> void:
 			_init_slot(v, -1, false)
 			_bag_views.append(v)
 
+	# Kopfzeilen (İstatik/Envanter) - Schrift ebenfalls im Editor einstellbar,
+	# darum hier keine Font-Overrides mehr.
 	_wire_left_page()
 	_wire_right_page()
 	# Tabs/Lesezeichen (bleiben im Code - werden hier an das Buch gehaengt).
@@ -149,20 +151,18 @@ func _init_slot(panel: InventorySlot, index: int, boxed: bool) -> void:
 ## Linke Seite: Kopfzeile/Werte formatieren (Knoten aus der Szene) und die
 ## +/- Buttons sowie die Punkte-Anzeige anhaengen.
 func _wire_left_page() -> void:
-	_style_header(_bag.get_node("HeaderLeft"))
-	_style_header(_bag.get_node("HeaderRight"))
 	for i in range(CharStats.ORDER.size()):
 		if i >= ICON_BOX.size():
 			break
 		var key := String(CharStats.ORDER[i])
 		var lbl: Label = _bag.get_node("StatValue%d" % i)
-		lbl.add_theme_font_override("font", UiAtlas.font())
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", Color("2a1a10"))
+		# Schrift/Groesse/Farbe NICHT mehr im Code setzen - so laesst sich die
+		# Textart der Stat-Werte im Editor (Inspector -> Theme Overrides) aendern.
 		_stat_value_labels[key] = lbl
-		# +/- Buttons am rechten Zeilenende.
-		_stat_button(_bag, key, 1, Color("4b9e3f"), Vector2i(0, 8), PLUS_X, ICON_BOX[i].y)
-		_stat_button(_bag, key, -1, Color("c0392b"), Vector2i(3, 8), MINUS_X, ICON_BOX[i].y)
+		# +/- Buttons liegen jetzt als Knoten in der Szene (im Editor schiebbar) -
+		# hier nur noch die Aktion verdrahten.
+		(_bag.get_node("Plus%d" % i) as Button).pressed.connect(_on_stat.bind(key, 1))
+		(_bag.get_node("Minus%d" % i) as Button).pressed.connect(_on_stat.bind(key, -1))
 
 	# Restpunkte-Anzeige (unterer Balken).
 	_points_label = Label.new()
@@ -195,12 +195,6 @@ func _wire_right_page() -> void:
 		_bag.add_child(bar)
 		_bag_scroll = bar
 	_apply_window()
-
-
-func _style_header(lbl: Label) -> void:
-	lbl.add_theme_font_override("font", UiAtlas.font())
-	lbl.add_theme_font_size_override("font_size", 18)
-	lbl.add_theme_color_override("font_color", Color("4a2f1c"))
 
 
 # --- Stil-Bausteine -----------------------------------------------------
@@ -273,27 +267,6 @@ func _icon_tab(bg_region: Rect2i, icon_cell: Vector2i, bg_scale: int, icon_scale
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tab.add_child(icon)
 	return tab
-
-
-## Kleiner +/- Button an fester Position (Quell-px Mitte).
-func _stat_button(book: Control, key: String, delta: int, color: Color, icon_cell: Vector2i, sx: float, sy: float) -> void:
-	var b := Button.new()
-	b.focus_mode = Control.FOCUS_NONE
-	var sz := 8 * BOOK_SCALE
-	b.size = Vector2(sz, sz)
-	b.position = Vector2(sx * BOOK_SCALE - sz * 0.5, sy * BOOK_SCALE - sz * 0.5)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.border_color = color.darkened(0.35)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(5)
-	b.add_theme_stylebox_override("normal", sb)
-	b.add_theme_stylebox_override("hover", sb)
-	b.add_theme_stylebox_override("pressed", sb)
-	b.icon = UiAtlas.cell("icons", icon_cell.x, icon_cell.y)
-	b.expand_icon = true
-	b.pressed.connect(_on_stat.bind(key, delta))
-	book.add_child(b)
 
 
 func _on_stat(key: String, delta: int) -> void:
