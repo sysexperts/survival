@@ -12,9 +12,11 @@ var hotbar_size: int
 var slots: Array = []
 
 
-func _init(p_hotbar := 9, p_bag_rows := 3) -> void:
+## `p_bag_slots` >= 0 setzt die Taschengröße direkt (sonst hotbar * bag_rows).
+func _init(p_hotbar := 9, p_bag_rows := 3, p_bag_slots := -1) -> void:
 	hotbar_size = p_hotbar
-	slots.resize(p_hotbar + p_hotbar * p_bag_rows)
+	var bag: int = p_bag_slots if p_bag_slots >= 0 else p_hotbar * p_bag_rows
+	slots.resize(p_hotbar + bag)
 	for i in slots.size():
 		slots[i] = {}
 

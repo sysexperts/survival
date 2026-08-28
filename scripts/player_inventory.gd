@@ -6,6 +6,8 @@ extends Node
 
 @export var hotbar_size := 9
 @export var bag_rows := 6
+## Feste Taschengröße, damit das Buch-Raster voll aufgeht (7 Spalten x 8 = 56).
+@export var bag_slots := 56
 ## Wie viel Holz ein gefällter Baum bzw. ein gerodeter Stumpf abwirft.
 @export var wood_per_tree := 4
 @export var wood_per_stump := 1
@@ -52,7 +54,7 @@ var _notice_left := 0.0
 
 
 func _ready() -> void:
-	inventory = Inventory.new(hotbar_size, bag_rows)
+	inventory = Inventory.new(hotbar_size, bag_rows, bag_slots)
 	hud = InventoryHUD.new()
 	add_child(hud)
 	hud.setup(inventory)
