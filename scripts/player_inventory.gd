@@ -37,6 +37,8 @@ var preview: PlacementPreview
 ## Per preload statt ueber den class_name CreativeHUD - sonst kennt der
 ## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
 const CreativeHUDScript := preload("res://scripts/creative_hud.gd")
+## Skill-XP (Fortschritt) - statisch, wird mitgespeichert (siehe to_save/from_save).
+const SkillsXPScript := preload("res://scripts/skills_xp.gd")
 var creative: Node
 ## Admin-Pruefung zentral (per preload, nicht ueber das Net-Autoload - das wird
 ## vom Auto-Updater nicht ersetzt, siehe admins.gd).
@@ -110,9 +112,10 @@ func _ready() -> void:
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
 
-## Das Inventar als speicherbare Daten.
+## Das Inventar als speicherbare Daten. Inklusive Skill-XP, damit der
+## Fortschritt (EXP-Leiste/Level) pro Spielername einen Neustart ueberlebt.
 func to_save() -> Dictionary:
-	return {"slots": inventory.slots}
+	return {"slots": inventory.slots, "xp": SkillsXPScript.xp.duplicate()}
 
 
 ## Setzt das Inventar aus gespeicherten Daten. Ungueltige/unbekannte Eintraege
@@ -134,6 +137,11 @@ func from_save(data: Dictionary) -> void:
 			inventory.slots[i] = rebuilt
 		else:
 			inventory.slots[i] = {}
+	# Skill-XP wiederherstellen (nur bekannte Skills, als Zahl).
+	if data.has("xp") and typeof(data["xp"]) == TYPE_DICTIONARY:
+		for skill in SkillsXPScript.xp.keys():
+			if data["xp"].has(skill):
+				SkillsXPScript.xp[skill] = float(data["xp"][skill])
 	inventory.changed.emit()
 
 
