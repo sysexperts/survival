@@ -39,8 +39,8 @@ const SLOT_VIEW := 20                  ## Slot-Kantenlänge in Quell-px
 const HEADER_LEFT := Vector2(58, 9)
 const HEADER_RIGHT := Vector2(168, 9)
 ## STATS (links): Mitte der 4 Icon-Boxen + x der Wert-Schrift (Quell-px).
-const ICON_BOX := [Vector2(21, 24), Vector2(21, 40), Vector2(21, 56), Vector2(21, 72)]
-const STAT_ICON_SRC := 12
+const ICON_BOX := [Vector2(21, 20.5), Vector2(21, 33.5), Vector2(21, 46.5), Vector2(21, 59.5)]
+const STAT_ICON_SRC := 11
 const STAT_VALUE_X := 34
 ## +/- Buttons je Zeile (Quell-x) und Punkte-Anzeige (Quell-Mitte).
 const MINUS_X := 90

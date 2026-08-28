@@ -42,8 +42,8 @@ const GRID := {
 	"popup": Vector2i(48, 48),         # 2 x 2
 }
 
-## Pixelify Sans - Pixel-Font MIT türkischen Zeichen (İ ı ş ç ğ ö ü).
-const FONT_PATH := "res://assets/fonts/pixelify.ttf"
+## Noto Sans - gut lesbar, volles Türkisch (İ ı ş ç ğ ö ü).
+const FONT_PATH := "res://assets/fonts/notosans.ttf"
 
 static var _tex_cache: Dictionary = {}
 static var _tex_res_cache: Dictionary = {}

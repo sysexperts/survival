@@ -6,8 +6,8 @@ extends Node
 
 @export var hotbar_size := 9
 @export var bag_rows := 6
-## Feste Taschengröße, damit das Buch-Raster voll aufgeht (7 Spalten x 8 = 56).
-@export var bag_slots := 56
+## Feste Taschengröße: 4 Spalten x 10 Reihen = 40.
+@export var bag_slots := 40
 ## Wie viel Holz ein gefällter Baum bzw. ein gerodeter Stumpf abwirft.
 @export var wood_per_tree := 4
 @export var wood_per_stump := 1
