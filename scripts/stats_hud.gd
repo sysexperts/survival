@@ -20,15 +20,17 @@ const ICON := 22
 const ROW_GAP := 6
 const HEAD_MAX_Y := 25
 
-## Die drei Zeilen: key -> [Farbe, Icon-Zelle in UI_Icons oder Item-Id].
-## Reihenfolge = Anzeige von oben nach unten.
+## Pack-Balken (aus UI_Bars gesliced, gruen->gelb umgefaerbt fuer Hunger).
+const BAR_DIR := "res://assets/UI/Cute_Fantasy_UI/UI/"
+
+## Die drei Zeilen: key -> [Balken-Grafik, Icon]. Reihenfolge = Anzeige oben->unten.
 const ROWS := [
-	{"key": "health", "color": Color("d34a4a"), "icon": Vector2i(0, 0)},    # Herz
-	{"key": "stamina", "color": Color("3aa0e0"), "icon": Vector2i(9, 0)},   # Blitz
-	{"key": "hunger", "color": Color("e8c24a"), "item": "kizarmis_et"},  # Fleisch, gelb
+	{"key": "health", "bar": BAR_DIR + "bar_red.png", "icon": Vector2i(0, 0)},    # Herz
+	{"key": "stamina", "bar": BAR_DIR + "bar_blue.png", "icon": Vector2i(9, 0)},  # Blitz
+	{"key": "hunger", "bar": BAR_DIR + "bar_yellow.png", "item": "kizarmis_et"},  # Fleisch
 ]
 
-## fill-ColorRect je key, zum Aktualisieren der Fuellung.
+## TextureProgressBar je key, zum Aktualisieren der Fuellung.
 var _fills: Dictionary = {}
 var _poll := 0.0
 
@@ -89,7 +91,7 @@ func _build_row(row: Dictionary, x: int, y: int) -> void:
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(icon)
 
-	# Balken: dunkle Schiene + farbige Fuellung.
+	# Balken: dunkle Schiene + Pack-Balken als Fuellung (klippt nach rechts).
 	var track := Panel.new()
 	track.add_theme_stylebox_override("panel", _track_style())
 	track.position = Vector2(x + ICON + 6, y)
@@ -97,16 +99,24 @@ func _build_row(row: Dictionary, x: int, y: int) -> void:
 	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(track)
 
-	var fill := ColorRect.new()
-	fill.color = row["color"]
-	fill.set_anchors_preset(Control.PRESET_LEFT_WIDE)
-	fill.offset_left = 2
-	fill.offset_top = 2
-	fill.offset_bottom = -2
-	fill.anchor_right = 0.0        # Breite ueber anchor_right (= Anteil)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	track.add_child(fill)
-	_fills[row["key"]] = fill
+	var bar := TextureProgressBar.new()
+	bar.texture_progress = load(row["bar"])
+	bar.nine_patch_stretch = true
+	bar.stretch_margin_left = 7
+	bar.stretch_margin_right = 5
+	bar.stretch_margin_top = 1
+	bar.stretch_margin_bottom = 1
+	bar.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bar.min_value = 0
+	bar.max_value = 100
+	bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bar.offset_left = 2
+	bar.offset_top = 2
+	bar.offset_right = -2
+	bar.offset_bottom = -2
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	track.add_child(bar)
+	_fills[row["key"]] = bar
 
 
 ## Anteil (0..1) je Status aus PlayerStats.
@@ -120,10 +130,8 @@ func _ratio(key: String) -> float:
 
 func _refresh() -> void:
 	for key in _fills:
-		var f: ColorRect = _fills[key]
-		# anchor_right verkleinert die Fuellung; 4px Rand (2 links/2 rechts).
-		f.anchor_right = _ratio(key)
-		f.offset_right = -2
+		var bar: TextureProgressBar = _fills[key]
+		bar.value = _ratio(key) * 100.0
 
 
 func _process(delta: float) -> void:
