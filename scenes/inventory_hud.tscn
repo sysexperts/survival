@@ -628,3 +628,63 @@ offset_left = 581.8
 offset_top = 303.4
 offset_right = 641.8
 offset_bottom = 363.4
+
+[node name="CraftPage" type="Control" parent="Root/Center/Book"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="CraftList" type="ScrollContainer" parent="Root/Center/Book/CraftPage"]
+layout_mode = 0
+offset_left = 42.0
+offset_top = 30.0
+offset_right = 330.0
+offset_bottom = 396.0
+mouse_filter = 1
+horizontal_scroll_mode = 0
+
+[node name="List" type="VBoxContainer" parent="Root/Center/Book/CraftPage/CraftList"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Input0" type="TextureRect" parent="Root/Center/Book/CraftPage"]
+layout_mode = 0
+offset_left = 357.0
+offset_top = 48.0
+offset_right = 429.0
+offset_bottom = 120.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Input1" type="TextureRect" parent="Root/Center/Book/CraftPage"]
+layout_mode = 0
+offset_left = 357.0
+offset_top = 126.0
+offset_right = 429.0
+offset_bottom = 198.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Output" type="TextureRect" parent="Root/Center/Book/CraftPage"]
+layout_mode = 0
+offset_left = 534.0
+offset_top = 66.0
+offset_right = 642.0
+offset_bottom = 174.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CraftBtn" type="Button" parent="Root/Center/Book/CraftPage"]
+layout_mode = 0
+offset_left = 372.0
+offset_top = 210.0
+offset_right = 522.0
+offset_bottom = 250.0
+text = "Yap"
