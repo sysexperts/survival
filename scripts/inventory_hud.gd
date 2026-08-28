@@ -112,6 +112,7 @@ var _in0: TextureRect = null               ## Zutat 1 (obere Box)
 var _in1: TextureRect = null               ## Zutat 2 (untere Box)
 var _out: TextureRect = null               ## Ergebnis (grosse Box, erst nach dem Bauen)
 var _craft_btn: Button = null
+var _craft_progress: ProgressBar = null    ## zeigt, wie lange das Bauen noch dauert
 var _craft_pending := ""                   ## Ergebnis-Id, das nach dem Bauen erscheinen soll
 
 
@@ -291,7 +292,7 @@ func _slot_style(i: int) -> StyleBox:
 func _build_tabs(book: Control, book_w: int) -> void:
 	_tab_bgs.clear()
 	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 6)
+	tabs.add_theme_constant_override("separation", 0)
 	# Ueber dem Buch; Zeilenhoehe = aktive (hoehere) Variante, damit alle sitzen.
 	tabs.position = Vector2(18 * BOOK_SCALE, -21 * TAB_SCALE)
 	book.add_child(tabs)
@@ -396,18 +397,34 @@ func attach_crafting(q: CraftQueue) -> void:
 	_in1 = _page_craft.get_node("Input1")
 	_out = _page_craft.get_node("Output")
 	_craft_btn = _page_craft.get_node("CraftBtn")
+	_craft_progress = _page_craft.get_node_or_null("CraftProgress")
 	_rows = _page_craft.get_node("Rows")
 	if not _craft_btn.pressed.is_connected(_on_craft_pressed):
 		_craft_btn.pressed.connect(_on_craft_pressed)
+	_add_hover(_craft_btn)
 	if craft_queue and not craft_queue.changed.is_connected(_on_craft_queue):
 		craft_queue.changed.connect(_on_craft_queue)
-	# Jede (Szenen-)Zeile einmal verdrahten; welches Rezept sie zeigt, kommt aus
-	# den Metadaten und wird in _fill_craft_list gesetzt.
+	# Jede (Szenen-)Zeile einmal verdrahten + Hover; welches Rezept sie zeigt,
+	# kommt aus den Metadaten und wird in _fill_craft_list gesetzt.
 	for row in _rows.get_children():
 		if row is Button and not row.pressed.is_connected(_on_row_pressed):
 			row.pressed.connect(_on_row_pressed.bind(row))
+			_add_hover(row)
+	if _craft_progress:
+		_craft_progress.visible = false
 	_fill_craft_list()
 	_show_recipe({})
+
+
+## Sanfter Hover: aufhellen + leicht vergroessern. Nur Verhalten (kein Layout).
+func _add_hover(c: Control) -> void:
+	c.mouse_entered.connect(func():
+		c.pivot_offset = c.size * 0.5
+		c.modulate = Color(1.18, 1.18, 1.18)
+		c.scale = Vector2(1.04, 1.04))
+	c.mouse_exited.connect(func():
+		c.modulate = Color(1, 1, 1)
+		c.scale = Vector2.ONE)
 
 
 ## Oeffnet das Buch direkt auf der Basic-Crafts-Seite (fuer die C-Taste).
@@ -449,15 +466,36 @@ func _show_recipe(recipe: Dictionary) -> void:
 	_craft_selected = recipe
 	_craft_pending = ""
 	_out.texture = null
+	(_out.get_node("Count") as Label).text = ""
 	if recipe.is_empty():
 		_in0.texture = null
 		_in1.texture = null
+		_ing_count(_in0, [], {}, 0)
+		_ing_count(_in1, [], {}, 1)
 		_craft_btn.disabled = true
 		return
-	var ings: Array = recipe.get("cost", {}).keys()
+	var cost: Dictionary = recipe.get("cost", {})
+	var ings: Array = cost.keys()
 	_in0.texture = ItemDB.icon(String(ings[0])) if ings.size() > 0 else null
 	_in1.texture = ItemDB.icon(String(ings[1])) if ings.size() > 1 else null
+	_ing_count(_in0, ings, cost, 0)
+	_ing_count(_in1, ings, cost, 1)
+	# Ergebnis-Menge (wie viel man rausbekommt).
+	(_out.get_node("Count") as Label).text = "x%d" % int(recipe.get("count", 1))
 	_craft_btn.disabled = not _can_afford(recipe)
+
+
+## Setzt die benoetigte Menge unter eine Zutat-Box (rot, wenn man zu wenig hat).
+func _ing_count(box: TextureRect, ings: Array, cost: Dictionary, idx: int) -> void:
+	var lbl: Label = box.get_node("Count")
+	if idx >= ings.size():
+		lbl.text = ""
+		return
+	var ing := String(ings[idx])
+	var need := int(cost[ing])
+	var have := inventory.count_of(ing)
+	lbl.text = "x%d" % need
+	lbl.add_theme_color_override("font_color", Color("b03030") if have < need else Color(0.23, 0.16, 0.1))
 
 
 func _can_afford(recipe: Dictionary) -> bool:
@@ -574,8 +612,15 @@ func _animate_exp(left_t: float, right_t: float) -> void:
 	_exp_tween.tween_property(_exp_right, "value", right_t, 0.35)
 
 
-## XP aendert sich zur Laufzeit (Faellen/Handwerk) ohne Signal - leichter Poll.
 func _process(delta: float) -> void:
+	# Craft-Fortschritt jeden Frame (fluessige Leiste); nur sichtbar, waehrend
+	# wirklich etwas gebaut wird.
+	if _craft_progress and craft_queue:
+		var busy := craft_queue.is_busy()
+		_craft_progress.visible = busy
+		if busy:
+			_craft_progress.value = craft_queue.progress() * 100.0
+	# XP aendert sich ohne Signal - dafuer reicht ein leichter Poll.
 	_poll += delta
 	if _poll < 0.4:
 		return
