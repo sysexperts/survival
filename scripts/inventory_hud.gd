@@ -1,13 +1,29 @@
 extends CanvasLayer
 class_name InventoryHUD
 
-## Hotbar unten, Tasche auf Tastendruck.
+## Hotbar unten, Tasche (Buch) auf Tastendruck.
 ##
 ## Wird komplett im Code aufgebaut, damit die Spielszene dafür nicht
 ## angefasst werden muss. Ein Slot ist ein Panel mit Icon und Anzahl.
 
+const UiAtlas := preload("res://scripts/ui_atlas.gd")
+const CCFrames := preload("res://scripts/cc_frames.gd")
+const AppearanceStore := preload("res://scripts/appearance_store.gd")
+
 const SLOT := 46
 const PAD := 4
+
+## --- Buch-Layout (Cute-Fantasy-UI) ---
+const BOOK_SCALE := 3
+## Tan-Buch (Doppelseite) in Book_UI.png.
+const BOOK_REGION := Rect2i(8, 6, 224, 140)
+## Nutzbare Seitenflächen in Buch-lokalen Pixeln (innerhalb der Zierränder).
+const LEFT_PAGE := Rect2i(14, 12, 90, 114)
+const RIGHT_PAGE := Rect2i(118, 12, 98, 114)
+const BAG_COLS := 9
+const BAG_SLOT := 30
+## Platzhalter-Tabs oben.
+const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
 ## Grundschrift, benutzt genau diesen Wert - Zwischengroessen verwaschen.
 const INFO_FONT := 11
@@ -21,7 +37,7 @@ var drop_sync: Node
 var drag_from := -1
 
 var _slot_nodes: Array[InventorySlot] = []
-var _bag: PanelContainer
+var _bag: Control
 var _dim: ColorRect
 var _bar: HBoxContainer
 var _name_label: Label
@@ -47,11 +63,11 @@ func _style(bright: bool) -> StyleBoxFlat:
 	return sb
 
 
-func _make_slot(index: int) -> InventorySlot:
+func _make_slot(index: int, size: int = SLOT) -> InventorySlot:
 	var panel := InventorySlot.new()
 	panel.hud = self
 	panel.index = index
-	panel.custom_minimum_size = Vector2(SLOT, SLOT)
+	panel.custom_minimum_size = Vector2(size, size)
 	panel.add_theme_stylebox_override("panel", _style(false))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_slot_input.bind(index))
@@ -165,37 +181,106 @@ func _build() -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
 
-	_bag = PanelContainer.new()
+	# Buch (Tasche) - Hintergrund aus dem Cute-Fantasy-UI-Pack.
+	_bag = Control.new()
 	_bag.visible = false
-	var bag_style := StyleBoxFlat.new()
-	bag_style.bg_color = Color(0.06, 0.07, 0.10, 0.94)
-	bag_style.border_color = Color(0.35, 0.37, 0.45, 0.95)
-	bag_style.set_border_width_all(2)
-	bag_style.set_corner_radius_all(5)
-	bag_style.set_content_margin_all(12)
-	_bag.add_theme_stylebox_override("panel", bag_style)
+	var bw := BOOK_REGION.size.x * BOOK_SCALE
+	var bh := BOOK_REGION.size.y * BOOK_SCALE
+	_bag.custom_minimum_size = Vector2(bw, bh)
+	_bag.mouse_filter = Control.MOUSE_FILTER_STOP
 	center.add_child(_bag)
 
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	_bag.add_child(column)
-	var title := Label.new()
-	title.text = "Canta"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
+	var book_bg := TextureRect.new()
+	book_bg.texture = UiAtlas.tex("book", BOOK_REGION)
+	book_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	book_bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	book_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bag.add_child(book_bg)
 
-	var grid := GridContainer.new()
-	grid.columns = inventory.hotbar_size
-	grid.add_theme_constant_override("h_separation", PAD)
-	grid.add_theme_constant_override("v_separation", PAD)
-	column.add_child(grid)
-	for i in range(inventory.hotbar_size, inventory.slots.size()):
-		grid.add_child(_make_slot(i))
+	_build_tabs(_bag, bw)
+	_build_left_page(_bag)
+	_build_right_page(_bag)
 
 	# Die Hotbar nach ganz oben holen. Sie wird als Erstes gebaut, laege
 	# also unter der Sperrflaeche - und damit koennte man bei offener
 	# Tasche nichts in die Hotbar ziehen.
 	root.move_child(bar, -1)
+
+
+# --- Buch-Seiten --------------------------------------------------------
+
+## Vier Platzhalter-Tabs oben auf dem Buch.
+func _build_tabs(book: Control, book_w: int) -> void:
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	tabs.position = Vector2(14 * BOOK_SCALE, -14 * BOOK_SCALE)
+	tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	book.add_child(tabs)
+	for text in TAB_LABELS:
+		var b := Button.new()
+		b.text = text
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(0, 22)
+		tabs.add_child(b)
+
+
+## Linke Seite: der eigene Charakter (Ganzkörper) als Vorschau.
+func _build_left_page(book: Control) -> void:
+	var area := _page_area(book, LEFT_PAGE)
+	var sf := CCFrames.build(AppearanceStore.local())
+	if sf.has_animation(&"idle_south") and sf.get_frame_count(&"idle_south") > 0:
+		var portrait := TextureRect.new()
+		portrait.texture = sf.get_frame_texture(&"idle_south", 0)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		area.add_child(portrait)
+
+
+## Rechte Seite: das Taschen-Raster (9 Spalten) in Pack-Slots.
+func _build_right_page(book: Control) -> void:
+	var area := _page_area(book, RIGHT_PAGE)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	area.add_child(center)
+	var grid := GridContainer.new()
+	grid.columns = BAG_COLS
+	grid.add_theme_constant_override("h_separation", 3)
+	grid.add_theme_constant_override("v_separation", 3)
+	center.add_child(grid)
+	for i in range(inventory.hotbar_size, inventory.slots.size()):
+		grid.add_child(_make_slot(i, BAG_SLOT))
+
+
+## Hilfs-Control für eine Buchseite (in Buch-lokalen Pixeln, skaliert).
+func _page_area(book: Control, page: Rect2i) -> Control:
+	var area := Control.new()
+	area.position = Vector2(page.position * BOOK_SCALE)
+	area.custom_minimum_size = Vector2(page.size * BOOK_SCALE)
+	area.size = Vector2(page.size * BOOK_SCALE)
+	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	book.add_child(area)
+	return area
+
+
+## Brauner Slot-Stil fürs Buch (Pack-Look).
+func _book_slot_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("8a5a3c")
+	sb.border_color = Color("5a3826")
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(4)
+	return sb
+
+
+## Passenden Slot-Stil je Index: Hotbar dunkel/hell, Tasche braun (Buch).
+func _slot_style(i: int) -> StyleBoxFlat:
+	if i >= inventory.hotbar_size:
+		return _book_slot_style()
+	return _style(i == selected)
 
 
 # --- Anzeige ------------------------------------------------------------
@@ -218,7 +303,7 @@ func _refresh() -> void:
 			# Godot zeigt den Text von selbst, wenn die Maus stehen bleibt.
 			panel.tooltip_text = ItemDB.display_name(slot["id"])
 			_refresh_durability(dur_bg, slot)
-		panel.add_theme_stylebox_override("panel", _style(i == selected))
+		panel.add_theme_stylebox_override("panel", _slot_style(i))
 	var sel: Dictionary = inventory.slots[selected]
 	_name_label.text = ItemDB.display_name(sel["id"]) if not sel.is_empty() else ""
 
