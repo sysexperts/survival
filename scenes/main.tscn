@@ -20,6 +20,8 @@
 [ext_resource type="Script" uid="uid://b65h4ghj5g1mg" path="res://scripts/deer_spawner.gd" id="20_deer"]
 [ext_resource type="Script" path="res://scripts/pause_menu.gd" id="21_pause"]
 [ext_resource type="Script" path="res://scripts/stats_hud.gd" id="22_stats"]
+[ext_resource type="Script" path="res://scripts/survival_needs.gd" id="23_needs"]
+[ext_resource type="Script" path="res://scripts/skills_xp.gd" id="24_skills"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -113,6 +115,12 @@ script = ExtResource("16_announce")
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("22_stats")
+
+[node name="SurvivalNeeds" type="Node" parent="." unique_id=1675334168]
+script = ExtResource("23_needs")
+
+[node name="SkillsXp" type="Node" parent="." unique_id=1675334169]
+script = ExtResource("24_skills")
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=1675334166]
 script = ExtResource("21_pause")

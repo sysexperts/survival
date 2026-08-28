@@ -10,6 +10,11 @@ static var mana := 100.0
 static var mana_max := 100.0
 static var stamina := 100.0
 static var stamina_max := 100.0
+## Für das (dormante) Survival-Needs-System.
+static var hunger := 100.0
+static var hunger_max := 100.0
+static var thirst := 100.0
+static var thirst_max := 100.0
 
 
 static func health_ratio() -> float:
