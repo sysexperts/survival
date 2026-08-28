@@ -119,20 +119,21 @@ func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> voi
 
 ## Direkt vom Server erzeugter Boden-Drop (z. B. Holz beim Baumfaellen, siehe
 ## world_sync.gd). Wie _request_drop, aber ohne den RPC-Umweg - der Aufrufer
-## laeuft schon auf dem Server.
-func server_spawn_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+## laeuft schon auf dem Server. `offset` streut das Bild etwas vom Zellmittel-
+## punkt weg (in Bildschirmpixeln), damit mehrere Drops nicht exakt stapeln.
+func server_spawn_drop(item_id: String, count: int, cell: Vector2i, lvl: int, offset := Vector2.ZERO) -> void:
 	if not multiplayer.is_server():
 		return
-	_do_spawn(item_id, count, cell, lvl)
+	_do_spawn(item_id, count, cell, lvl, offset)
 
 
-func _do_spawn(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+func _do_spawn(item_id: String, count: int, cell: Vector2i, lvl: int, offset := Vector2.ZERO) -> void:
 	if not ItemDB.has(item_id) or count <= 0:
 		return
 	var id := _next_id
 	_next_id += 1
 	_drops[id] = {"item_id": item_id, "count": count}
-	_spawn.rpc(id, item_id, count, cell, lvl)
+	_spawn.rpc(id, item_id, count, cell, lvl, offset)
 	var t := get_tree().create_timer(DESPAWN_SECONDS)
 	t.timeout.connect(_despawn.bind(id))
 
@@ -161,7 +162,7 @@ func _request_pickup(id: int) -> void:
 # --- Client: Anzeige ------------------------------------------------------
 
 @rpc("any_peer", "reliable")
-func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int, offset: Vector2) -> void:
 	if Net.is_dedicated or _world == null or _world.props_root == null:
 		return
 	if _drops.has(id):
@@ -169,7 +170,9 @@ func _spawn(id: int, item_id: String, count: int, cell: Vector2i, lvl: int) -> v
 	var node := DroppedItemScript.new()
 	node.setup(item_id, count)
 	_world.props_root.add_child(node)
-	node.global_position = _world.cell_to_world(cell, lvl)
+	# `offset` streut das Bild leicht vom Zellmittelpunkt weg (z. B. Holz um den
+	# Baum herum). Die Zelle bleibt fuer die Aufheb-Reichweite massgeblich.
+	node.global_position = _world.cell_to_world(cell, lvl) + offset
 	_drops[id] = {"node": node, "item_id": item_id, "count": count, "cell": cell,
 		"level": lvl, "t": Time.get_ticks_msec()}
 

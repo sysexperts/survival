@@ -32,6 +32,13 @@ var _forced := false
 
 var _drops: CPUParticles2D
 var _overlay: ColorRect
+## WorldEnvironment-Glow: das Softlight-Glow malt auf der abgedunkelten Welt sonst
+## einen hellen Hof um JEDE Kachel (Diamant-Gitter). Bei Regen deshalb stark
+## zuruecknehmen. Ausgangswert wird beim Aufbau gemerkt und beim Aufklaren
+## wiederhergestellt.
+var _env: Environment
+var _glow_clear := 0.72
+const GLOW_RAIN_MUL := 0.18
 
 
 func _ready() -> void:
@@ -109,9 +116,18 @@ func _apply_visuals() -> void:
 	if _overlay:
 		# Sanft ein-/ausblenden.
 		create_tween().tween_property(_overlay, "color:a", 0.14 if _raining else 0.0, 0.8)
+	if _env:
+		# Glow bei Regen fast aus (sonst Diamant-Gitter), beim Aufklaren zurueck.
+		var target: float = _glow_clear * GLOW_RAIN_MUL if _raining else _glow_clear
+		create_tween().tween_property(_env, "glow_intensity", target, 0.8)
 
 
 func _build_visuals() -> void:
+	# WorldEnvironment-Glow merken (fuer die Regen-Daempfung).
+	var we := get_node_or_null(^"../WorldEnvironment") as WorldEnvironment
+	if we != null and we.environment != null:
+		_env = we.environment
+		_glow_clear = _env.glow_intensity
 	# Halbtransparenter, kuehler Schleier zusaetzlich zur Welt-Abdunklung.
 	_overlay = ColorRect.new()
 	_overlay.color = Color(0.10, 0.13, 0.20, 0.0)   # Alpha kommt aus dem Regen

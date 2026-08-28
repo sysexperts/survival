@@ -453,10 +453,16 @@ func _drop_wood_remaining(cell: Vector2i, level: int) -> void:
 	_tree_drops.erase(cell)
 
 
-## Server: ein Boden-Item ueber DropSync erzeugen (fuer alle sichtbar).
+## Server: ein Boden-Item ueber DropSync erzeugen (fuer alle sichtbar). Streut es
+## etwas um den Baum herum (Iso-Ellipse, damit es nicht exakt auf dem Stumpf liegt).
 func _spawn_ground_drop(item_id: String, count: int, cell: Vector2i, level: int) -> void:
-	if _drop_sync != null and _drop_sync.has_method("server_spawn_drop"):
-		_drop_sync.server_spawn_drop(item_id, count, cell, maxi(level, 0))
+	if _drop_sync == null or not _drop_sync.has_method("server_spawn_drop"):
+		return
+	var ang := randf() * TAU
+	var r := randf_range(6.0, 16.0)
+	# Y flacher (Iso): der Boden ist halb so hoch wie breit.
+	var offset := Vector2(cos(ang) * r, sin(ang) * r * 0.5)
+	_drop_sync.server_spawn_drop(item_id, count, cell, maxi(level, 0), offset)
 
 
 @rpc("any_peer", "reliable")

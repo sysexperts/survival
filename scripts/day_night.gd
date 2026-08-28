@@ -22,7 +22,9 @@ extends CanvasModulate
 var rain_dim := 0.0
 var _rain_dim_shown := 0.0
 ## Wie dunkel die Welt bei vollem Regen wird (Faktor auf die Tagesfarbe).
-const RAIN_MIN_MUL := 0.62
+## Nicht zu tief - sonst treten die Kachelkanten als Gitter hervor (zusammen mit
+## dem gedaempften Glow, siehe weather.gd).
+const RAIN_MIN_MUL := 0.72
 
 ## Farbverlauf ueber den Tag. Leer lassen -> Standardverlauf.
 @export var sky_gradient: Gradient:
