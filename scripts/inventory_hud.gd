@@ -272,47 +272,82 @@ func _icon_tab(bg_region: Rect2i, icon_cell: Vector2i, bg_scale: int, icon_scale
 	return tab
 
 
-## Linke Seite: Ausrüstungs-Slots + Gold + verstellbare Charakter-Stats.
+## Icon-Zelle (UI_Icons) je Stat.
+const STAT_ICONS := {
+	"vitalitaet": Vector2i(0, 0),   # Herz
+	"staerke": Vector2i(1, 1),      # Schwert
+	"ruestung": Vector2i(12, 0),    # Schild
+	"tempo": Vector2i(9, 0),        # Blitz
+}
+## Banner (UI_Ribbons) für Header und Punkte-Leiste.
+const BANNER_HEADER := Rect2i(90, 32, 92, 25)
+const BANNER_SMALL := Rect2i(1, 33, 78, 24)
+
+
+## Linke Seite, obere Hälfte: CHARAKTER-WERTE-Panel (Pack-Optik).
 func _build_left_page(book: Control) -> void:
 	var area := _page_area(book, LEFT_PAGE)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 5)
-	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	col.offset_left = 14; col.offset_top = 14; col.offset_right = -14; col.offset_bottom = -14
+	col.add_theme_constant_override("separation", 6)
+	col.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	col.offset_left = 6; col.offset_top = 6; col.offset_right = -6
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	area.add_child(col)
 
-	# Ausrüstungs-Panel (braun, eingelassen) mit 6 Slots (3x2).
-	var eq_panel := PanelContainer.new()
-	var panel_sb := StyleBoxFlat.new()
-	panel_sb.bg_color = Color("a9713f")
-	panel_sb.border_color = Color("5a3826")
-	panel_sb.set_border_width_all(2)
-	panel_sb.set_corner_radius_all(6)
-	panel_sb.set_content_margin_all(6)
-	eq_panel.add_theme_stylebox_override("panel", panel_sb)
-	eq_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(eq_panel)
-	var eq := GridContainer.new()
-	eq.columns = 3
-	eq.add_theme_constant_override("h_separation", 5)
-	eq.add_theme_constant_override("v_separation", 5)
-	eq_panel.add_child(eq)
-	for i in range(6):
-		eq.add_child(_placeholder_slot(38))
+	# Header-Banner.
+	col.add_child(_banner_row(BANNER_HEADER, 46, "CHARAKTER-WERTE", 17)[0])
 
-	var gold := Label.new()
-	gold.text = "Altin: 0"
-	gold.add_theme_color_override("font_color", Color("6a4326"))
-	col.add_child(gold)
-
-	_points_label = Label.new()
-	_points_label.add_theme_color_override("font_color", Color("6a4326"))
-	col.add_child(_points_label)
-
+	# Dunkles Panel mit 4 Stat-Reihen.
+	var panel := PanelContainer.new()
+	var psb := StyleBoxFlat.new()
+	psb.bg_color = Color("232028")
+	psb.border_color = Color("6a4326")
+	psb.set_border_width_all(3)
+	psb.set_corner_radius_all(8)
+	psb.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", psb)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(panel)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 6)
+	panel.add_child(rows)
 	for key in CharStats.ORDER:
-		col.add_child(_stat_row(String(key)))
+		rows.add_child(_stat_row(String(key)))
+
+	# Punkte-Banner.
+	var pr := _banner_row(BANNER_SMALL, 30, "", 12)
+	_points_label = pr[1]
+	col.add_child(pr[0])
 	_refresh_stats()
+
+
+## Banner-Zeile: Pack-Banner (9-Patch) + zentrierte Schrift. Gibt [Control, Label].
+func _banner_row(region: Rect2i, height: int, text: String, fsize: int) -> Array:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, height)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var np := NinePatchRect.new()
+	np.texture = UiAtlas.tex("ribbons", region)
+	np.patch_margin_left = 18
+	np.patch_margin_right = 18
+	np.patch_margin_top = 5
+	np.patch_margin_bottom = 7
+	np.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	np.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	np.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.add_child(np)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_override("font", UiAtlas.font())
+	lbl.add_theme_font_size_override("font_size", fsize)
+	lbl.add_theme_color_override("font_color", Color("3a2418"))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	lbl.offset_bottom = -3
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.add_child(lbl)
+	return [c, lbl]
 
 
 ## Rechte Seite: das Taschen-Raster (9 Spalten) oben in die Seite gesetzt.
@@ -352,38 +387,65 @@ func _placeholder_slot(size: int) -> Panel:
 	return p
 
 
-## Eine Stat-Zeile:  Name   [−]  Wert  [+].
+## Eine Stat-Zeile: dunkle Pille mit Icon, „Name: Wert" und Hoch/Runter-Pfeilen.
 func _stat_row(key: String) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 5)
+	var pill := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("15131a")
+	sb.set_corner_radius_all(11)
+	sb.border_color = Color("0c0b10")
+	sb.set_border_width_all(1)
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	sb.content_margin_top = 3
+	sb.content_margin_bottom = 3
+	pill.add_theme_stylebox_override("panel", sb)
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var name_lbl := Label.new()
-	name_lbl.text = String(CharStats.LABELS.get(key, key))
-	name_lbl.custom_minimum_size = Vector2(96, 0)
-	name_lbl.add_theme_color_override("font_color", Color("4a2f1c"))
-	row.add_child(name_lbl)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 7)
+	pill.add_child(h)
 
-	var minus := Button.new()
-	minus.text = "−"
-	minus.focus_mode = Control.FOCUS_NONE
-	minus.custom_minimum_size = Vector2(24, 24)
-	minus.pressed.connect(_on_stat.bind(key, -1))
-	row.add_child(minus)
+	var icon := TextureRect.new()
+	icon.texture = UiAtlas.cell("icons", STAT_ICONS[key].x, STAT_ICONS[key].y)
+	icon.custom_minimum_size = Vector2(26, 26)
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(icon)
 
-	var val := Label.new()
-	val.custom_minimum_size = Vector2(28, 0)
-	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	val.add_theme_color_override("font_color", Color("3a2418"))
-	row.add_child(val)
-	_stat_value_labels[key] = val
+	var lbl := Label.new()
+	lbl.add_theme_font_override("font", UiAtlas.font())
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_color", Color("ffffff"))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(lbl)
+	_stat_value_labels[key] = lbl
 
-	var plus := Button.new()
-	plus.text = "+"
-	plus.focus_mode = Control.FOCUS_NONE
-	plus.custom_minimum_size = Vector2(24, 24)
-	plus.pressed.connect(_on_stat.bind(key, 1))
-	row.add_child(plus)
-	return row
+	h.add_child(_arrow_button(key, 1, Color("4b9e3f"), Vector2i(0, 8)))    # grün, hoch
+	h.add_child(_arrow_button(key, -1, Color("e0a020"), Vector2i(3, 8)))   # gold, runter
+	return pill
+
+
+## Farbiger Pfeil-Button (Pack-Pfeil-Icon auf farbigem Grund).
+func _arrow_button(key: String, delta: int, color: Color, icon_cell: Vector2i) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(30, 30)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = color
+	sb.border_color = color.darkened(0.35)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sb)
+	b.add_theme_stylebox_override("pressed", sb)
+	b.icon = UiAtlas.cell("icons", icon_cell.x, icon_cell.y)
+	b.expand_icon = true
+	b.pressed.connect(_on_stat.bind(key, delta))
+	return b
 
 
 func _on_stat(key: String, delta: int) -> void:
@@ -393,9 +455,10 @@ func _on_stat(key: String, delta: int) -> void:
 
 func _refresh_stats() -> void:
 	for key in _stat_value_labels:
-		_stat_value_labels[key].text = str(CharStats.values.get(key, 0))
+		_stat_value_labels[key].text = "%s: %02d" % [
+			CharStats.LABELS.get(key, key), int(CharStats.values.get(key, 0))]
 	if _points_label:
-		_points_label.text = "Puan: %d" % CharStats.points
+		_points_label.text = "Verbleibende Punkte: %d" % CharStats.points
 
 
 func _spacer_h(h: int) -> Control:

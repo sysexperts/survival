@@ -7,14 +7,14 @@ const MINV := 0
 const MAXV := 99
 
 ## Reihenfolge = Anzeige. key -> Anzeigename.
-const ORDER := ["tragkraft", "kraft", "ausdauer", "hiz"]
+const ORDER := ["vitalitaet", "staerke", "ruestung", "tempo"]
 const LABELS := {
-	"tragkraft": "Tasima", "kraft": "Guc", "ausdauer": "Dayaniklilik", "hiz": "Hiz",
+	"vitalitaet": "Vitalitaet", "staerke": "Staerke", "ruestung": "Ruestung", "tempo": "Tempo",
 }
 
-static var values := {"tragkraft": 50, "kraft": 10, "ausdauer": 10, "hiz": 10}
+static var values := {"vitalitaet": 15, "staerke": 8, "ruestung": 4, "tempo": 10}
 ## Freie Punkte, die verteilt werden können.
-static var points := 5
+static var points := 3
 
 
 static func adjust(key: String, delta: int) -> void:
