@@ -501,9 +501,18 @@ func _on_animation_finished() -> void:
 
 	# Baum ist inzwischen gefaellt (von mir oder einem Mitspieler)? Aufhoeren.
 	if not is_instance_valid(_tree) or world.prop_node(_chop_cell) == null:
+		var fell_cell := _chop_cell
+		var fell_lvl := _chop_level
+		var fell_atlas: Vector2i = _tree.atlas if is_instance_valid(_tree) else Vector2i.ZERO
+		var was_active := _chop_level >= 0
 		_tree = null
 		_end_chop()
 		_play("idle")
+		# Im MP faellt der Baum server-seitig - die normale felled-Zeile unten
+		# wird nie erreicht. Wenn ich gerade an diesem Baum geschlagen habe und
+		# er jetzt weg ist, das Signal hier nachziehen (fuer XP / EXP-Leiste).
+		if Net.active and was_active:
+			felled.emit(fell_cell, fell_lvl, fell_atlas)
 		return
 
 	if Net.active and _ws != null:
