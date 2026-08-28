@@ -45,6 +45,30 @@ static func level_of(skill: String) -> int:
 	return int(floor(sqrt(xp.get(skill, 0.0) / 10.0)))
 
 
+## Gesamt-XP ueber alle Skills - Grundlage fuer das Spieler-Level (EXP-Leiste
+## + Stern in der Itemleiste). level = floor(sqrt(gesamt/10)); xp_fuer(L)=10*L^2.
+static func total_xp() -> float:
+	var sum := 0.0
+	for v in xp.values():
+		sum += v
+	return sum
+
+
+static func player_level() -> int:
+	return int(floor(sqrt(total_xp() / 10.0)))
+
+
+## Fortschritt zum naechsten Level, 0..1 (fuer die Fuellung der EXP-Leiste).
+static func level_progress() -> float:
+	var lvl := player_level()
+	var base := 10.0 * lvl * lvl
+	var next := 10.0 * (lvl + 1) * (lvl + 1)
+	var span := next - base
+	if span <= 0.0:
+		return 0.0
+	return clampf((total_xp() - base) / span, 0.0, 1.0)
+
+
 func _show() -> void:
 	if _label == null:
 		var layer := CanvasLayer.new()

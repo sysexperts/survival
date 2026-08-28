@@ -13,6 +13,10 @@ class_name InventoryHUD
 
 const UiAtlas := preload("res://scripts/ui_atlas.gd")
 const CharStats := preload("res://scripts/char_stats.gd")
+const SkillsXP := preload("res://scripts/skills_xp.gd")
+
+## Slot-Grafik aus der neuen Itemleiste (leiste.png), als 9-Patch-Stylebox.
+const SLOT_TEX := "res://assets/UI/Cute_Fantasy_UI/UI/leiste_slot.png"
 
 ## Referenzen für die verstellbaren Stats (linke Buchseite).
 var _stat_value_labels: Dictionary = {}
@@ -76,6 +80,17 @@ var _bar: HBoxContainer
 var _name_label: Label
 var _hint_label: Label
 
+## Itemleisten-Extras: EXP-Leiste (links/rechts) + Level-Stern.
+var _exp_left: TextureProgressBar
+var _exp_right: TextureProgressBar
+var _level_label: Label
+var _level_star: TextureRect
+## Gemeinsamer Slot-Grafik-Stil (einmal gebaut).
+var _slot_style_tex: StyleBoxTexture = null
+## Level, bei dem die EXP-Leiste zuletzt gezeichnet wurde (Poll-Vergleich).
+var _last_level := -1
+var _poll := 0.0
+
 
 func setup(p_inventory: Inventory) -> void:
 	inventory = p_inventory
@@ -120,10 +135,20 @@ func _bind() -> void:
 	# Tabs/Lesezeichen (bleiben im Code - werden hier an das Buch gehaengt).
 	_build_tabs(_bag, int(_bag.custom_minimum_size.x))
 
-	# Hotbar in der Zeichenreihenfolge nach ganz oben - sonst laege sie unter
-	# der Sperrflaeche und man koennte bei offener Tasche nichts hineinziehen.
+	# Itemleisten-Extras (EXP-Leiste + Stern).
+	_exp_left = $Root/LevelBar/ExpLeft
+	_exp_right = $Root/LevelBar/ExpRight
+	_level_label = $Root/LevelBar/LevelLabel
+	_level_star = $Root/LevelBar/LevelStar
+
+	# Hotbar + LevelBar in der Zeichenreihenfolge nach oben - sonst laegen sie
+	# unter der Sperrflaeche (Dim) und man koennte bei offener Tasche nichts
+	# hineinziehen bzw. die EXP-Leiste waere verdeckt.
+	$Root.move_child($Root/LevelBar, -1)
 	$Root.move_child(_bar, -1)
 	_refresh_stats()
+	_refresh_level()
+	set_process(true)
 
 
 ## Versieht ein Szenen-Slotfeld mit Index, Stil, Hover und Klick-Logik. Die
@@ -133,7 +158,7 @@ func _init_slot(panel: InventorySlot, index: int, boxed: bool) -> void:
 	panel.index = index
 	var sz: float = panel.custom_minimum_size.x
 	if boxed:
-		panel.add_theme_stylebox_override("panel", _style(false))
+		panel.add_theme_stylebox_override("panel", _slot_tex())
 	else:
 		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -224,11 +249,20 @@ func _book_slot_style() -> StyleBoxFlat:
 	return sb
 
 
-## Passenden Slot-Stil je Index: Hotbar dunkel/hell, Tasche transparent.
+## Slot-Grafik (leiste.png) als 9-Patch-Stylebox, einmal gebaut.
+func _slot_tex() -> StyleBoxTexture:
+	if _slot_style_tex == null:
+		_slot_style_tex = StyleBoxTexture.new()
+		_slot_style_tex.texture = load(SLOT_TEX)
+		_slot_style_tex.set_texture_margin_all(6)   # runde Ecken nicht verzerren
+	return _slot_style_tex
+
+
+## Passenden Slot-Stil je Index: Hotbar = Grafik, Tasche transparent.
 func _slot_style(i: int) -> StyleBox:
 	if i >= inventory.hotbar_size or i < 0:
 		return StyleBoxEmpty.new()
-	return _style(i == selected)
+	return _slot_tex()
 
 
 # --- Tabs/Lesezeichen (Code, an das Buch gehaengt) ----------------------
@@ -286,6 +320,36 @@ func _refresh_stats() -> void:
 		b.visible = has_points
 
 
+## Stern-Grafik je Level-Stufe (alle 5 Level eine andere). Leicht erweiterbar:
+## weitere Zellen aus UI_Icons anhaengen. Aktuell blau -> gelb.
+const STAR_CELLS := [Vector2i(9, 3), Vector2i(3, 0)]
+
+
+## EXP-Leiste + Level-Stern aus skills_xp aktualisieren.
+func _refresh_level() -> void:
+	if _exp_left == null:
+		return
+	var lvl := SkillsXP.player_level()
+	var prog := SkillsXP.level_progress() * 100.0
+	_exp_left.value = prog
+	_exp_right.value = prog
+	_level_label.text = str(lvl)
+	# Stern-Grafik nur bei Levelwechsel neu setzen (spart Arbeit).
+	if lvl != _last_level:
+		var tier: int = clampi(lvl / 5, 0, STAR_CELLS.size() - 1)
+		_level_star.texture = UiAtlas.cell("icons", STAR_CELLS[tier].x, STAR_CELLS[tier].y)
+		_last_level = lvl
+
+
+## XP aendert sich zur Laufzeit (Faellen/Handwerk) ohne Signal - leichter Poll.
+func _process(delta: float) -> void:
+	_poll += delta
+	if _poll < 0.4:
+		return
+	_poll = 0.0
+	_refresh_level()
+
+
 # --- Fenster-Scrolling der Tasche ---------------------------------------
 
 ## Verschiebt das sichtbare Fenster (Mausrad); hält die Scrollleiste im Gleichlauf.
@@ -316,6 +380,8 @@ func _refresh() -> void:
 	for panel in _slot_nodes:
 		_refresh_slot(panel)
 		panel.add_theme_stylebox_override("panel", _slot_style(panel.index))
+		# Ausgewaehltes Hotbar-Feld heller (alle nutzen dieselbe Grafik).
+		panel.self_modulate = Color(1.35, 1.3, 1.0) if panel.index == selected else Color(1, 1, 1)
 	for view in _bag_views:
 		_refresh_slot(view)
 	var sel: Dictionary = inventory.slots[selected]
