@@ -25,10 +25,15 @@ const BOOK_SCALE := 3
 const BOOK_IMG := "res://assets/UI/Cute_Fantasy_UI/UI/inventar2.png"
 const BOOK_W_PX := 230
 const BOOK_H_PX := 138
-## ENVANTER-Vertiefung (rechte Seite) - hier liegt das scrollbare Slot-Raster.
+## ENVANTER-Vertiefung (rechte Seite).
 const WELL := Rect2i(120, 30, 100, 98)
-const BAG_COLS := 4
-const BAG_SLOT := 20
+## Die gezeichneten Kacheln: 4x4 sichtbar. Die Items liegen transparent GENAU
+## darauf; eine Scrollleiste schiebt, welche 16 der Taschen-Slots gezeigt werden.
+const VIEW_COLS := 4
+const VIEW_ROWS := 4
+const CELL0 := Vector2(135.5, 44.5)   ## Quell-Mitte der ersten Kachel
+const CELL_PITCH := 23.0
+const SLOT_VIEW := 22                  ## Slot-Kantenlänge in Quell-px
 ## STATS (linke Seite): y-Mitte der vier Icon-Zeilen und x der Wert-Schrift.
 const STAT_ROW_Y := [23, 40, 56, 74]
 const STAT_VALUE_X := 34
@@ -47,6 +52,10 @@ var drop_sync: Node
 var drag_from := -1
 
 var _slot_nodes: Array[InventorySlot] = []
+## Die 16 sichtbaren Taschen-Ansichten (Fenster-Scrolling) + aktueller Zeilen-Offset.
+var _bag_views: Array[InventorySlot] = []
+var _bag_offset := 0
+var _bag_scroll: VScrollBar = null
 var _bag: Control
 var _dim: ColorRect
 var _bar: HBoxContainer
@@ -73,14 +82,18 @@ func _style(bright: bool) -> StyleBoxFlat:
 	return sb
 
 
-func _make_slot(index: int, size: int = SLOT) -> InventorySlot:
+func _make_slot(index: int, size: int = SLOT, boxed := true, track := true) -> InventorySlot:
 	var panel := InventorySlot.new()
 	panel.hud = self
 	panel.index = index
 	panel.custom_minimum_size = Vector2(size, size)
-	panel.add_theme_stylebox_override("panel", _style(false))
+	if boxed:
+		panel.add_theme_stylebox_override("panel", _style(false))
+	else:
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.gui_input.connect(_on_slot_input.bind(index))
+	# Aktuellen Index zur Ereigniszeit lesen (Fenster-Scrolling ändert ihn).
+	panel.gui_input.connect(func(e): _on_slot_input(e, panel.index))
 	# Hover-Effekt: leicht aufhellen + „poppen" für mehr haptisches Gefühl.
 	panel.pivot_offset = Vector2(size, size) * 0.5
 	panel.mouse_entered.connect(func():
@@ -135,7 +148,8 @@ func _make_slot(index: int, size: int = SLOT) -> InventorySlot:
 	dur_bg.add_child(dur_fill)
 	panel.add_child(dur_bg)
 
-	_slot_nodes.append(panel)
+	if track:
+		_slot_nodes.append(panel)
 	return panel
 
 
@@ -342,27 +356,57 @@ func _banner_row(region: Rect2i, height: int, text: String, fsize: int) -> Array
 	return [c, lbl]
 
 
-## Rechte Seite (ENVANTER): scrollbares Slot-Raster in der Vertiefung.
+## Rechte Seite (ENVANTER): 16 transparente Slots GENAU auf den gezeichneten
+## Kacheln; eine Scrollleiste schiebt das Fenster über alle Taschen-Slots.
 func _build_right_page(book: Control) -> void:
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(WELL.position * BOOK_SCALE)
-	scroll.custom_minimum_size = Vector2(WELL.size * BOOK_SCALE)
-	scroll.size = Vector2(WELL.size * BOOK_SCALE)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.clip_contents = true
-	book.add_child(scroll)
+	var sv := SLOT_VIEW * BOOK_SCALE
+	for r in range(VIEW_ROWS):
+		for c in range(VIEW_COLS):
+			var v := _make_slot(-1, sv, false, false)   # transparent, nicht getrackt
+			var cx := (CELL0.x + c * CELL_PITCH) * BOOK_SCALE
+			var cy := (CELL0.y + r * CELL_PITCH) * BOOK_SCALE
+			v.position = Vector2(cx - sv * 0.5, cy - sv * 0.5)
+			v.size = Vector2(sv, sv)
+			book.add_child(v)
+			_bag_views.append(v)
 
-	var gap := 6
-	var grid := GridContainer.new()
-	grid.columns = BAG_COLS
-	grid.add_theme_constant_override("h_separation", gap)
-	grid.add_theme_constant_override("v_separation", gap)
-	scroll.add_child(grid)
+	var bag_count := inventory.slots.size() - inventory.hotbar_size
+	var total_rows := int(ceil(float(bag_count) / VIEW_COLS))
+	if total_rows > VIEW_ROWS:
+		var bar := VScrollBar.new()
+		bar.min_value = 0
+		bar.max_value = total_rows - VIEW_ROWS
+		bar.step = 1
+		bar.page = 1
+		bar.position = Vector2((WELL.position.x + WELL.size.x - 1) * BOOK_SCALE, WELL.position.y * BOOK_SCALE)
+		bar.custom_minimum_size = Vector2(12, WELL.size.y * BOOK_SCALE)
+		bar.size = Vector2(12, WELL.size.y * BOOK_SCALE)
+		bar.value_changed.connect(func(val): _bag_offset = int(val); _apply_window())
+		book.add_child(bar)
+		_bag_scroll = bar
+	_apply_window()
 
-	var well_w: int = WELL.size.x * BOOK_SCALE
-	var slot: int = int((well_w - (BAG_COLS + 1) * gap) / BAG_COLS)
-	for i in range(inventory.hotbar_size, inventory.slots.size()):
-		grid.add_child(_make_slot(i, slot))
+
+## Verschiebt das sichtbare Fenster (Mausrad); hält die Scrollleiste im Gleichlauf.
+func _scroll_bag(delta: int) -> void:
+	if _bag_scroll == null:
+		return
+	_bag_scroll.value = clampf(_bag_scroll.value + delta, _bag_scroll.min_value, _bag_scroll.max_value)
+
+
+## Ordnet den 16 Ansichten die aktuellen Taschen-Slots zu (nach Scroll-Offset).
+func _apply_window() -> void:
+	for r in range(VIEW_ROWS):
+		for c in range(VIEW_COLS):
+			var view: InventorySlot = _bag_views[r * VIEW_COLS + c]
+			var data_idx := inventory.hotbar_size + (_bag_offset + r) * VIEW_COLS + c
+			if data_idx < inventory.slots.size():
+				view.index = data_idx
+				view.visible = true
+			else:
+				view.index = -1
+				view.visible = false
+			_refresh_slot(view)
 
 
 # --- Buch-Bausteine -----------------------------------------------------
@@ -499,26 +543,33 @@ func _slot_style(i: int) -> StyleBoxFlat:
 # --- Anzeige ------------------------------------------------------------
 
 func _refresh() -> void:
-	for i in _slot_nodes.size():
-		var slot: Dictionary = inventory.slots[i]
-		var panel := _slot_nodes[i]
-		var icon: TextureRect = panel.get_node("Icon")
-		var label: Label = panel.get_node("Count")
-		var dur_bg: ColorRect = panel.get_node("DurBg")
-		if slot.is_empty():
-			icon.texture = null
-			label.text = ""
-			panel.tooltip_text = ""
-			dur_bg.visible = false
-		else:
-			icon.texture = ItemDB.icon(slot["id"])
-			label.text = str(slot["count"]) if int(slot["count"]) > 1 else ""
-			# Godot zeigt den Text von selbst, wenn die Maus stehen bleibt.
-			panel.tooltip_text = ItemDB.display_name(slot["id"])
-			_refresh_durability(dur_bg, slot)
-		panel.add_theme_stylebox_override("panel", _slot_style(i))
+	# Hotbar (mit Box-Stil) + Taschen-Ansichten (transparent, Fenster-Scroll).
+	for panel in _slot_nodes:
+		_refresh_slot(panel)
+		panel.add_theme_stylebox_override("panel", _slot_style(panel.index))
+	for view in _bag_views:
+		_refresh_slot(view)
 	var sel: Dictionary = inventory.slots[selected]
 	_name_label.text = ItemDB.display_name(sel["id"]) if not sel.is_empty() else ""
+
+
+## Aktualisiert Icon/Anzahl/Dauerhaftigkeit eines Slots aus seinem aktuellen
+## Index (bei den Taschen-Ansichten ändert er sich beim Scrollen).
+func _refresh_slot(panel: InventorySlot) -> void:
+	var icon: TextureRect = panel.get_node("Icon")
+	var label: Label = panel.get_node("Count")
+	var dur_bg: ColorRect = panel.get_node("DurBg")
+	if panel.index < 0 or panel.index >= inventory.slots.size() or inventory.slots[panel.index].is_empty():
+		icon.texture = null
+		label.text = ""
+		panel.tooltip_text = ""
+		dur_bg.visible = false
+		return
+	var slot: Dictionary = inventory.slots[panel.index]
+	icon.texture = ItemDB.icon(slot["id"])
+	label.text = str(slot["count"]) if int(slot["count"]) > 1 else ""
+	panel.tooltip_text = ItemDB.display_name(slot["id"])
+	_refresh_durability(dur_bg, slot)
 
 
 ## Stellt den Dayaniklilik-Cubugu eines Slots ein: sichtbar nur bei Aleten,
@@ -580,6 +631,13 @@ func select(index: int) -> void:
 
 func _on_slot_input(event: InputEvent, index: int) -> void:
 	if not (event is InputEventMouseButton and event.pressed):
+		return
+	# Mausrad über den Taschen-Feldern scrollt das Fenster.
+	if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		_scroll_bag(-1)
+		return
+	if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		_scroll_bag(1)
 		return
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
