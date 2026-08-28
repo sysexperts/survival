@@ -107,16 +107,12 @@ var _book_bg: TextureRect = null           ## Buch-Hintergrund (wechselt je Seit
 ## das Script fuellt nur Icons/Liste).
 var craft_queue: CraftQueue = null
 var _craft_selected: Dictionary = {}       ## aktuell gewaehltes Rezept
-var _craft_list: VBoxContainer = null      ## linke Rezeptliste
+var _rows: Control = null                   ## Rezeptzeilen (Szenen-Knoten, im Editor anpassbar)
 var _in0: TextureRect = null               ## Zutat 1 (obere Box)
 var _in1: TextureRect = null               ## Zutat 2 (untere Box)
 var _out: TextureRect = null               ## Ergebnis (grosse Box, erst nach dem Bauen)
 var _craft_btn: Button = null
 var _craft_pending := ""                   ## Ergebnis-Id, das nach dem Bauen erscheinen soll
-
-## Groesse der Rezeptliste links - am InventoryHUD-Knoten im Inspector einstellbar.
-@export var craft_row_height := 40
-@export var craft_icon_size := 36
 
 
 func setup(p_inventory: Inventory) -> void:
@@ -400,11 +396,16 @@ func attach_crafting(q: CraftQueue) -> void:
 	_in1 = _page_craft.get_node("Input1")
 	_out = _page_craft.get_node("Output")
 	_craft_btn = _page_craft.get_node("CraftBtn")
-	_craft_list = _page_craft.get_node("CraftList/List")
+	_rows = _page_craft.get_node("Rows")
 	if not _craft_btn.pressed.is_connected(_on_craft_pressed):
 		_craft_btn.pressed.connect(_on_craft_pressed)
 	if craft_queue and not craft_queue.changed.is_connected(_on_craft_queue):
 		craft_queue.changed.connect(_on_craft_queue)
+	# Jede (Szenen-)Zeile einmal verdrahten; welches Rezept sie zeigt, kommt aus
+	# den Metadaten und wird in _fill_craft_list gesetzt.
+	for row in _rows.get_children():
+		if row is Button and not row.pressed.is_connected(_on_row_pressed):
+			row.pressed.connect(_on_row_pressed.bind(row))
 	_fill_craft_list()
 	_show_recipe({})
 
@@ -416,50 +417,30 @@ func open_craft_page() -> void:
 	_select_tab(1)
 
 
-## Rezeptliste (Grundhandwerk = Station HAND): Name links, Icon rechts im Slot.
+## Setzt in jede vorhandene Szenen-Zeile (CraftRow0..N) ein Rezept: Name + Icon.
+## Ueberzaehlige Zeilen werden ausgeblendet. Das Layout der Zeilen (Position,
+## Groesse von Zeile/Icon/Name) machst du komplett im Editor.
 func _fill_craft_list() -> void:
-	for c in _craft_list.get_children():
-		c.queue_free()
+	var recipes: Array = []
 	for r in RecipeDB.RECIPES:
 		if String(r.get("station", "")) == RecipeDB.HAND:
-			_craft_list.add_child(_craft_row(r))
+			recipes.append(r)
+	var rows := _rows.get_children()
+	for i in rows.size():
+		var row: Control = rows[i]
+		if i < recipes.size():
+			row.visible = true
+			row.set_meta("recipe", recipes[i])
+			(row.get_node("Icon") as TextureRect).texture = ItemDB.icon(recipes[i]["out"])
+			(row.get_node("Name") as Label).text = ItemDB.display_name(recipes[i]["out"])
+		else:
+			row.visible = false
 
 
-func _craft_row(recipe: Dictionary) -> Button:
-	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, craft_row_height)
-	b.focus_mode = Control.FOCUS_NONE
-	b.mouse_filter = Control.MOUSE_FILTER_STOP
-	b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	var hov := StyleBoxFlat.new()
-	hov.bg_color = Color(0, 0, 0, 0.12)
-	hov.set_corner_radius_all(4)
-	b.add_theme_stylebox_override("hover", hov)
-	b.add_theme_stylebox_override("pressed", hov)
-	b.pressed.connect(_show_recipe.bind(recipe))
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 8)
-	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.add_child(h)
-	var nm := Label.new()
-	nm.text = ItemDB.display_name(recipe["out"])
-	nm.add_theme_font_override("font", UiAtlas.font())
-	nm.add_theme_font_size_override("font_size", 14)
-	nm.add_theme_color_override("font_color", Color("3a2418"))
-	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	h.add_child(nm)
-	# Icon rechts, auf Slot-Groesse begrenzt (nie groesser als die Box).
-	var ic := TextureRect.new()
-	ic.texture = ItemDB.icon(recipe["out"])
-	ic.custom_minimum_size = Vector2(craft_icon_size, craft_icon_size)
-	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	h.add_child(ic)
-	return b
+## Klick auf eine Rezeptzeile -> zugehoeriges Rezept anzeigen.
+func _on_row_pressed(row: Control) -> void:
+	if row.has_meta("recipe"):
+		_show_recipe(row.get_meta("recipe"))
 
 
 ## Zeigt ein Rezept: die zwei Zutaten in die Eingabe-Boxen; die Ergebnis-Box
