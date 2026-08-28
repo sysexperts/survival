@@ -9,7 +9,7 @@ const MAXV := 99
 ## Reihenfolge = Anzeige. key -> Anzeigename.
 const ORDER := ["tragkraft", "kraft", "ausdauer", "hiz"]
 const LABELS := {
-	"tragkraft": "Taşıma", "kraft": "Güç", "ausdauer": "Dayanıklılık", "hiz": "Hız",
+	"tragkraft": "Tasima", "kraft": "Guc", "ausdauer": "Dayaniklilik", "hiz": "Hiz",
 }
 
 static var values := {"tragkraft": 50, "kraft": 10, "ausdauer": 10, "hiz": 10}

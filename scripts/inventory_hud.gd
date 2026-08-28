@@ -27,8 +27,8 @@ const BOOK_REGION := Rect2i(8, 6, 224, 140)
 ## Nutzbare Seitenflächen in Buch-lokalen Pixeln (innerhalb der Zierränder).
 const LEFT_PAGE := Rect2i(14, 12, 90, 114)
 const RIGHT_PAGE := Rect2i(118, 12, 98, 114)
-const BAG_COLS := 9
-const BAG_SLOT := 28
+const BAG_COLS := 6
+const BAG_SLOT := 34
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
@@ -216,47 +216,92 @@ func _build() -> void:
 
 # --- Buch-Seiten --------------------------------------------------------
 
-## Vier Tabs oben auf dem Buch (Reiter-Stil wie im Referenzbild). Platzhalter.
-func _build_tabs(book: Control, _book_w: int) -> void:
+## Pack-Grafiken für Tabs/Lesezeichen (aus Book_UI) und Icons (aus UI_Icons).
+const TAB_BG := Rect2i(590, 78, 20, 18)          ## tan Top-Tab
+const RIBBON_BG := [                               ## farbige Lesezeichen (rechts)
+	Rect2i(750, 79, 28, 18),   # rot
+	Rect2i(798, 79, 28, 18),   # blau
+	Rect2i(846, 79, 28, 18),   # grün
+	Rect2i(894, 79, 28, 18),   # gelb
+	Rect2i(990, 79, 28, 18),   # braun
+]
+## Icon-Zellen (Spalte, Zeile) in UI_Icons.
+const TOP_ICONS := [Vector2i(14, 1), Vector2i(10, 1), Vector2i(2, 1), Vector2i(9, 1)]  # Mail/Screen/Gear/Save
+const RIBBON_ICONS := [Vector2i(14, 1), Vector2i(0, 1), Vector2i(8, 1), Vector2i(3, 0), Vector2i(9, 2)]  # Mail/Chat/Gift/Star/Bag
+
+
+## Tabs wie im Referenzbild: oben Icon-Reiter, rechts farbige Lesezeichen.
+func _build_tabs(book: Control, book_w: int) -> void:
+	# Oben: 4 tan Reiter mit Icons.
 	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 5)
-	tabs.position = Vector2(16 * BOOK_SCALE, -13 * BOOK_SCALE)
+	tabs.add_theme_constant_override("separation", 6)
+	tabs.position = Vector2(18 * BOOK_SCALE, -18 * BOOK_SCALE)
 	book.add_child(tabs)
-	for i in TAB_LABELS.size():
-		var tab := Button.new()
-		tab.text = TAB_LABELS[i]
-		tab.focus_mode = Control.FOCUS_NONE
-		tab.custom_minimum_size = Vector2(0, 34)
-		tab.add_theme_stylebox_override("normal", _tab_style(i == 0))
-		tab.add_theme_stylebox_override("hover", _tab_style(true))
-		tab.add_theme_stylebox_override("pressed", _tab_style(true))
-		tab.add_theme_color_override("font_color", Color("3a2418"))
-		tabs.add_child(tab)
+	for cell in TOP_ICONS:
+		tabs.add_child(_icon_tab(TAB_BG, cell, 3, 2))
+
+	# Rechts: farbige Lesezeichen, vertikal gestapelt, ragen nach rechts raus.
+	var ry := 14 * BOOK_SCALE
+	for i in RIBBON_BG.size():
+		var ribbon := _icon_tab(RIBBON_BG[i], RIBBON_ICONS[i], 3, 2)
+		ribbon.position = Vector2(book_w - 10 * BOOK_SCALE, ry)
+		book.add_child(ribbon)
+		ry += ribbon.custom_minimum_size.y + 6
+
+
+## Ein Tab/Lesezeichen: Pack-Hintergrund + zentriertes Icon.
+func _icon_tab(bg_region: Rect2i, icon_cell: Vector2i, bg_scale: int, icon_scale: int) -> Control:
+	var tab := Control.new()
+	tab.custom_minimum_size = Vector2(bg_region.size * bg_scale)
+	tab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg := TextureRect.new()
+	bg.texture = UiAtlas.tex("book", bg_region)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tab.add_child(bg)
+	var icon := TextureRect.new()
+	icon.texture = UiAtlas.cell("icons", icon_cell.x, icon_cell.y)
+	icon.custom_minimum_size = Vector2(16 * icon_scale, 16 * icon_scale)
+	icon.size = Vector2(16 * icon_scale, 16 * icon_scale)
+	icon.position = (tab.custom_minimum_size - icon.size) * 0.5
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tab.add_child(icon)
+	return tab
 
 
 ## Linke Seite: Ausrüstungs-Slots + Gold + verstellbare Charakter-Stats.
 func _build_left_page(book: Control) -> void:
 	var area := _page_area(book, LEFT_PAGE)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 7)
+	col.add_theme_constant_override("separation", 5)
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	col.offset_left = 12; col.offset_top = 12; col.offset_right = -12; col.offset_bottom = -12
+	col.offset_left = 14; col.offset_top = 14; col.offset_right = -14; col.offset_bottom = -14
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	area.add_child(col)
 
-	# Ausrüstungs-Slots (Platzhalter) - 3 Reihen x 3.
+	# Ausrüstungs-Panel (braun, eingelassen) mit 6 Slots (3x2).
+	var eq_panel := PanelContainer.new()
+	var panel_sb := StyleBoxFlat.new()
+	panel_sb.bg_color = Color("a9713f")
+	panel_sb.border_color = Color("5a3826")
+	panel_sb.set_border_width_all(2)
+	panel_sb.set_corner_radius_all(6)
+	panel_sb.set_content_margin_all(6)
+	eq_panel.add_theme_stylebox_override("panel", panel_sb)
+	eq_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(eq_panel)
 	var eq := GridContainer.new()
 	eq.columns = 3
-	eq.add_theme_constant_override("h_separation", 6)
-	eq.add_theme_constant_override("v_separation", 6)
-	col.add_child(eq)
-	for i in range(9):
-		eq.add_child(_placeholder_slot(42))
-
-	col.add_child(_spacer_h(4))
+	eq.add_theme_constant_override("h_separation", 5)
+	eq.add_theme_constant_override("v_separation", 5)
+	eq_panel.add_child(eq)
+	for i in range(6):
+		eq.add_child(_placeholder_slot(38))
 
 	var gold := Label.new()
-	gold.text = "Altın: 0"
+	gold.text = "Altin: 0"
 	gold.add_theme_color_override("font_color", Color("6a4326"))
 	col.add_child(gold)
 
