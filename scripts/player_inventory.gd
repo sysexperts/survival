@@ -249,7 +249,9 @@ func _close_all_crafting() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Mausrad blaettert durch die Hotbar (frueher Zoom). Hoch = ein Feld nach
 	# links, runter = nach rechts, laeuft am Rand um.
-	if event is InputEventMouseButton and event.pressed:
+	# ...aber nicht, solange die Tasche offen ist: dort blaettert das Mausrad
+	# durch die Taschen-Reihen, und die Hotbar-Auswahl darf dabei nicht mitwandern.
+	if event is InputEventMouseButton and event.pressed and not hud.bag_open():
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			hud.select(wrapi(hud.selected - 1, 0, hotbar_size))
 			get_viewport().set_input_as_handled()

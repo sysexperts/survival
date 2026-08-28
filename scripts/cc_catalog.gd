@@ -13,8 +13,10 @@ const CELL := 48
 const ROWS := 5   ## Süd, Südwest, West, Nordwest, Nord
 
 ## Spielzustand -> Spaltenzahl (= Frames) im gebauten Sheet.
+## sleep ist ein einzelnes, ruhendes Liege-Bild (aus der "Die"-Animation, letztes
+## Frame) - kein Zyklus, deshalb nur 1 Spalte.
 const STATE_COLS := {
-	"idle": 8, "walk": 6, "run": 4, "axe": 6, "sleep": 4,
+	"idle": 8, "walk": 6, "run": 4, "axe": 6, "sleep": 1,
 }
 
 ## Zeichenreihenfolge von unten nach oben. Jeder Eintrag ist ein Slot-Schlüssel

@@ -336,11 +336,6 @@ func _physics_process(delta: float) -> void:
 	if busy:
 		return
 
-	# Axt auf Leertaste. (Enter ist jetzt fuer den Chat reserviert.)
-	if Input.is_key_pressed(KEY_SPACE):
-		_start_axe()
-		return
-
 	if input == Vector2.ZERO:
 		if not path.is_empty():
 			_follow_path(delta)
