@@ -1,78 +1,67 @@
 extends Control
 
-## Leben/Mana/Stamina oben links. Rahmen aus dem Cute-Fantasy-UI-Pack
-## (9-Patch), innen eine gerundete Farbfüllung, die mit dem Wert skaliert.
-## Preload-Muster; hängt in der Overlay-CanvasLayer.
+## Leben/Mana/Stamina oben links im Cute-Fantasy-UI-Look: die Pack-Vorlage
+## "Porträt + 3 Balken" (rot/blau/grün) aus UI_Bars, mit dem eigenen
+## Charakter-Kopf im Rahmen.
+##
+## Die Balken sind aktuell voll gezeichnet (Werte starten voll). Sobald es
+## echten Verbrauch gibt, können die Füllungen dynamisch werden.
 
-const PlayerStats := preload("res://scripts/player_stats.gd")
+const UiAtlas := preload("res://scripts/ui_atlas.gd")
+const CCFrames := preload("res://scripts/cc_frames.gd")
+const AppearanceStore := preload("res://scripts/appearance_store.gd")
 
-const BAR_W := 160
-const BAR_H := 20
-const FILL_INSET := 4            ## Abstand der Füllung zum Rahmen
-const GAP := 5                   ## Abstand zwischen den Balken
-
-const HEALTH := Color("e43b44")
-const MANA := Color("0095e9")
-const STAMINA := Color("63c74d")
-## Pack-Farben für Rahmen/Hintergrund (dunkel + warmes Braun wie die UI-Rahmen).
-const FRAME_BORDER := Color("e4a672")
-const TRACK_BG := Color("241c1a")
-
-var _fills: Array[Panel] = []
-var _ratios: Array[Callable] = []
+## Vorlage-Block (Porträt-Rahmen + 3 volle Balken) im Sheet.
+const BLOCK_REGION := Rect2i(256, 6, 48, 19)
+const SCALE := 3
+## Innenfläche des Porträt-Rahmens im Block (lokale Pixel, vor Skalierung). Der
+## Rahmen hat einen gefüllten (nicht transparenten) Innenraum, deshalb kommt der
+## Kopf ÜBER den Block, auf diese Fläche.
+const PORTRAIT_INNER := Rect2i(3, 3, 14, 14)
+## Kopf-Ausschnitt aus dem 48px-Idle-Frame.
+const HEAD_CROP := Rect2i(12, 3, 24, 22)
 
 
 func _ready() -> void:
-	# Oben links, unter dem Bildschirmrand.
 	set_anchors_preset(Control.PRESET_TOP_LEFT)
-	position = Vector2(12, 12)
+	position = Vector2(12, 10)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", GAP)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(box)
+	# Porträt-Rahmen + Balken (Basis).
+	var block := TextureRect.new()
+	block.texture = UiAtlas.tex("bars", BLOCK_REGION)
+	block.custom_minimum_size = Vector2(BLOCK_REGION.size * SCALE)
+	block.size = Vector2(BLOCK_REGION.size * SCALE)
+	block.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(block)
 
-	_add_bar(box, HEALTH, PlayerStats.health_ratio)
-	_add_bar(box, MANA, PlayerStats.mana_ratio)
-	_add_bar(box, STAMINA, PlayerStats.stamina_ratio)
-
-
-func _add_bar(box: VBoxContainer, color: Color, ratio: Callable) -> void:
-	var row := Control.new()
-	row.custom_minimum_size = Vector2(BAR_W, BAR_H)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(row)
-
-	# Rahmen/Spur (dunkel, gerundet, warmer Rand wie die Pack-UI).
-	var track := Panel.new()
-	var tsb := StyleBoxFlat.new()
-	tsb.bg_color = TRACK_BG
-	tsb.set_corner_radius_all(6)
-	tsb.set_border_width_all(2)
-	tsb.border_color = FRAME_BORDER
-	track.add_theme_stylebox_override("panel", tsb)
-	track.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(track)
-
-	# Füllung, gerundet, innen eingerückt.
-	var fill := Panel.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.set_corner_radius_all(4)
-	fill.add_theme_stylebox_override("panel", sb)
-	fill.position = Vector2(FILL_INSET, FILL_INSET)
-	fill.size = Vector2(BAR_W - 2 * FILL_INSET, BAR_H - 2 * FILL_INSET)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(fill)
-
-	_fills.append(fill)
-	_ratios.append(ratio)
+	# Kopf ÜBER den Block, auf die Porträt-Innenfläche, geclippt.
+	var head := _head_texture()
+	if head != null:
+		var clip := Control.new()
+		clip.position = Vector2(PORTRAIT_INNER.position * SCALE)
+		clip.size = Vector2(PORTRAIT_INNER.size * SCALE)
+		clip.clip_contents = true
+		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(clip)
+		var tr := TextureRect.new()
+		tr.texture = head
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		clip.add_child(tr)
 
 
-func _process(_delta: float) -> void:
-	var full := float(BAR_W - 2 * FILL_INSET)
-	for i in range(_fills.size()):
-		var r: float = _ratios[i].call()
-		_fills[i].size.x = maxf(0.0, full * r)
+## Kopf des eigenen Charakters aus dem Idle-Frame ausschneiden.
+func _head_texture() -> Texture2D:
+	var sf := CCFrames.build(AppearanceStore.local())
+	if not sf.has_animation(&"idle_south") or sf.get_frame_count(&"idle_south") == 0:
+		return null
+	var img := sf.get_frame_texture(&"idle_south", 0).get_image()
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+	var crop := HEAD_CROP.intersection(Rect2i(0, 0, img.get_width(), img.get_height()))
+	return ImageTexture.create_from_image(img.get_region(crop))
