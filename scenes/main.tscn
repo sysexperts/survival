@@ -19,6 +19,7 @@
 [ext_resource type="Script" uid="uid://c7t137mixxp86" path="res://scripts/drop_sync.gd" id="19_drop"]
 [ext_resource type="Script" uid="uid://b65h4ghj5g1mg" path="res://scripts/deer_spawner.gd" id="20_deer"]
 [ext_resource type="Script" path="res://scripts/pause_menu.gd" id="21_pause"]
+[ext_resource type="Script" path="res://scripts/stats_hud.gd" id="22_stats"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -107,6 +108,11 @@ script = ExtResource("14_chat")
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("16_announce")
+
+[node name="StatsHud" type="Control" parent="Overlay" unique_id=1675334167]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("22_stats")
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=1675334166]
 script = ExtResource("21_pause")

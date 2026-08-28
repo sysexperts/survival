@@ -8,7 +8,7 @@ extends RefCounted
 ## Komponenten-Analyse (tools/bars_rects.gd). 9x12 px, hier x3 vergrößert.
 
 const SHEET := "res://assets/UI/Cute_Fantasy_UI/UI/UI_ALL.png"
-const SCALE := 3
+const SCALE := 4
 
 ## Weiße Cursor, Normal-Reihe (y=1218). Pfeil ganz links, Hand als vierte.
 const ARROW_RECT := Rect2i(4, 1218, 10, 13)
