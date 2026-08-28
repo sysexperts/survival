@@ -39,9 +39,13 @@ const SLOT_VIEW := 20                  ## Slot-Kantenlänge in Quell-px
 const HEADER_LEFT := Vector2(58, 9)
 const HEADER_RIGHT := Vector2(168, 9)
 ## STATS (links): Mitte der 4 Icon-Boxen + x der Wert-Schrift (Quell-px).
-const ICON_BOX := [Vector2(21, 22), Vector2(21, 38), Vector2(21, 54), Vector2(21, 70)]
-const STAT_ICON_SRC := 13
-const STAT_VALUE_X := 33
+const ICON_BOX := [Vector2(21, 24), Vector2(21, 40), Vector2(21, 56), Vector2(21, 72)]
+const STAT_ICON_SRC := 12
+const STAT_VALUE_X := 34
+## +/- Buttons je Zeile (Quell-x) und Punkte-Anzeige (Quell-Mitte).
+const MINUS_X := 90
+const PLUS_X := 99
+const POINTS_CENTER := Vector2(58, 116)
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
@@ -257,20 +261,27 @@ const RIBBON_BG := [                               ## farbige Lesezeichen (recht
 	Rect2i(894, 79, 28, 18),   # gelb
 	Rect2i(990, 79, 28, 18),   # braun
 ]
-## Icon-Zellen (Spalte, Zeile) in UI_Icons.
-const TOP_ICONS := [Vector2i(14, 1), Vector2i(10, 1), Vector2i(2, 1), Vector2i(9, 1)]  # Mail/Screen/Gear/Save
+## Obere Reiter: [Icon-Zelle, Name]. Rucksack / Basic Crafts / Einstellungen.
+const TOP_TABS := [
+	[Vector2i(9, 2), "Rucksack"],       # Rucksack-Icon
+	[Vector2i(3, 1), "Basic Crafts"],   # Schraubenschlüssel
+	[Vector2i(2, 1), "Einstellungen"],  # Zahnrad
+]
 const RIBBON_ICONS := [Vector2i(14, 1), Vector2i(0, 1), Vector2i(8, 1), Vector2i(3, 0), Vector2i(9, 2)]  # Mail/Chat/Gift/Star/Bag
 
 
 ## Tabs wie im Referenzbild: oben Icon-Reiter, rechts farbige Lesezeichen.
 func _build_tabs(book: Control, book_w: int) -> void:
-	# Oben: 4 tan Reiter mit Icons.
+	# Oben: benannte tan Reiter mit Icons.
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 6)
 	tabs.position = Vector2(18 * BOOK_SCALE, -18 * BOOK_SCALE)
 	book.add_child(tabs)
-	for cell in TOP_ICONS:
-		tabs.add_child(_icon_tab(TAB_BG, cell, 3, 2))
+	for entry in TOP_TABS:
+		var tab := _icon_tab(TAB_BG, entry[0], 3, 2)
+		tab.tooltip_text = String(entry[1])
+		tab.mouse_filter = Control.MOUSE_FILTER_STOP   # damit der Tooltip erscheint
+		tabs.add_child(tab)
 
 	# Rechts: farbige Lesezeichen, vertikal gestapelt, ragen nach rechts raus.
 	var ry := 14 * BOOK_SCALE
@@ -339,15 +350,52 @@ func _build_left_page(book: Control) -> void:
 
 		var lbl := Label.new()
 		lbl.add_theme_font_override("font", UiAtlas.font())
-		lbl.add_theme_font_size_override("font_size", 15)
-		lbl.add_theme_color_override("font_color", Color("3a2418"))
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", Color("2a1a10"))
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.size = Vector2(140, 20)
-		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, ICON_BOX[i].y * BOOK_SCALE - 10)
+		lbl.size = Vector2(140, 24)
+		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, ICON_BOX[i].y * BOOK_SCALE - 12)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		book.add_child(lbl)
 		_stat_value_labels[key] = lbl
+
+		# +/- Buttons am rechten Zeilenende.
+		_stat_button(book, key, 1, Color("4b9e3f"), Vector2i(0, 8), PLUS_X, ICON_BOX[i].y)
+		_stat_button(book, key, -1, Color("c0392b"), Vector2i(3, 8), MINUS_X, ICON_BOX[i].y)
+
+	# Restpunkte-Anzeige (unterer Balken).
+	_points_label = Label.new()
+	_points_label.add_theme_font_override("font", UiAtlas.font())
+	_points_label.add_theme_font_size_override("font_size", 14)
+	_points_label.add_theme_color_override("font_color", Color("2a1a10"))
+	_points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_points_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_points_label.size = Vector2(200, 24)
+	_points_label.position = POINTS_CENTER * BOOK_SCALE - Vector2(100, 12)
+	_points_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	book.add_child(_points_label)
 	_refresh_stats()
+
+
+## Kleiner +/- Button an fester Position (Quell-px Mitte).
+func _stat_button(book: Control, key: String, delta: int, color: Color, icon_cell: Vector2i, sx: float, sy: float) -> void:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	var sz := 8 * BOOK_SCALE
+	b.size = Vector2(sz, sz)
+	b.position = Vector2(sx * BOOK_SCALE - sz * 0.5, sy * BOOK_SCALE - sz * 0.5)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = color
+	sb.border_color = color.darkened(0.35)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(5)
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sb)
+	b.add_theme_stylebox_override("pressed", sb)
+	b.icon = UiAtlas.cell("icons", icon_cell.x, icon_cell.y)
+	b.expand_icon = true
+	b.pressed.connect(_on_stat.bind(key, delta))
+	book.add_child(b)
 
 
 ## Seiten-Überschrift (selbst geschrieben), zentriert um `center` (Quell-px).
@@ -542,7 +590,7 @@ func _refresh_stats() -> void:
 		_stat_value_labels[key].text = "%s: %02d" % [
 			CharStats.LABELS.get(key, key), int(CharStats.values.get(key, 0))]
 	if _points_label:
-		_points_label.text = "Verbleibende Punkte: %d" % CharStats.points
+		_points_label.text = "Kalan Puan: %d" % CharStats.points
 
 
 func _spacer_h(h: int) -> Control:
