@@ -1400,281 +1400,335 @@ text = "Yapim"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Rows" type="Control" parent="Root/Center/Book/CraftPage"]
+[node name="Rows" type="Control" parent="Root/Center/Book/CraftPage" unique_id=1346362698]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = 15.0
+offset_right = 1.0
+offset_bottom = 15.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="CraftRow0" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow0" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=617062956]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 36.0
-offset_right = 320.0
-offset_bottom = 70.0
+offset_left = 48.0
+offset_top = 32.0
+offset_right = 304.0
+offset_bottom = 66.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow0"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow0" unique_id=1498862570]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 16.0
+offset_top = 3.0
+offset_right = -70.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow0"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow0" unique_id=1908728957]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = 4.0
-offset_right = -14.0
-offset_bottom = -4.0
+offset_left = -45.0
+offset_top = 3.0
+offset_right = -13.0
+offset_bottom = -5.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow1" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow1" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=1152855687]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 72.0
-offset_right = 320.0
-offset_bottom = 106.0
+offset_left = 48.0
+offset_top = 69.0
+offset_right = 304.0
+offset_bottom = 103.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow1"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow1" unique_id=900130565]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 15.0
+offset_top = 4.0
+offset_right = -48.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow1"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow1" unique_id=163427203]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = 4.0
-offset_right = -14.0
-offset_bottom = -4.0
+offset_left = -48.0
+offset_top = 5.0
+offset_right = -10.0
+offset_bottom = -3.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow2" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow2" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=1187120614]
 layout_mode = 0
-offset_left = 42.0
+offset_left = 48.0
 offset_top = 108.0
-offset_right = 320.0
+offset_right = 304.0
 offset_bottom = 142.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow2"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow2" unique_id=1398746613]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 15.0
+offset_top = 5.0
+offset_right = -48.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow2"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow2" unique_id=2076159569]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
+offset_left = -48.0
 offset_top = 4.0
-offset_right = -14.0
+offset_right = -8.0
 offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow3" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow3" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=582632750]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 144.0
-offset_right = 320.0
-offset_bottom = 178.0
+offset_left = 48.0
+offset_top = 147.0
+offset_right = 296.0
+offset_bottom = 181.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow3"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow3" unique_id=929337210]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 15.0
+offset_top = 5.0
+offset_right = -40.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow3"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow3" unique_id=1031448917]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = 4.0
-offset_right = -14.0
-offset_bottom = -4.0
+offset_left = -40.0
+offset_top = 5.0
+offset_right = -1.0
+offset_bottom = -3.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow4" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow4" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=1272742628]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 180.0
-offset_right = 320.0
-offset_bottom = 214.0
+offset_left = 47.0
+offset_top = 186.0
+offset_right = 296.0
+offset_bottom = 220.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow4"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow4" unique_id=1471456706]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 16.0
+offset_top = 5.0
+offset_right = -40.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow4"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow4" unique_id=2064315551]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
+offset_left = -41.0
 offset_top = 4.0
-offset_right = -14.0
+offset_right = -1.0
 offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow5" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow5" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=1547380200]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 216.0
-offset_right = 320.0
-offset_bottom = 250.0
+offset_left = 48.0
+offset_top = 226.0
+offset_right = 296.0
+offset_bottom = 260.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow5"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow5" unique_id=393072478]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 14.0
+offset_top = 3.0
+offset_right = -40.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow5"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow5" unique_id=185102831]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
+offset_left = -40.0
 offset_top = 4.0
-offset_right = -14.0
+offset_right = -1.0
 offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow6" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow6" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=2040463166]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 252.0
-offset_right = 320.0
-offset_bottom = 286.0
+offset_left = 48.0
+offset_top = 265.0
+offset_right = 296.0
+offset_bottom = 299.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow6"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow6" unique_id=300168610]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 15.0
+offset_top = 3.0
+offset_right = -40.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow6"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow6" unique_id=2013301836]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = 4.0
-offset_right = -14.0
-offset_bottom = -4.0
+offset_left = -40.0
+offset_top = 3.0
+offset_right = -1.0
+offset_bottom = -5.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftRow7" type="Button" parent="Root/Center/Book/CraftPage/Rows"]
+[node name="CraftRow7" type="Button" parent="Root/Center/Book/CraftPage/Rows" unique_id=409495683]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 288.0
-offset_right = 320.0
-offset_bottom = 322.0
+offset_left = 48.0
+offset_top = 304.0
+offset_right = 296.0
+offset_bottom = 338.0
 focus_mode = 0
 flat = true
 
-[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow7"]
+[node name="Name" type="Label" parent="Root/Center/Book/CraftPage/Rows/CraftRow7" unique_id=690255143]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -64.0
-mouse_filter = 2
+offset_left = 15.0
+offset_top = 3.0
+offset_right = -40.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.5411765, 0.28235295, 0.21176471, 1)
 theme_override_font_sizes/font_size = 14
 vertical_alignment = 1
 
-[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow7"]
+[node name="Icon" type="TextureRect" parent="Root/Center/Book/CraftPage/Rows/CraftRow7" unique_id=645298678]
 layout_mode = 1
+anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = 4.0
-offset_right = -14.0
-offset_bottom = -4.0
+offset_left = -40.0
+offset_top = 3.0
+offset_right = -2.0
+offset_bottom = -5.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
