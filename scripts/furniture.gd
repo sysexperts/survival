@@ -45,9 +45,11 @@ const CONFIG := {
 	"ileri_uretim_masasi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	"dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	"ileri_dokuma_tezgahi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
-	"uretim_masasi_v2": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
-	"ileri_uretim_masasi_v2": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
-	"ustun_uretim_masasi": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	# working_table2: die Grafik ist klein (~21px) und sitzt oben links im
+	# 68er-Bild. Groesser skaliert und Anker auf die tatsaechliche Fuss-Mitte.
+	"uretim_masasi_v2": {"scale": 1.45, "offset": Vector2(-13, -23)},
+	"ileri_uretim_masasi_v2": {"scale": 1.45, "offset": Vector2(-12, -23)},
+	"ustun_uretim_masasi": {"scale": 1.45, "offset": Vector2(-12, -23)},
 	"eritme_firini": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 }
 
