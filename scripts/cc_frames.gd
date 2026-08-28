@@ -99,7 +99,13 @@ static func _composite(dir_name: String, cols: int, look: Dictionary, with_axe: 
 	var order: Array = []
 	if with_axe:
 		order.append("NegativeLayer1_Axe_" + AXE_METAL)
+	# Haare und Kopfbedeckung liegen im Pack auf derselben Ebene (Layer11) und
+	# sind nicht fürs gemeinsame Tragen gedacht: mit Mütze/Helm ragen die Haare
+	# sonst darüber. Deshalb Haare unterdrücken, sobald ein Hut gewählt ist.
+	var has_hat := String(look.get("hat", "")) != ""
 	for slot in CCCatalog.DRAW_ORDER:
+		if slot == "hair" and has_hat:
+			continue
 		order.append(String(look.get(slot, "")))
 	if with_axe:
 		order.append("Layer13_Axe_" + AXE_METAL)
