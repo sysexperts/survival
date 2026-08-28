@@ -60,9 +60,15 @@ func _process(_delta: float) -> void:
 	visible = hidden
 	if not hidden:
 		return
-	# Erst synchronisieren, wenn tatsächlich gezeichnet wird.
+	# Erst synchronisieren, wenn tatsächlich gezeichnet wird. Der Spieler tauscht
+	# sein SpriteFrames zur Laufzeit (Aussehen/Axt) und spiegelt für Ost-
+	# Richtungen - beides hier nachziehen, sonst passt der Umriss nicht.
+	if sprite_frames != source.sprite_frames:
+		sprite_frames = source.sprite_frames
 	if animation != source.animation:
 		animation = source.animation
+	flip_h = source.flip_h
+	offset = source.offset
 	set_frame_and_progress(source.frame, source.frame_progress)
 
 

@@ -23,8 +23,11 @@ void fragment() {
 	a = max(a, texture(TEXTURE, UV + vec2( 0.0,  px.y)).a);
 	a = max(a, texture(TEXTURE, UV + vec2( 0.0, -px.y)).a);
 
-	vec4 edge = vec4(outline_color.rgb, outline_color.a * step(0.05, a));
+	// Schwelle bei 0.5 statt am Faserrand: die verkleinerten Figuren-Frames
+	// haben weiche Alpha-Kanten (Lanczos). Bei 0.05 saugte der Rand den ganzen
+	// Halbschatten mit und wurde ein fransiger Klumpen.
+	vec4 edge = vec4(outline_color.rgb, outline_color.a * step(0.5, a));
 	vec4 body = vec4(base.rgb, base.a * fill_alpha);
-	// Undurchsichtige Pixel bleiben Koerper, transparente werden Rand.
-	COLOR = mix(edge, body, step(0.05, base.a));
+	// Undurchsichtige Pixel bleiben Koerper, halbdurchsichtige werden Rand.
+	COLOR = mix(edge, body, step(0.5, base.a));
 }
