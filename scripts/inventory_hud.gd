@@ -98,7 +98,7 @@ var _exp_tween: Tween = null
 ## Buch-Reiter (oben) und Seiten.
 var _tab_bgs: Array[TextureRect] = []      ## Hintergrund je Reiter (fuer aktiv/inaktiv)
 var _active_tab := 0
-var _rucksack_nodes: Array[Node] = []      ## Inhalt der Rucksack-Seite (zum Ein-/Ausblenden)
+var _page_rucksack: Control = null         ## Rucksack-Seite (Container, ein Auge im Editor)
 var _page_craft: Control = null            ## Basic-Crafts-Seite
 var _page_settings: Control = null         ## Einstellungen-Seite (Platzhalter)
 var _book_bg: TextureRect = null           ## Buch-Hintergrund (wechselt je Seite)
@@ -144,10 +144,11 @@ func _bind() -> void:
 	_hint_label = $Root/HintLabel
 	_bag = $Root/Center/Book
 	_book_bg = _bag.get_node("BookBg")
+	_page_rucksack = _bag.get_node("RucksackPage")
 
 	# Taschen-Felder (4x5) - transparent, Index wird beim Scrollen gesetzt.
 	_bag_views.clear()
-	for v in _bag.get_node("BagGrid").get_children():
+	for v in _page_rucksack.get_node("BagGrid").get_children():
 		if v is InventorySlot:
 			_init_slot(v, -1, false)
 			_bag_views.append(v)
@@ -209,14 +210,14 @@ func _wire_left_page() -> void:
 		if i >= ICON_BOX.size():
 			break
 		var key := String(CharStats.ORDER[i])
-		var lbl: Label = _bag.get_node("StatValue%d" % i)
+		var lbl: Label = _page_rucksack.get_node("StatValue%d" % i)
 		# Schrift/Groesse/Farbe NICHT mehr im Code setzen - so laesst sich die
 		# Textart der Stat-Werte im Editor (Inspector -> Theme Overrides) aendern.
 		_stat_value_labels[key] = lbl
 		# +/- Buttons liegen jetzt als Knoten in der Szene (im Editor schiebbar) -
 		# hier nur noch die Aktion verdrahten und fuer das spaetere Ausblenden merken.
-		var plus: Button = _bag.get_node("Plus%d" % i)
-		var minus: Button = _bag.get_node("Minus%d" % i)
+		var plus: Button = _page_rucksack.get_node("Plus%d" % i)
+		var minus: Button = _page_rucksack.get_node("Minus%d" % i)
 		plus.pressed.connect(_on_stat.bind(key, 1))
 		minus.pressed.connect(_on_stat.bind(key, -1))
 		_stat_buttons.append(plus)
@@ -232,7 +233,7 @@ func _wire_left_page() -> void:
 	_points_label.size = Vector2(200, 24)
 	_points_label.position = POINTS_CENTER * BOOK_SCALE - Vector2(100, 12)
 	_points_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bag.add_child(_points_label)
+	_page_rucksack.add_child(_points_label)
 
 
 ## Rechte Seite: Scrollleiste anhaengen, wenn es mehr Taschen-Reihen als
@@ -250,7 +251,7 @@ func _wire_right_page() -> void:
 		bar.custom_minimum_size = Vector2(12, WELL.size.y * BOOK_SCALE)
 		bar.size = Vector2(12, WELL.size.y * BOOK_SCALE)
 		bar.value_changed.connect(func(val): _bag_offset = int(val); _apply_window())
-		_bag.add_child(bar)
+		_page_rucksack.add_child(bar)
 		_bag_scroll = bar
 	_apply_window()
 
@@ -339,22 +340,9 @@ func _update_tab_visual(bg: TextureRect, active: bool) -> void:
 		bg.position.y + (bg.size.y - icon.size.y) * 0.5)
 
 
-## Sammelt die Rucksack-Inhalte und legt Platzhalter fuer die anderen Seiten an.
+## Die Seiten sind jetzt je EIN Container (im Editor ein Auge-Klick pro Seite):
+## RucksackPage + CraftPage liegen in der Szene, Ayarlar ist ein Platzhalter.
 func _setup_pages() -> void:
-	for n in ["HeaderLeft", "HeaderRight", "StatIcon0", "StatIcon1", "StatIcon2",
-			"StatIcon3", "StatValue0", "StatValue1", "StatValue2", "StatValue3",
-			"Plus0", "Plus1", "Plus2", "Plus3", "Minus0", "Minus1", "Minus2", "Minus3",
-			"BagGrid"]:
-		var node := _bag.get_node_or_null(n)
-		if node:
-			_rucksack_nodes.append(node)
-	# Im Code erzeugte Rucksack-Teile.
-	if _points_label:
-		_rucksack_nodes.append(_points_label)
-	if _bag_scroll:
-		_rucksack_nodes.append(_bag_scroll)
-	# Basic-Crafts-Seite: Layout liegt in der Szene (CraftPage), das Script
-	# fuellt nur Liste/Icons. attach_crafting() verdrahtet die Knoten.
 	_page_craft = _bag.get_node("CraftPage")
 	_page_settings = _placeholder_page("Ayarlar")
 
@@ -387,9 +375,8 @@ func _select_tab(index: int) -> void:
 	# Buch-Hintergrund je Seite (Basic Crafts hat ein eigenes Bild).
 	if _book_bg:
 		_book_bg.texture = load(CRAFT_IMG) if index == 1 else load(BOOK_IMG)
-	for n in _rucksack_nodes:
-		if is_instance_valid(n):
-			n.visible = index == 0
+	if _page_rucksack:
+		_page_rucksack.visible = index == 0
 	if _page_craft:
 		_page_craft.visible = index == 1
 	if _page_settings:
