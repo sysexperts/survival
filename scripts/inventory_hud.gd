@@ -9,6 +9,13 @@ class_name InventoryHUD
 const UiAtlas := preload("res://scripts/ui_atlas.gd")
 const CCFrames := preload("res://scripts/cc_frames.gd")
 const AppearanceStore := preload("res://scripts/appearance_store.gd")
+const CharStats := preload("res://scripts/char_stats.gd")
+
+## Referenzen für die verstellbaren Stats (linke Buchseite).
+var _stat_value_labels: Dictionary = {}
+var _points_label: Label = null
+## Braune Slot-Optik (Pack), einmal gebaut.
+var _brown_style: StyleBoxFlat = null
 
 const SLOT := 46
 const PAD := 4
@@ -21,7 +28,7 @@ const BOOK_REGION := Rect2i(8, 6, 224, 140)
 const LEFT_PAGE := Rect2i(14, 12, 90, 114)
 const RIGHT_PAGE := Rect2i(118, 12, 98, 114)
 const BAG_COLS := 9
-const BAG_SLOT := 30
+const BAG_SLOT := 28
 ## Platzhalter-Tabs oben.
 const TAB_LABELS := ["Skills", "Lifeskill", "Tab 3", "Tab 4"]
 ## Rastergroesse des Pixel-Fonts. Alles, was kleiner sein soll als die
@@ -209,50 +216,146 @@ func _build() -> void:
 
 # --- Buch-Seiten --------------------------------------------------------
 
-## Vier Platzhalter-Tabs oben auf dem Buch.
-func _build_tabs(book: Control, book_w: int) -> void:
+## Vier Tabs oben auf dem Buch (Reiter-Stil wie im Referenzbild). Platzhalter.
+func _build_tabs(book: Control, _book_w: int) -> void:
 	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 6)
-	tabs.position = Vector2(14 * BOOK_SCALE, -14 * BOOK_SCALE)
-	tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tabs.add_theme_constant_override("separation", 5)
+	tabs.position = Vector2(16 * BOOK_SCALE, -13 * BOOK_SCALE)
 	book.add_child(tabs)
-	for text in TAB_LABELS:
-		var b := Button.new()
-		b.text = text
-		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(0, 22)
-		tabs.add_child(b)
+	for i in TAB_LABELS.size():
+		var tab := Button.new()
+		tab.text = TAB_LABELS[i]
+		tab.focus_mode = Control.FOCUS_NONE
+		tab.custom_minimum_size = Vector2(0, 34)
+		tab.add_theme_stylebox_override("normal", _tab_style(i == 0))
+		tab.add_theme_stylebox_override("hover", _tab_style(true))
+		tab.add_theme_stylebox_override("pressed", _tab_style(true))
+		tab.add_theme_color_override("font_color", Color("3a2418"))
+		tabs.add_child(tab)
 
 
-## Linke Seite: der eigene Charakter (Ganzkörper) als Vorschau.
+## Linke Seite: Ausrüstungs-Slots + Gold + verstellbare Charakter-Stats.
 func _build_left_page(book: Control) -> void:
 	var area := _page_area(book, LEFT_PAGE)
-	var sf := CCFrames.build(AppearanceStore.local())
-	if sf.has_animation(&"idle_south") and sf.get_frame_count(&"idle_south") > 0:
-		var portrait := TextureRect.new()
-		portrait.texture = sf.get_frame_texture(&"idle_south", 0)
-		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		area.add_child(portrait)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 7)
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.offset_left = 12; col.offset_top = 12; col.offset_right = -12; col.offset_bottom = -12
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	area.add_child(col)
+
+	# Ausrüstungs-Slots (Platzhalter) - 3 Reihen x 3.
+	var eq := GridContainer.new()
+	eq.columns = 3
+	eq.add_theme_constant_override("h_separation", 6)
+	eq.add_theme_constant_override("v_separation", 6)
+	col.add_child(eq)
+	for i in range(9):
+		eq.add_child(_placeholder_slot(42))
+
+	col.add_child(_spacer_h(4))
+
+	var gold := Label.new()
+	gold.text = "Altın: 0"
+	gold.add_theme_color_override("font_color", Color("6a4326"))
+	col.add_child(gold)
+
+	_points_label = Label.new()
+	_points_label.add_theme_color_override("font_color", Color("6a4326"))
+	col.add_child(_points_label)
+
+	for key in CharStats.ORDER:
+		col.add_child(_stat_row(String(key)))
+	_refresh_stats()
 
 
-## Rechte Seite: das Taschen-Raster (9 Spalten) in Pack-Slots.
+## Rechte Seite: das Taschen-Raster (9 Spalten) oben in die Seite gesetzt.
 func _build_right_page(book: Control) -> void:
 	var area := _page_area(book, RIGHT_PAGE)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	area.add_child(center)
 	var grid := GridContainer.new()
 	grid.columns = BAG_COLS
 	grid.add_theme_constant_override("h_separation", 3)
 	grid.add_theme_constant_override("v_separation", 3)
-	center.add_child(grid)
+	var grid_w := BAG_COLS * BAG_SLOT + (BAG_COLS - 1) * 3
+	grid.position = Vector2(maxf(0.0, (area.size.x - grid_w) * 0.5), 10)
+	area.add_child(grid)
 	for i in range(inventory.hotbar_size, inventory.slots.size()):
 		grid.add_child(_make_slot(i, BAG_SLOT))
+
+
+# --- Buch-Bausteine -----------------------------------------------------
+
+func _tab_style(active: bool) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("d9a066") if active else Color("b0794e")
+	sb.border_color = Color("5a3826")
+	sb.set_border_width_all(2)
+	sb.border_width_bottom = 0
+	sb.corner_radius_top_left = 5
+	sb.corner_radius_top_right = 5
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	return sb
+
+
+func _placeholder_slot(size: int) -> Panel:
+	var p := Panel.new()
+	p.custom_minimum_size = Vector2(size, size)
+	p.add_theme_stylebox_override("panel", _book_slot_style())
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return p
+
+
+## Eine Stat-Zeile:  Name   [−]  Wert  [+].
+func _stat_row(key: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+
+	var name_lbl := Label.new()
+	name_lbl.text = String(CharStats.LABELS.get(key, key))
+	name_lbl.custom_minimum_size = Vector2(96, 0)
+	name_lbl.add_theme_color_override("font_color", Color("4a2f1c"))
+	row.add_child(name_lbl)
+
+	var minus := Button.new()
+	minus.text = "−"
+	minus.focus_mode = Control.FOCUS_NONE
+	minus.custom_minimum_size = Vector2(24, 24)
+	minus.pressed.connect(_on_stat.bind(key, -1))
+	row.add_child(minus)
+
+	var val := Label.new()
+	val.custom_minimum_size = Vector2(28, 0)
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	val.add_theme_color_override("font_color", Color("3a2418"))
+	row.add_child(val)
+	_stat_value_labels[key] = val
+
+	var plus := Button.new()
+	plus.text = "+"
+	plus.focus_mode = Control.FOCUS_NONE
+	plus.custom_minimum_size = Vector2(24, 24)
+	plus.pressed.connect(_on_stat.bind(key, 1))
+	row.add_child(plus)
+	return row
+
+
+func _on_stat(key: String, delta: int) -> void:
+	CharStats.adjust(key, delta)
+	_refresh_stats()
+
+
+func _refresh_stats() -> void:
+	for key in _stat_value_labels:
+		_stat_value_labels[key].text = str(CharStats.values.get(key, 0))
+	if _points_label:
+		_points_label.text = "Puan: %d" % CharStats.points
+
+
+func _spacer_h(h: int) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, h)
+	return c
 
 
 ## Hilfs-Control für eine Buchseite (in Buch-lokalen Pixeln, skaliert).
