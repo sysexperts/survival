@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://b0invhud0001"]
+[gd_scene format=3 uid="uid://b0invhud0001"]
 
 ; Inventar-HUD als echte Szene (Pilot). Der Buch-Aufbau steht hier als
 ; editierbare Knoten - Icons, Kopfzeilen und die 4x5 Tasche lassen sich im
@@ -125,7 +125,6 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Book" type="Control" parent="Root/Center"]
-visible = false
 custom_minimum_size = Vector2(690, 414)
 layout_mode = 2
 

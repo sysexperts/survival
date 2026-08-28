@@ -79,6 +79,10 @@ func setup(p_inventory: Inventory) -> void:
 	inventory = p_inventory
 	inventory.changed.connect(_refresh)
 	_bind()
+	# Tasche startet zu. Die Sichtbarkeit steuert das Skript (nicht die Szene),
+	# damit das Buch im Editor sichtbar/editierbar bleibt.
+	_bag.visible = false
+	_dim.visible = false
 	_refresh()
 
 
