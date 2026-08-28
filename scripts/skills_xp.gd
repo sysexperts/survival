@@ -15,16 +15,34 @@ static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0}
 const XP_PER_CHOP := 5.0
 const XP_PER_CRAFT := 8.0
 const XP_PER_BUILD := 10.0
+## Kleiner XP-Gewinn pro GEFAELLTEM Baum - fuellt die EXP-Leiste in der
+## Itemleiste. Bewusst NICHT ans Feature-Flag gebunden (Test/Grundfortschritt).
+const XP_PER_FELL := 4.0
 
 var _player: Node = null
 var _label: Label = null
 
 
 func _ready() -> void:
-	# Signale immer verbinden - der Handler entscheidet anhand des Flags.
+	# Der Spieler joint die Gruppe erst spaeter (Parent-Wechsel, Netzwerk) -
+	# darum das Verbinden wiederholen, bis er da ist. Sonst kommt nie XP an.
+	_hook_player.call_deferred()
+
+
+func _hook_player() -> void:
 	_player = get_tree().get_first_node_in_group("player")
-	if _player and _player.has_signal("axe_swung"):
+	if _player == null:
+		get_tree().create_timer(1.0).timeout.connect(_hook_player)
+		return
+	if _player.has_signal("axe_swung") and not _player.axe_swung.is_connected(_on_chop):
 		_player.axe_swung.connect(_on_chop)
+	# Pro gefaelltem Baum ein bisschen XP - immer aktiv (speist die EXP-Leiste).
+	if _player.has_signal("felled") and not _player.felled.is_connected(_on_felled):
+		_player.felled.connect(_on_felled)
+
+
+func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:
+	xp["woodcutting"] += XP_PER_FELL
 
 
 func _on_chop() -> void:

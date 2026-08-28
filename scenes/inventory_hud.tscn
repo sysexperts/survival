@@ -169,12 +169,14 @@ stretch_mode = 5
 
 [node name="LevelLabel" type="Label" parent="Root/LevelBar" unique_id=836929073]
 layout_mode = 0
-offset_left = 205.0
-offset_top = 2.0
-offset_right = 241.0
-offset_bottom = 26.0
-theme_override_font_sizes/font_size = 11
-text = "1"
+offset_left = 204.0
+offset_top = 4.0
+offset_right = 240.0
+offset_bottom = 28.181818
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7176471)
+theme_override_font_sizes/font_size = 15
+text = "13"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -190,7 +192,9 @@ offset_right = 1.0
 offset_bottom = -108.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.45490196)
 theme_override_font_sizes/font_size = 11
+text = "Tas Balta"
 horizontal_alignment = 1
 
 [node name="HintLabel" type="Label" parent="Root" unique_id=781619434]
@@ -206,11 +210,12 @@ offset_bottom = -130.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 0.92, 0.7, 1)
+theme_override_colors/font_shadow_color = Color(0.07450981, 0.07450981, 0.07450981, 0.6901961)
 theme_override_font_sizes/font_size = 11
+text = "Tas Toplamak icin F ye bas"
 horizontal_alignment = 1
 
 [node name="Dim" type="ColorRect" parent="Root" unique_id=357235182]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
