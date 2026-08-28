@@ -31,15 +31,15 @@ const WELL := Rect2i(120, 30, 100, 98)
 ## Die gezeichneten Kacheln: 4x4 sichtbar. Items liegen transparent GENAU darauf;
 ## eine Scrollleiste schiebt, welche 16 der Taschen-Slots gezeigt werden.
 const VIEW_COLS := 4
-const VIEW_ROWS := 4
-const CELL0 := Vector2(135.0, 46.0)   ## Quell-Mitte der ersten Kachel
-const CELL_PITCH := 22.3
+const VIEW_ROWS := 5                    ## das gezeichnete Raster ist 4x5
+const CELL0 := Vector2(135.0, 24.0)   ## Quell-Mitte der ersten Kachel
+const CELL_PITCH := 22.2
 const SLOT_VIEW := 20                  ## Slot-Kantenlänge in Quell-px
 ## Header-Positionen (Quell-Mitte).
-const HEADER_LEFT := Vector2(58, 13)
-const HEADER_RIGHT := Vector2(168, 13)
+const HEADER_LEFT := Vector2(58, 9)
+const HEADER_RIGHT := Vector2(168, 9)
 ## STATS (links): Mitte der 4 Icon-Boxen + x der Wert-Schrift (Quell-px).
-const ICON_BOX := [Vector2(21, 20), Vector2(21, 36), Vector2(21, 51), Vector2(21, 63)]
+const ICON_BOX := [Vector2(21, 22), Vector2(21, 38), Vector2(21, 54), Vector2(21, 70)]
 const STAT_ICON_SRC := 13
 const STAT_VALUE_X := 33
 ## Platzhalter-Tabs oben.
@@ -339,9 +339,11 @@ func _build_left_page(book: Control) -> void:
 
 		var lbl := Label.new()
 		lbl.add_theme_font_override("font", UiAtlas.font())
-		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.add_theme_color_override("font_color", Color("4a2f1c"))
-		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, (ICON_BOX[i].y - 6) * BOOK_SCALE)
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", Color("3a2418"))
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size = Vector2(140, 20)
+		lbl.position = Vector2(STAT_VALUE_X * BOOK_SCALE, ICON_BOX[i].y * BOOK_SCALE - 10)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		book.add_child(lbl)
 		_stat_value_labels[key] = lbl
