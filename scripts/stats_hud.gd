@@ -18,8 +18,10 @@ const SCALE := 3
 ## Rahmen hat einen gefüllten (nicht transparenten) Innenraum, deshalb kommt der
 ## Kopf ÜBER den Block, auf diese Fläche.
 const PORTRAIT_INNER := Rect2i(3, 3, 14, 14)
-## Kopf-Ausschnitt aus dem 48px-Idle-Frame.
-const HEAD_CROP := Rect2i(12, 3, 24, 22)
+## Bis zu dieser Zeile im 48px-Idle-Frame wird der Kopf gesucht (darunter fangen
+## Schultern/Körper an). Der tatsächliche Ausschnitt wird daraus gemessen, damit
+## jede Frisur/Kopfbedeckung mittig im Rahmen sitzt.
+const HEAD_MAX_Y := 25
 
 
 func _ready() -> void:
@@ -48,7 +50,7 @@ func _ready() -> void:
 		var tr := TextureRect.new()
 		tr.texture = head
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -63,5 +65,18 @@ func _head_texture() -> Texture2D:
 	var img := sf.get_frame_texture(&"idle_south", 0).get_image()
 	if img.get_format() != Image.FORMAT_RGBA8:
 		img.convert(Image.FORMAT_RGBA8)
-	var crop := HEAD_CROP.intersection(Rect2i(0, 0, img.get_width(), img.get_height()))
+	# Tight-Bounds des Kopfes im oberen Frame-Bereich messen.
+	var max_y: int = mini(HEAD_MAX_Y, img.get_height())
+	var mnx := img.get_width()
+	var mxx := 0
+	var mny := img.get_height()
+	var mxy := 0
+	for y in range(max_y):
+		for x in range(img.get_width()):
+			if img.get_pixel(x, y).a > 0.4:
+				mnx = mini(mnx, x); mxx = maxi(mxx, x)
+				mny = mini(mny, y); mxy = maxi(mxy, y)
+	if mxx < mnx:
+		return null
+	var crop := Rect2i(mnx, mny, mxx - mnx + 1, mxy - mny + 1)
 	return ImageTexture.create_from_image(img.get_region(crop))
