@@ -16,6 +16,14 @@ extends CanvasModulate
 ## Sekunden fuer einen vollen Tag. 0 = Zyklus steht still.
 @export var day_length := 1200.0
 
+## Regen-Verdunkelung: 0 = klar, 1 = voller Regen (Welt bis RAIN_MIN_MUL abgedunkelt).
+## Setzt weather.gd; wirkt nur auf die 2D-Welt (CanvasModulate), nicht auf die
+## UI-CanvasLayer - die bleibt lesbar. Weich nachgezogen in _process.
+var rain_dim := 0.0
+var _rain_dim_shown := 0.0
+## Wie dunkel die Welt bei vollem Regen wird (Faktor auf die Tagesfarbe).
+const RAIN_MIN_MUL := 0.62
+
 ## Farbverlauf ueber den Tag. Leer lassen -> Standardverlauf.
 @export var sky_gradient: Gradient:
 	set(v):
@@ -31,14 +39,24 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint() or day_length <= 0.0:
+	if Engine.is_editor_hint():
+		return
+	# Regen-Verdunkelung weich nachziehen (auch wenn der Tageszyklus steht).
+	if not is_equal_approx(_rain_dim_shown, rain_dim):
+		_rain_dim_shown = move_toward(_rain_dim_shown, rain_dim, delta * 0.6)
+		_apply()
+	if day_length <= 0.0:
 		return
 	time_of_day = fposmod(time_of_day + delta / day_length, 1.0)
 
 
 func _apply() -> void:
 	var g := sky_gradient if sky_gradient != null else _default_gradient()
-	color = g.sample(time_of_day)
+	var c := g.sample(time_of_day)
+	# Bei Regen die ganze Welt etwas abdunkeln (Faktor auf die Tagesfarbe).
+	if _rain_dim_shown > 0.0:
+		c = c.lerp(c * RAIN_MIN_MUL, _rain_dim_shown)
+	color = c
 
 
 ## Nacht -> Daemmerung -> Tag -> Abendrot -> Nacht

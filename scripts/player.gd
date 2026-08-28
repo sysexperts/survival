@@ -31,6 +31,10 @@ signal chop_refused
 ## und zieht der Axt Dayaniklilik ab - der Player selbst kennt kein Inventar.
 signal axe_swung
 
+## Es wurde versucht, sich in ein bereits belegtes Bett zu legen. Das Inventar
+## zeigt daraufhin einen Hinweis.
+signal bed_busy
+
 ## Ein Stein wurde aufgehoben.
 ## `gather_id` sagt, WAS aufgehoben wurde (siehe GatherDB) - leer bei den
 ## alten, in die Karte gemalten Steinen.
@@ -220,6 +224,37 @@ func _snap_to_cell(cell: Vector2i) -> void:
 	level = maxi(world.top_level_at(cell), 0)
 	global_position = world.cell_to_world(cell, level)
 	_reparent_to_level()
+
+
+## Versetzt Jack an eine Weltposition (Admin-Teleport). Bricht laufende Auftraege
+## ab und rastet sauber auf die Zielzelle (richtige Hoehe/Y-Sortierung) ein.
+func teleport_to(pos: Vector2) -> void:
+	_cancel_task()
+	var cell := world.world_to_cell(pos, level)
+	_snap_to_cell(cell)
+	_play("idle")
+
+
+## Merkt sich einen Wiederbelebungspunkt (beim Schlafen gesetzt). Bei Tod wird
+## Jack hierher zurueckgesetzt. Solange es noch kein Todes-System gibt, dient das
+## nur der Vorbereitung (respawn() ist bereits verdrahtet).
+var _spawn_cell := Vector2i.ZERO
+var _has_spawn := false
+
+
+func set_spawn_here(cell: Vector2i) -> void:
+	_spawn_cell = cell
+	_has_spawn = true
+
+
+## Belebt Jack am gemerkten Bett-Spawnpunkt wieder (oder am Startpunkt, falls er
+## noch nie geschlafen hat).
+func respawn() -> void:
+	if _sleeping:
+		_wake_up()
+	_cancel_task()
+	_snap_to_cell(_spawn_cell if _has_spawn else start_cell)
+	_play("idle")
 
 
 ## Die Laterne brennt nur, wenn es dunkel genug ist.
@@ -635,10 +670,14 @@ const BED_POS_NUDGE := Vector2(0, 3)
 ## PRO BETT, weil das Feldbett tiefer aufgesetzt ist (siehe furniture.gd): sein
 ## Wert ist um denselben Betrag gesenkt, damit die Liegepose relativ gleich
 ## bleibt. Standard = Wert des hohen Betts.
-const BED_SLEEP_OFFSET := Vector2(-1, -12)
+## Zentriert die Liege-Pose auf der Matratze. Beim neuen (anpassbaren) Character
+## sitzt das Liege-Frame etwas tiefer/rechts im Zellbild - deshalb leicht nach
+## oben-links geschoben. Fein einstellen, falls noetig: y kleiner = hoeher aufs
+## Bett, x kleiner = weiter nach links.
+const BED_SLEEP_OFFSET := Vector2(-4, -15)
 const BED_SLEEP_OFFSETS := {
-	"yatak": Vector2(-1, -12),
-	"portatif_yatak": Vector2(-1, 0),
+	"yatak": Vector2(-4, -15),
+	"portatif_yatak": Vector2(-4, -3),
 }
 
 
@@ -655,6 +694,10 @@ func _bed_at(cell: Vector2i) -> Furniture:
 func walk_to_bed(cell: Vector2i) -> bool:
 	var bed := _bed_at(cell)
 	if bed == null:
+		return false
+	# Liegt schon ein anderer Spieler drin? Dann gar nicht erst hinlaufen.
+	if _bed_taken_by_other(bed.cell):
+		bed_busy.emit()
 		return false
 	_cancel_task()
 	var here := world.world_to_cell(global_position, level)
@@ -679,8 +722,17 @@ func _lie_down(cell: Vector2i) -> void:
 	if bed == null:
 		_play("idle")
 		return
+	# In der Zwischenzeit (waehrend des Hinlaufens) belegt? Dann nicht hinlegen.
+	if _bed_taken_by_other(bed.cell):
+		bed_busy.emit()
+		_play("idle")
+		return
 	_sleep_return_pos = global_position
 	_sleep_return_level = level
+	# Wiederbelebungspunkt = die Standflaeche neben dem Bett (begehbar).
+	set_spawn_here(world.world_to_cell(_sleep_return_pos, _sleep_return_level))
+	# Allen sagen: dieses Bett ist jetzt belegt.
+	_net_game_call("set_my_bed", bed.cell)
 	var center := world.footprint_long_center(bed.cell, bed.level)
 	global_position = center + BED_POS_NUDGE
 	level = bed.level
@@ -710,7 +762,22 @@ func _wake_up() -> void:
 	global_position = _sleep_return_pos
 	level = _sleep_return_level
 	_reparent_to_level()
+	# Bett wieder freigeben (INVALID_CELL == NetGame.NO_BED).
+	_net_game_call("set_my_bed", INVALID_CELL)
 	_play("idle")
+
+
+## Belegt gerade ein ANDERER Spieler dieses Bett? (Einzelspieler: nie.)
+func _bed_taken_by_other(anchor: Vector2i) -> bool:
+	var ng := get_tree().get_first_node_in_group("net_game")
+	return ng != null and ng.has_method("is_bed_taken") and ng.is_bed_taken(anchor)
+
+
+## Ruft eine Methode am NetGame-Node auf, falls vorhanden (Belegungs-Sync).
+func _net_game_call(method: String, arg) -> void:
+	var ng := get_tree().get_first_node_in_group("net_game")
+	if ng != null and ng.has_method(method):
+		ng.call(method, arg)
 
 
 ## Läuft zum Stumpf und entfernt ihn mit einem Schlag - endgültig, es

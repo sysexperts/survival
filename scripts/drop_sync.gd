@@ -114,6 +114,19 @@ func _auto_collect(id: int) -> void:
 func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
 	if not multiplayer.is_server():
 		return
+	_do_spawn(item_id, count, cell, lvl)
+
+
+## Direkt vom Server erzeugter Boden-Drop (z. B. Holz beim Baumfaellen, siehe
+## world_sync.gd). Wie _request_drop, aber ohne den RPC-Umweg - der Aufrufer
+## laeuft schon auf dem Server.
+func server_spawn_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+	if not multiplayer.is_server():
+		return
+	_do_spawn(item_id, count, cell, lvl)
+
+
+func _do_spawn(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
 	if not ItemDB.has(item_id) or count <= 0:
 		return
 	var id := _next_id

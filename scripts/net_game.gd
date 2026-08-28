@@ -32,8 +32,13 @@ var _tab_layer: CanvasLayer
 var _tab_panel: PanelContainer
 var _tab_list: VBoxContainer
 
+## Server: owner_id -> {name, pos}. Aus den Status-Paketen gefuellt, damit
+## Admin-Befehle (/tp) Spieler ueber ihren Namen finden und ihre Position kennen.
+var _server_states: Dictionary = {}
+
 
 func _ready() -> void:
+	add_to_group("net_game")
 	_world = get_node_or_null(^"../World") as IsoWorld
 	_local = get_tree().get_first_node_in_group("player") as Player
 
@@ -165,6 +170,8 @@ func _process(delta: float) -> void:
 func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, frame: int, armed: bool) -> void:
 	# Server: an alle anderen Clients weiterreichen, selbst nichts anzeigen.
 	if Net.is_dedicated:
+		# Fuer Admin-Befehle merken, wer wo steht (Name -> Peer -> Position).
+		_server_states[owner_id] = {"name": pname, "pos": pos}
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
 				_recv_state.rpc_id(pid, owner_id, pname, pos, anim, frame, armed)
@@ -207,10 +214,87 @@ func _spawn_avatar(id: int) -> RemotePlayer:
 
 func _on_peer_left(id: int) -> void:
 	if Net.is_dedicated:
+		_server_states.erase(id)
 		# Allen verbleibenden Clients sagen: dieser Spieler ist weg.
 		_despawn.rpc(id)
 		return
 	_remove_avatar(id)
+
+
+# --- Admin: Teleport (server-autoritativ) --------------------------------
+
+## Server: Peer-Id zu einem Spielernamen (unscharf, Gross/Klein egal), oder -1.
+## Der eigene Server-Prozess spielt nicht mit und taucht daher nicht auf.
+func peer_id_of_name(pname: String) -> int:
+	var want := pname.strip_edges().to_lower()
+	for id in _server_states:
+		if String(_server_states[id].get("name", "")).strip_edges().to_lower() == want:
+			return id
+	return -1
+
+
+## Server: letzte bekannte Weltposition eines Peers.
+func peer_pos(id: int) -> Vector2:
+	return _server_states.get(id, {}).get("pos", Vector2.ZERO)
+
+
+## Server: alle bekannten Spielernamen (fuer Fehlermeldungen).
+func known_names() -> Array:
+	var out: Array = []
+	for id in _server_states:
+		out.append(String(_server_states[id].get("name", "")))
+	return out
+
+
+# --- Belegte Betten (damit nicht zwei im selben Bett liegen) --------------
+
+## owner_id -> Bett-Ankerzelle, in dem dieser Spieler gerade liegt. Auf jedem
+## Client gefuehrt (eigener + fremde), damit man vor dem Hinlegen pruefen kann.
+var _occupied_beds: Dictionary = {}
+const NO_BED := Vector2i(2147483647, 2147483647)
+
+
+## Liegt in diesem Bett schon EIN ANDERER Spieler? (Der eigene zaehlt nicht.)
+func is_bed_taken(cell: Vector2i) -> bool:
+	if not Net.active:
+		return false
+	var me := multiplayer.get_unique_id()
+	for id in _occupied_beds:
+		if id != me and _occupied_beds[id] == cell:
+			return true
+	return false
+
+
+## Meldet allen, in welchem Bett der lokale Spieler jetzt liegt (NO_BED = steht auf).
+func set_my_bed(cell: Vector2i) -> void:
+	if Net.is_dedicated or not Net.active:
+		return
+	_recv_bed.rpc(multiplayer.get_unique_id(), cell)
+
+
+@rpc("any_peer", "reliable")
+func _recv_bed(owner_id: int, cell: Vector2i) -> void:
+	# Server: nur weiterreichen (spielt selbst nicht mit).
+	if Net.is_dedicated:
+		for pid in multiplayer.get_peers():
+			if pid != owner_id:
+				_recv_bed.rpc_id(pid, owner_id, cell)
+		return
+	if cell == NO_BED:
+		_occupied_beds.erase(owner_id)
+	else:
+		_occupied_beds[owner_id] = cell
+
+
+## Server -> gezielter Client: setzt dessen lokale Figur an eine Weltposition.
+func teleport_peer(target_id: int, pos: Vector2) -> void:
+	_do_teleport.rpc_id(target_id, pos)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _do_teleport(pos: Vector2) -> void:
+	if _local and is_instance_valid(_local) and _local.has_method("teleport_to"):
+		_local.teleport_to(pos)
 
 
 @rpc("any_peer", "reliable")
@@ -223,3 +307,4 @@ func _remove_avatar(id: int) -> void:
 	if av and is_instance_valid(av):
 		av.queue_free()
 	_avatars.erase(id)
+	_occupied_beds.erase(id)

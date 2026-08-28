@@ -110,6 +110,7 @@ func _ready() -> void:
 		player.chop_refused.connect(_on_chop_refused)
 		player.axe_swung.connect(_on_axe_swung)
 		player.reached_station.connect(_on_reached_station)
+		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -350,6 +351,11 @@ func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> voi
 
 
 func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:
+	# Im Multiplayer faellt das Holz als Boden-Item (server-autoritativ in
+	# world_sync.gd, ueber die Schlaege verteilt) - NICHT direkt ins Inventar,
+	# sonst gaebe es das Holz doppelt. Nur im Einzelspieler direkt gutschreiben.
+	if Net.active:
+		return
 	_grant("odun", wood_per_tree)
 
 

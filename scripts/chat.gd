@@ -180,7 +180,103 @@ func _on_submit(text: String) -> void:
 func _submit_chat(sender: String, text: String) -> void:
 	if not multiplayer.is_server():
 		return
+	# Befehle (/...) nicht als normale Nachricht verteilen, sondern ausfuehren.
+	if text.begins_with("/"):
+		_run_command(sender, multiplayer.get_remote_sender_id(), text)
+		return
 	_show_chat.rpc(sender, text)
+
+
+const AdminsScript := preload("res://scripts/admins.gd")
+
+
+## Server: einen Admin-Befehl ausfuehren. Nur Admins duerfen; andere bekommen
+## eine Absage. Antworten gehen als Systemzeile NUR an den Absender zurueck.
+func _run_command(sender: String, sender_id: int, text: String) -> void:
+	var parts := text.strip_edges().split(" ", false)
+	var cmd := String(parts[0]).to_lower()
+	if not AdminsScript.is_admin(sender):
+		_sys_to(sender_id, "Bu komut icin yetkin yok.")
+		return
+	match cmd:
+		"/rain":
+			var on := not _weather_raining()
+			if parts.size() > 1:
+				on = String(parts[1]).to_lower() in ["on", "1", "acik", "ac", "true"]
+			_weather_set(on)
+			_sys_to(sender_id, "Yagmur: %s" % ("acik" if on else "kapali"))
+		"/day":
+			_set_time(0.5)
+			_sys_to(sender_id, "Gunduz yapildi.")
+		"/night":
+			_set_time(0.0)
+			_sys_to(sender_id, "Gece yapildi.")
+		"/tp":
+			_cmd_tp(sender, sender_id, parts)
+		_:
+			_sys_to(sender_id, "Bilinmeyen komut: %s" % cmd)
+
+
+## /tp to <isim>  ODER  /tp <isim> to <isim2>
+func _cmd_tp(sender: String, sender_id: int, parts: PackedStringArray) -> void:
+	var ng := get_tree().get_first_node_in_group("net_game")
+	if ng == null:
+		_sys_to(sender_id, "Isinlanma su an mumkun degil.")
+		return
+	# "to" finden und Namen links/rechts davon zusammensetzen.
+	var to_idx := -1
+	for i in range(1, parts.size()):
+		if String(parts[i]).to_lower() == "to":
+			to_idx = i
+			break
+	if to_idx == -1 or to_idx + 1 >= parts.size():
+		_sys_to(sender_id, "Kullanim: /tp to <isim>  veya  /tp <isim> to <isim2>")
+		return
+	var dest_name := " ".join(_slice(parts, to_idx + 1, parts.size()))
+	var dest_id: int = ng.peer_id_of_name(dest_name)
+	if dest_id == -1:
+		_sys_to(sender_id, "Oyuncu bulunamadi: %s" % dest_name)
+		return
+	# Zielperson: entweder der Absender (/tp to X) oder ein genannter Name.
+	var target_id := sender_id
+	if to_idx > 1:
+		var target_name := " ".join(_slice(parts, 1, to_idx))
+		target_id = ng.peer_id_of_name(target_name)
+		if target_id == -1:
+			_sys_to(sender_id, "Oyuncu bulunamadi: %s" % target_name)
+			return
+	ng.teleport_peer(target_id, ng.peer_pos(dest_id))
+	_sys_to(sender_id, "Isinlandi.")
+
+
+## PackedStringArray-Ausschnitt [from, to) als Array.
+func _slice(parts: PackedStringArray, from: int, to: int) -> Array:
+	var out: Array = []
+	for i in range(from, to):
+		out.append(String(parts[i]))
+	return out
+
+
+func _weather_raining() -> bool:
+	var w := get_tree().get_first_node_in_group("weather")
+	return w != null and w.has_method("is_raining") and w.is_raining()
+
+
+func _weather_set(on: bool) -> void:
+	var w := get_tree().get_first_node_in_group("weather")
+	if w != null and w.has_method("set_rain_forced"):
+		w.set_rain_forced(on)
+
+
+func _set_time(t: float) -> void:
+	var d := get_tree().get_first_node_in_group("day_night")
+	if d != null:
+		d.time_of_day = t
+
+
+## Systemzeile nur an einen bestimmten Spieler (Befehls-Rueckmeldung).
+func _sys_to(peer_id: int, msg: String) -> void:
+	_show_chat.rpc_id(peer_id, "Sistem", msg)
 
 
 ## Server -> alle Clients. Nur der Server (Autoritaet) darf senden.

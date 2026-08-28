@@ -32,6 +32,14 @@ const STONE_SECONDS := 240.0
 ## Lebenspunkte eines Baums (Axtschlaege bis er faellt). GETEILT ueber alle
 ## Spieler - schlagen zwei am selben Baum, faellt er doppelt so schnell.
 const TREE_MAX_HP := 6
+## Wie viel Holz ein Baum insgesamt abwirft. Faellt jetzt als Boden-Items ueber
+## die Schlaege VERTEILT (manche Schlaege lassen nichts fallen), Summe = dieser
+## Wert. Muss zu wood_per_tree in player_inventory.gd passen.
+const WOOD_PER_TREE := 4
+## Server: pro Baumzelle ein Fahrplan, bei welchen Schlaegen Holz herausfaellt
+## (Array aus bool, Laenge TREE_MAX_HP, genau WOOD_PER_TREE-mal true).
+var _tree_drops: Dictionary = {}
+var _drop_sync: Node
 
 var _world: IsoWorld
 var _regrowth: Node
@@ -62,6 +70,7 @@ func _ready() -> void:
 	if Net.is_dedicated:
 		_load_builds()               # Register vom letzten Lauf wiederherstellen
 		_load_removed()
+		_drop_sync = get_node_or_null(^"../DropSync")   # Boden-Drops beim Faellen
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
 	_pinv = get_node_or_null(^"../Inventory")
@@ -396,14 +405,58 @@ func _tree_hit(cell: Vector2i, level: int, atlas: Vector2i) -> void:
 	var killer := multiplayer.get_remote_sender_id()
 	var hp := int(_tree_hp.get(cell, TREE_MAX_HP)) - 1
 	print("[Baum] Zelle %s: %d/%d HP (Schlag von %d)" % [cell, maxi(hp, 0), TREE_MAX_HP, killer])
+	# Dieser Schlag laesst evtl. ein Stueck Holz fallen (nach Fahrplan).
+	_drop_wood_for_hit(cell, level)
 	if hp > 0:
 		_tree_hp[cell] = hp
 		return
 	_tree_hp.erase(cell)
+	# Reststuecke des Fahrplans beim Faellen herausfallen lassen (Summe = WOOD_PER_TREE).
+	_drop_wood_remaining(cell, level)
 	_record_removal("fell", cell, level, atlas, "")
-	# Jeder Client faellt den Baum; nur der toedliche Schlaeger bekommt Holz.
+	# Jeder Client faellt den Baum (kein Holz mehr direkt ins Inventar - es liegt
+	# jetzt als Boden-Item da).
 	for pid in multiplayer.get_peers():
-		_fell_now.rpc_id(pid, cell, level, atlas, pid == killer)
+		_fell_now.rpc_id(pid, cell, level, atlas, false)
+
+
+## Server: Fahrplan fuer eine Baumzelle - genau WOOD_PER_TREE Schlaege (von
+## TREE_MAX_HP) lassen Holz fallen, zufaellig verteilt.
+func _drop_schedule(cell: Vector2i) -> Array:
+	if not _tree_drops.has(cell):
+		var sched: Array = []
+		for i in range(TREE_MAX_HP):
+			sched.append(i < WOOD_PER_TREE)
+		sched.shuffle()
+		_tree_drops[cell] = sched
+	return _tree_drops[cell]
+
+
+## Server: diesen Schlag abarbeiten - faellt laut Fahrplan Holz, auf den Boden.
+func _drop_wood_for_hit(cell: Vector2i, level: int) -> void:
+	var sched: Array = _drop_schedule(cell)
+	if sched.is_empty():
+		return
+	if bool(sched.pop_front()):
+		_spawn_ground_drop("odun", 1, cell, level)
+
+
+## Server: beim Faellen alle noch offenen Holz-Stuecke des Fahrplans abwerfen.
+func _drop_wood_remaining(cell: Vector2i, level: int) -> void:
+	var sched: Array = _tree_drops.get(cell, [])
+	var rest := 0
+	for give in sched:
+		if bool(give):
+			rest += 1
+	if rest > 0:
+		_spawn_ground_drop("odun", rest, cell, level)
+	_tree_drops.erase(cell)
+
+
+## Server: ein Boden-Item ueber DropSync erzeugen (fuer alle sichtbar).
+func _spawn_ground_drop(item_id: String, count: int, cell: Vector2i, level: int) -> void:
+	if _drop_sync != null and _drop_sync.has_method("server_spawn_drop"):
+		_drop_sync.server_spawn_drop(item_id, count, cell, maxi(level, 0))
 
 
 @rpc("any_peer", "reliable")
