@@ -114,6 +114,11 @@ func _ready() -> void:
 		player.axe_swung.connect(_on_axe_swung)
 		player.reached_station.connect(_on_reached_station)
 		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
+		# Hinlegen: Spawnpunkt gemerkt -> Hinweis im Chat.
+		player.lay_down.connect(func():
+			var ch := get_tree().get_first_node_in_group("chat")
+			if ch != null and ch.has_method("local_system"):
+				ch.local_system("Dogum noktan kaydedildi. Uyandiginda burada dogacaksin."))
 		# Buddeln gibt einen Dirt-Block, Aufschuetten verbraucht einen.
 		player.dug.connect(func(_c): _grant("toprak", 1))
 		player.raised.connect(func(_c): inventory.remove("toprak", 1))

@@ -276,16 +276,54 @@ func set_my_bed(cell: Vector2i) -> void:
 
 @rpc("any_peer", "reliable")
 func _recv_bed(owner_id: int, cell: Vector2i) -> void:
-	# Server: nur weiterreichen (spielt selbst nicht mit).
-	if Net.is_dedicated:
-		for pid in multiplayer.get_peers():
-			if pid != owner_id:
-				_recv_bed.rpc_id(pid, owner_id, cell)
-		return
+	# Belegung ueberall mitfuehren - auch am Server, damit er die Mehrheit kennt.
 	if cell == NO_BED:
 		_occupied_beds.erase(owner_id)
 	else:
 		_occupied_beds[owner_id] = cell
+	# Server: an die anderen weiterreichen und pruefen, ob die Mehrheit schlaeft.
+	if Net.is_dedicated:
+		for pid in multiplayer.get_peers():
+			if pid != owner_id:
+				_recv_bed.rpc_id(pid, owner_id, cell)
+		_maybe_sleep_skip()
+
+
+## Server: Schlafen die MEISTEN Spieler und ist es Nacht? Dann den Morgen
+## einleiten (Zeit auf Morgen setzen + allen Clients die Ueberblendung sagen).
+func _maybe_sleep_skip() -> void:
+	if not Net.is_dedicated:
+		return
+	var total := multiplayer.get_peers().size()
+	if total <= 0:
+		return
+	if _occupied_beds.size() * 2 <= total:   # keine Mehrheit
+		return
+	var day := get_tree().get_first_node_in_group("day_night")
+	if day == null or not day.has_method("is_night") or not day.is_night():
+		return
+	# Zeit sofort auf Morgen (autoritativ) - dadurch ist is_night() danach false
+	# und es feuert nicht doppelt. Die Clients blenden weich dorthin.
+	day.time_of_day = day.MORNING
+	_sleep_skip_now.rpc()
+
+
+## Server -> alle Clients: weiche Ueberblendung zum Morgen + Banner + Aufwachen.
+@rpc("authority", "call_remote", "reliable")
+func _sleep_skip_now() -> void:
+	if Net.is_dedicated:
+		return
+	var day := get_tree().get_first_node_in_group("day_night")
+	if day != null and day.has_method("skip_to_morning"):
+		day.skip_to_morning()
+	var ann := get_tree().get_first_node_in_group("announce")
+	if ann != null and ann.has_method("flash"):
+		ann.flash("Gunaydin!  Yeni bir gun basliyor")
+	var wait: float = day.SKIP_SECONDS if day != null else 2.6
+	await get_tree().create_timer(wait).timeout
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl != null and pl.has_method("wake"):
+		pl.wake()
 
 
 ## Server -> gezielter Client: setzt dessen lokale Figur an eine Weltposition.

@@ -20,6 +20,7 @@ var _busy := false
 
 
 func _ready() -> void:
+	add_to_group("announce")
 	_build_ui()
 	if not Net.active:
 		return
@@ -109,3 +110,70 @@ func _show(text: String) -> void:
 func _on_server_gone() -> void:
 	_label.text = "Sunucu yeniden baslatildi.\nGuncelleme icin oyunu yeniden baslat."
 	_panel.visible = true
+
+
+# --- Schön animiertes Info-Banner (z. B. "Günaydın") ---------------------
+
+var _flash_center: CenterContainer
+var _flash_panel: PanelContainer
+var _flash_label: Label
+var _flash_tween: Tween
+
+
+func _build_flash() -> void:
+	# CenterContainer ueber die volle Breite -> das Banner ist immer waagerecht
+	# zentriert, egal wie breit der Text ist (das manuelle Positionieren hatte es
+	# nach links verschoben).
+	_flash_center = CenterContainer.new()
+	_flash_center.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_flash_center.offset_top = 34
+	_flash_center.offset_bottom = 120
+	_flash_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_flash_center)
+
+	_flash_panel = PanelContainer.new()
+	_flash_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.95, 0.78, 0.42, 0.95)     # warmes Sonnenaufgang-Gold
+	sb.border_color = Color(1, 0.94, 0.7, 1)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.set_content_margin_all(14)
+	sb.shadow_color = Color(0, 0, 0, 0.35)
+	sb.shadow_size = 8
+	_flash_panel.add_theme_stylebox_override("panel", sb)
+	_flash_center.add_child(_flash_panel)
+
+	_flash_label = Label.new()
+	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_flash_label.add_theme_font_size_override("font_size", 26)
+	_flash_label.add_theme_color_override("font_color", Color(0.25, 0.15, 0.05))
+	_flash_label.add_theme_color_override("font_outline_color", Color(1, 0.97, 0.85))
+	_flash_label.add_theme_constant_override("outline_size", 4)
+	_flash_panel.add_child(_flash_label)
+	_flash_center.visible = false
+
+
+## Zeigt `text` oben mit einer weichen Animation (einschweben, halten, ausblenden).
+func flash(text: String, hold := 2.6) -> void:
+	if _flash_panel == null:
+		_build_flash()
+	_flash_label.text = text
+	_flash_center.visible = true
+	# Groesse jetzt kennen, um den Skalier-Pivot in die Panel-Mitte zu legen
+	# (sonst skaliert es aus der Ecke und wandert).
+	_flash_panel.reset_size()
+	_flash_panel.pivot_offset = _flash_panel.size * 0.5
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+	# Einschweben (fade + leichtes Aufskalieren), halten, ausblenden.
+	_flash_panel.modulate = Color(1, 1, 1, 0)
+	_flash_panel.scale = Vector2(0.85, 0.85)
+	_flash_tween = create_tween()
+	_flash_tween.set_parallel(true)
+	_flash_tween.tween_property(_flash_panel, "modulate:a", 1.0, 0.45)
+	_flash_tween.tween_property(_flash_panel, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_flash_tween.set_parallel(false)
+	_flash_tween.tween_interval(hold)
+	_flash_tween.tween_property(_flash_panel, "modulate:a", 0.0, 0.6)
+	_flash_tween.tween_callback(func(): _flash_center.visible = false)

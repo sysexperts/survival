@@ -38,4 +38,8 @@ func _process(delta: float) -> void:
 func _set_time(t: float) -> void:
 	if Net.is_dedicated or _day == null:
 		return
+	# Waehrend der Schlaf-Ueberblendung nicht dazwischenfunken (sonst ruckt die
+	# Zeit auf den Server-Wert zurueck).
+	if _day.has_method("is_skipping") and _day.is_skipping():
+		return
 	_day.time_of_day = t

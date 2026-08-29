@@ -40,6 +40,34 @@ func _ready() -> void:
 	_apply()
 
 
+## Schlaf-Übergang zum Morgen (Animation). Solange `_skipping`, laeuft der
+## normale Zyklus nicht und der Zeit-Sync (time_sync) wird ignoriert.
+const MORNING := 0.30
+const SKIP_SECONDS := 2.6
+var _skipping := false
+var _skip_from := 0.0
+var _skip_span := 0.0
+var _skip_t := 0.0
+
+
+func is_skipping() -> bool:
+	return _skipping
+
+
+## Dunkel genug zum Schlafen? (Ab Abenddaemmerung bis zum Sonnenaufgang.) Etwas
+## frueher als der echte Sonnenuntergang, damit man abends schon ins Bett kann.
+func is_night() -> bool:
+	return time_of_day >= 0.70 or time_of_day <= sunrise
+
+
+## Startet die weiche Ueberblendung zum Morgen (immer vorwaerts = Sonnenaufgang).
+func skip_to_morning() -> void:
+	_skip_from = time_of_day
+	_skip_span = fposmod(MORNING - time_of_day, 1.0)   # immer vorwaerts
+	_skip_t = 0.0
+	_skipping = true
+
+
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
@@ -47,6 +75,14 @@ func _process(delta: float) -> void:
 	if not is_equal_approx(_rain_dim_shown, rain_dim):
 		_rain_dim_shown = move_toward(_rain_dim_shown, rain_dim, delta * 0.6)
 		_apply()
+	# Schlaf-Ueberblendung hat Vorrang vor dem normalen Zyklus.
+	if _skipping:
+		_skip_t += delta / SKIP_SECONDS
+		var u := smoothstep(0.0, 1.0, clampf(_skip_t, 0.0, 1.0))
+		time_of_day = fposmod(_skip_from + u * _skip_span, 1.0)
+		if _skip_t >= 1.0:
+			_skipping = false
+		return
 	if day_length <= 0.0:
 		return
 	time_of_day = fposmod(time_of_day + delta / day_length, 1.0)
@@ -83,14 +119,14 @@ func _default_gradient() -> Gradient:
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.00, 0.22, 0.30, 0.40, 0.60, 0.72, 0.84, 1.00])
 	g.colors = PackedColorArray([
-		Color(0.52, 0.58, 0.85),   # Mitternacht (kuehl, aber noch lesbar)
-		Color(0.56, 0.61, 0.86),   # spaete Nacht
-		Color(0.86, 0.78, 0.80),   # Sonnenaufgang
+		Color(0.13, 0.16, 0.30),   # Mitternacht (deutlich dunkler)
+		Color(0.15, 0.18, 0.33),   # spaete Nacht
+		Color(0.62, 0.55, 0.60),   # Sonnenaufgang
 		Color(1.00, 0.99, 0.96),   # Vormittag
 		Color(1.00, 0.97, 0.92),   # Nachmittag
 		Color(1.00, 0.87, 0.74),   # goldene Stunde
-		Color(0.74, 0.70, 0.86),   # Daemmerung
-		Color(0.52, 0.58, 0.85),   # Mitternacht
+		Color(0.48, 0.45, 0.60),   # Daemmerung
+		Color(0.13, 0.16, 0.30),   # Mitternacht
 	])
 	return g
 

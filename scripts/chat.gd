@@ -32,6 +32,7 @@ func _ready() -> void:
 	if Net.is_dedicated:
 		return
 
+	add_to_group("chat")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -277,6 +278,12 @@ func _set_time(t: float) -> void:
 ## Systemzeile nur an einen bestimmten Spieler (Befehls-Rueckmeldung).
 func _sys_to(peer_id: int, msg: String) -> void:
 	_show_chat.rpc_id(peer_id, "Sistem", msg)
+
+
+## Lokale Systemzeile (nur bei diesem Spieler, ohne Netzwerk) - z. B. Hinweise
+## wie der gespeicherte Spawnpunkt.
+func local_system(msg: String) -> void:
+	_add_line("Sistem", msg)
 
 
 ## Server -> alle Clients. Nur der Server (Autoritaet) darf senden.

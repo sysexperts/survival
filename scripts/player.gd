@@ -34,6 +34,8 @@ signal axe_swung
 ## Es wurde versucht, sich in ein bereits belegtes Bett zu legen. Das Inventar
 ## zeigt daraufhin einen Hinweis.
 signal bed_busy
+## Jack hat sich hingelegt (Spawnpunkt gemerkt) - fuer Chat-Hinweis + Schlaf-Logik.
+signal lay_down
 
 ## Ein Stein wurde aufgehoben.
 ## `gather_id` sagt, WAS aufgehoben wurde (siehe GatherDB) - leer bei den
@@ -840,6 +842,18 @@ func _lie_down(cell: Vector2i) -> void:
 		_zzz = SleepZzzScript.new()
 		_zzz.mirror = bed.flip_h     # Kopf liegt beim gespiegelten Bett rechts
 		add_child(_zzz)
+	lay_down.emit()
+
+
+## Liegt Jack gerade im Bett?
+func is_sleeping() -> bool:
+	return _sleeping
+
+
+## Weckt Jack (falls er liegt) - von der Schlaf-Ueberblendung aufgerufen.
+func wake() -> void:
+	if _sleeping:
+		_wake_up()
 
 
 ## Weckt Jack: zurück auf die gemerkte Standfläche, normale Anzeige.
