@@ -45,6 +45,12 @@ static var ITEMS := {
 		"max_stack": 64,
 		"texture": "res://assets/game_assets/items/stone.png",
 	},
+	# Cakmaktasi (Flint): selten (1%) beim Abbauen von normalem Stein. Icon
+	# vorerst eine Stein-Zelle aus prop1 (Platzhalter, leicht ersetzbar).
+	"cakmaktasi": {
+		"name": "Cakmaktasi", "max_stack": 64,
+		"sheet": SHEET_ITEMS, "item_cell": Vector2i(10, 0),
+	},
 	"odun": {
 		"name": "Odun",
 		"max_stack": 64,

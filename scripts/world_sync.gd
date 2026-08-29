@@ -163,7 +163,7 @@ func _on_local_raised(cell: Vector2i) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "raise", cell, 0, Vector2i.ZERO, "", 0)
 
 
-func _on_local_mined(cell: Vector2i, _drop_id: String, _amount: int) -> void:
+func _on_local_mined(cell: Vector2i, _drop_id: String) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "rock", cell, 0, Vector2i.ZERO, "", 0)
 
 

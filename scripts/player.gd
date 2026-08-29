@@ -58,9 +58,13 @@ signal destroyed_placed(cell: Vector2i)
 signal dug(cell: Vector2i)
 signal raised(cell: Vector2i)
 
-## Ein Fels wurde mit der Spitzhacke abgebaut: `drop_id` x `amount` ins Inventar,
-## world_sync entfernt ihn bei allen. Bzw. Absage, wenn die Spitzhacke zu schwach ist.
-signal mined(cell: Vector2i, drop_id: String, amount: int)
+## Ein Fels ist gebrochen (nach genug Schlaegen). `drop_id` sagt den Typ (fuer XP);
+## world_sync entfernt ihn bei allen. Die eigentlichen Items fallen ueber
+## `mine_drop` waehrend der Schlaege (wie Holz beim Baum).
+signal mined(cell: Vector2i, drop_id: String)
+## Ein Stueck ist bei einem Schlag herausgefallen (auf den Boden bzw. ins Inventar).
+signal mine_drop(cell: Vector2i, drop_id: String)
+## Absage, wenn die Spitzhacke zu schwach fuer diesen Fels ist.
 signal mine_refused(needed_tier: int)
 
 @export var world_path: NodePath = ^"../World"
@@ -124,6 +128,8 @@ const RockDBScript := preload("res://scripts/rock_db.gd")
 var _mine_target := Vector2i(2147483647, 2147483647)
 var _mine_state := -1
 var _mine_hits_left := 0
+var _mine_drop_id := ""
+var _mine_drops_left := 0
 var _mining := false
 ## Gewaehltes Aussehen (fuer Neuaufbau bei Werkzeug-Wechsel).
 var _look: Dictionary = {}
@@ -952,6 +958,8 @@ func _begin_mine() -> void:
 	var to_rock := world.cell_to_world(_mine_target, ground) - global_position
 	facing = DIRS[_dir_index(Vector2(to_rock.x, to_rock.y / y_squash))]
 	_mine_hits_left = mine_hits
+	_mine_drop_id = RockDBScript.drop_of(_mine_state)
+	_mine_drops_left = RockDBScript.amount_of(_mine_state)
 	_mining = true
 	busy = true
 	_sync_armed()
@@ -959,9 +967,10 @@ func _begin_mine() -> void:
 	sprite.play("axe_%s" % facing.replace("-", "_"))
 
 
-## Ein Schwung ist durch: Fels wackeln lassen; nach genug Schlaegen bricht er
-## (Drop + Signal), sonst der naechste Schwung. Ist der Fels weg (Mitspieler war
-## schneller), abbrechen.
+## Ein Schwung ist durch: Fels wackeln lassen und - wie Holz beim Baum - ab und
+## zu ein Stueck herausfallen lassen (ueber die Schlaege verteilt, Summe = amount).
+## Nach genug Schlaegen bricht der Fels (Signal fuer XP + Entfernen). Ist er schon
+## weg (Mitspieler war schneller), abbrechen.
 func _finish_mine() -> void:
 	var rock := world.prop_node(_mine_target)
 	if rock == null or world.rock_state_at(_mine_target) < 0:
@@ -970,22 +979,33 @@ func _finish_mine() -> void:
 		_mine_target = INVALID_CELL
 		_play("idle")
 		return
+	var cell := _mine_target
 	var away := (rock.global_position - global_position).normalized()
 	rock.hit(away)
 	_shake(hit_shake)
 	_mine_hits_left -= 1
+	# Ein Stueck herausschlagen? Gegen Ende erzwungen, damit die Summe stimmt.
+	if _mine_drops_left > 0 and (_mine_hits_left < _mine_drops_left or randf() < 0.45):
+		mine_drop.emit(cell, _mine_drop_id)
+		_mine_drops_left -= 1
 	if _mine_hits_left > 0:
 		sprite.play("axe_%s" % facing.replace("-", "_"))   # naechster Schlag
 		return
+	# Fels bricht: eventuelle Reststuecke noch fallen lassen, dann entfernen.
 	_mining = false
 	busy = false
-	var cell := _mine_target
-	var state := _mine_state
+	var drop := _mine_drop_id
+	while _mine_drops_left > 0:
+		mine_drop.emit(cell, drop)
+		_mine_drops_left -= 1
+	# Aus normalem Stein faellt selten (1%) ein Cakmaktasi (Flint) zusaetzlich.
+	if _mine_state == 0 and randf() < 0.01:
+		mine_drop.emit(cell, "cakmaktasi")
 	_mine_target = INVALID_CELL
 	world.detach_prop(cell)
 	rock.fell(away)
 	_shake(fell_shake)
-	mined.emit(cell, RockDBScript.drop_of(state), RockDBScript.amount_of(state))
+	mined.emit(cell, drop)
 	_play("idle")
 
 

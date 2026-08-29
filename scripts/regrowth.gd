@@ -39,7 +39,7 @@ func _ready() -> void:
 		player.stump_cleared.connect(_on_stump_cleared)
 		player.stone_collected.connect(_on_stone_collected)
 		# Abgebaute Felsen sind endgueltig weg (wie geholte Rohstoffe).
-		player.mined.connect(func(cell, _d, _a): _cleared[cell] = true)
+		player.mined.connect(func(cell, _d): _cleared[cell] = true)
 
 
 func _process(delta: float) -> void:

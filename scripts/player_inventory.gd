@@ -114,8 +114,9 @@ func _ready() -> void:
 		# Buddeln gibt einen Dirt-Block, Aufschuetten verbraucht einen.
 		player.dug.connect(func(_c): _grant("toprak", 1))
 		player.raised.connect(func(_c): inventory.remove("toprak", 1))
-		# Fels abgebaut -> Drop ins Inventar; zu schwache Hacke -> Hinweis.
-		player.mined.connect(func(_c, drop_id, amount): _grant(drop_id, amount))
+		# Fels-Abbau: pro Schlag faellt ein Stueck auf den BODEN (wie Holz beim
+		# Baum) - im Einzelspieler direkt ins Inventar. Zu schwache Hacke -> Hinweis.
+		player.mine_drop.connect(_on_mine_drop)
 		player.mine_refused.connect(func(tier):
 			_notice("Bu kaya icin en az demir kazma lazim" if tier >= 2 else "Bir kazma lazim"))
 
@@ -363,6 +364,19 @@ func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> voi
 	else:
 		_grant("tas", stone_per_pickup)
 	_set_ctx_hint("")
+
+
+## Ein beim Fels-Abbau herausgeschlagenes Stueck: im Multiplayer als Boden-Item
+## (leicht gestreut) ueber DropSync, im Einzelspieler direkt ins Inventar.
+func _on_mine_drop(cell: Vector2i, drop_id: String) -> void:
+	if Net.active and _drop != null and player != null:
+		var lvl := maxi(player.world.top_level_at(cell), 0)
+		var ang := randf() * TAU
+		var r := randf_range(6.0, 16.0)
+		var off := Vector2(cos(ang) * r, sin(ang) * r * 0.5)   # Iso-Ellipse
+		_drop._request_drop.rpc_id(1, drop_id, 1, cell, lvl, off)
+	else:
+		_grant(drop_id, 1)
 
 
 func _on_felled(_cell: Vector2i, _level: int, _atlas: Vector2i) -> void:

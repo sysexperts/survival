@@ -11,7 +11,7 @@ const Features := preload("res://scripts/features.gd")
 const XpParticles := preload("res://scripts/xp_particles.gd")
 
 ## Skill-Schlüssel -> XP (roh). Level = floor(sqrt(xp / 10)).
-static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0}
+static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0, "mining": 0.0}
 
 const XP_PER_CHOP := 5.0
 const XP_PER_CRAFT := 8.0
@@ -19,6 +19,8 @@ const XP_PER_BUILD := 10.0
 ## Kleiner XP-Gewinn pro GEFAELLTEM Baum - fuellt die EXP-Leiste in der
 ## Itemleiste. Bewusst NICHT ans Feature-Flag gebunden (Test/Grundfortschritt).
 const XP_PER_FELL := 4.0
+## XP pro abgebautem Fels, je nach Wert: Stein wenig, Diamant viel.
+const XP_MINE := {"tas": 2.0, "demir_cevheri": 8.0, "altin_cevheri": 16.0, "ham_elmas": 45.0}
 
 var _player: Node = null
 var _label: Label = null
@@ -40,10 +42,22 @@ func _hook_player() -> void:
 	# Pro gefaelltem Baum ein bisschen XP - immer aktiv (speist die EXP-Leiste).
 	if _player.has_signal("felled") and not _player.felled.is_connected(_on_felled):
 		_player.felled.connect(_on_felled)
+	# Pro abgebautem Fels XP nach Wert (Stein wenig, Diamant viel).
+	if _player.has_signal("mined") and not _player.mined.is_connected(_on_mined):
+		_player.mined.connect(_on_mined)
 
 
 func _on_felled(cell: Vector2i, level: int, _atlas: Vector2i) -> void:
 	xp["woodcutting"] += XP_PER_FELL
+	_xp_fx(cell, level)
+
+
+## Fels abgebaut: XP je nach Typ, gelbe Teilchen zum Spieler.
+func _on_mined(cell: Vector2i, drop_id: String) -> void:
+	xp["mining"] += float(XP_MINE.get(drop_id, 3.0))
+	var level := 0
+	if _player and is_instance_valid(_player) and _player.world:
+		level = maxi(_player.world.top_level_at(cell), 0)
 	_xp_fx(cell, level)
 
 

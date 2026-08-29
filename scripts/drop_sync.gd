@@ -111,10 +111,10 @@ func _auto_collect(id: int) -> void:
 # --- Server ---------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
-func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int) -> void:
+func _request_drop(item_id: String, count: int, cell: Vector2i, lvl: int, offset: Vector2 = Vector2.ZERO) -> void:
 	if not multiplayer.is_server():
 		return
-	_do_spawn(item_id, count, cell, lvl)
+	_do_spawn(item_id, count, cell, lvl, offset)
 
 
 ## Direkt vom Server erzeugter Boden-Drop (z. B. Holz beim Baumfaellen, siehe
