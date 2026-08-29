@@ -12,7 +12,7 @@ const MageScript := preload("res://scripts/mage.gd")
 ## 136er-Bild: waagerecht mittig, Fuss knapp unter die Zellmitte.
 const ART_OFFSET := Vector2(-68, -104)
 const TRIGGER := 190.0            ## Spieler naeher -> Magier kommt heraus
-const RESPAWN := 12.0             ## Sekunden bis ein neuer Magier kommt
+const RESPAWN := 0.5             ## fast sofort ein neuer Magier
 
 var world = null
 var player = null
@@ -39,9 +39,16 @@ func _ready() -> void:
 	z_index = IsoWorld.TALL_Z_INDEX
 	level = maxi(world.top_level_at(cell), 0)
 	global_position = world.cell_to_world(cell, level)
-	# Ein kleines Feld unter dem Haus sperren, damit man nicht hindurchlaeuft.
-	cells = world.footprint_2x2(cell)
-	for c in cells:
+	# Hausfuss sperren (Hitbox): die 2x2-Raute plus die Kanten-Nachbarn, damit
+	# man nicht durch das Haus laeuft und die Hexe nicht darauf steht.
+	var set := {}
+	for c in world.footprint_2x2(cell):
+		set[c] = true
+	for n in world.neighbors(cell):
+		set[n] = true
+	set[cell] = true
+	for c in set:
+		cells.append(c)
 		world.block_cell(c, self)
 
 

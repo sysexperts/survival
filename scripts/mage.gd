@@ -72,7 +72,7 @@ func _ready() -> void:
 	modulate.a = 0.0
 	var start := global_position + Vector2(0, -6)
 	global_position = start
-	_home = start + Vector2(0, 18)     # Leine-Mittelpunkt vor dem Haus
+	_home = start + Vector2(0, 30)     # Leine-Mittelpunkt klar VOR dem Haus
 	_wtarget = _home
 	var tw := create_tween()
 	tw.set_parallel(true)
@@ -81,8 +81,8 @@ func _ready() -> void:
 
 
 func _dir_index(v: Vector2) -> int:
-	# Iso: y stauchen, dann in 8 Sektoren. 0=Sued, im Uhrzeigersinn.
-	var a := atan2(-v.x, v.y * 2.0)      # 0 = nach Sueden (unten)
+	# 8 Sektoren, 0 = Sued (unten), im Uhrzeigersinn. y verdoppelt (Iso 2:1).
+	var a := atan2(v.x, v.y * 2.0)       # 0 = nach Sueden, +x = Osten
 	var idx := int(round(a / (PI / 4.0))) % 8
 	return (idx + 8) % 8
 
@@ -114,17 +114,16 @@ func _process(delta: float) -> void:
 	if dist <= SHOOT_RANGE and _cooldown <= 0.0:
 		_shoot()
 		_cooldown = SHOOT_INTERVAL
-	# Waehrend des Zauberns steht die Hexe und schaut den Spieler an; sonst
-	# schlendert sie an der Leine umher (schaut in Laufrichtung).
-	if _cast_left > 0.0:
-		_update_dir()
-	else:
+	# IMMER Blickkontakt zum Spieler (auch beim Laufen). Steht beim Zaubern.
+	_update_dir()
+	if _cast_left <= 0.0:
 		_wander(delta)
 	_refresh_body()
 	queue_redraw()
 
 
-## Zufaelliges Umherschlendern um _home (kleine Leine), auf begehbarem Boden.
+## Zufaelliges Umherschlendern VOR dem Haus (nur nach vorn/seitlich, nie hinein),
+## auf freiem, begehbarem Boden.
 func _wander(delta: float) -> void:
 	_wwait -= delta
 	if _wwait <= 0.0 or global_position.distance_to(_wtarget) < 4.0:
@@ -132,20 +131,19 @@ func _wander(delta: float) -> void:
 	var to := _wtarget - global_position
 	if to.length() > 2.0:
 		global_position += to.normalized() * WALK_SPEED * delta
-		_dir = _dir_index(to)             # Blick in Laufrichtung (Iso in _dir_index)
-	else:
-		_update_dir()
 
 
 func _pick_wander() -> void:
-	for i in 6:
+	for i in 8:
 		var ang := randf() * TAU
 		var r := randf() * WANDER_RADIUS
-		var p := _home + Vector2(cos(ang) * r, sin(ang) * r * 0.55)   # Iso-Ellipse
-		if world.top_level_at(world.world_to_cell(p, 0)) >= 0:        # Boden vorhanden
+		# abs(sin) -> y-Versatz immer nach SUEDEN (vor dem Haus), nie nach oben ins Haus.
+		var p := _home + Vector2(cos(ang) * r, absf(sin(ang)) * r * 0.6)
+		var cell: Vector2i = world.world_to_cell(p, 0)
+		if world.top_level_at(cell) >= 0 and world.blocker_at(cell) == null and not world.has_prop(cell):
 			_wtarget = p
 			break
-	_wwait = randf_range(1.2, 2.8)
+	_wwait = randf_range(1.2, 2.6)
 
 
 func _shoot() -> void:
