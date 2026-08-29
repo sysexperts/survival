@@ -379,6 +379,14 @@ static func is_watering_can(id: String) -> bool:
 	return id == "sulama_kabi"
 
 
+## Nahkampfwaffe (Messer/Schwert) -> Schaden pro Treffer. 0 = keine Waffe.
+const MELEE_DMG := {"bicak": 10, "demir_bicak": 18, "altin_bicak": 28}
+static func is_knife(id: String) -> bool:
+	return MELEE_DMG.has(id)
+static func melee_damage(id: String) -> int:
+	return int(MELEE_DMG.get(id, 0))
+
+
 ## Richtungs-Sprites: Stationen, die als 8-Richtungs-Satz (68x68) unter
 ## assets/game_assets/tool_tables liegen. Statt eines Sheet-Ausschnitts
 ## bekommt so ein Moebel je nach Ausrichtung (orient 0..3 = S/O/N/W) ein

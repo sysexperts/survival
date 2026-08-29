@@ -170,6 +170,11 @@ var _day_night: Node = null      ## optional, zum Dimmen der Laterne
 var path: Array[Vector2i] = []   ## laufender Klick-Weg, leer = kein Auftrag
 var _chop_cell := Vector2i.ZERO  ## Baum, der nach dem Laufen dran ist
 var _chop_level := -1
+## Nahkampf: Ziel-Gegner (mage), auf den zugelaufen und dann eingeschlagen wird.
+var _pending_attack = null
+var _melee_dmg := 0
+const MELEE_RANGE := 48.0
+const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 var _chops_left := 0
 var _clearing_stump := false     ## Auftrag ist "Stumpf weg", nicht "Baum faellen"
 var _pickup_cell := Vector2i(2147483647, 2147483647)  ## Stein, der nach dem Laufen dran ist
@@ -439,7 +444,7 @@ func _physics_process(delta: float) -> void:
 	if input != Vector2.ZERO and (busy or not path.is_empty() or _chop_level >= 0
 			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed
 			or _reach_destroy != INVALID_CELL or _dig_target != INVALID_CELL
-			or _mine_target != INVALID_CELL):
+			or _mine_target != INVALID_CELL or _pending_attack != null):
 		_cancel_task()
 
 	if busy:
@@ -451,6 +456,15 @@ func _physics_process(delta: float) -> void:
 			return
 		if _chop_level >= 0:
 			_begin_chopping()
+			return
+		# Nahkampf-Ziel erreicht? In Reichweite zuschlagen, sonst aufgeben.
+		if _pending_attack != null:
+			var m = _pending_attack
+			_pending_attack = null
+			if is_instance_valid(m) and global_position.distance_to(m.global_position) <= MELEE_RANGE:
+				_swing_at(m)
+			else:
+				_play("idle")
 			return
 		if _pickup_cell != INVALID_CELL:
 			var target := _pickup_cell
@@ -1032,6 +1046,74 @@ func fill_can(cell: Vector2i) -> bool:
 	return _walk_then_dig(cell, "fill")
 
 
+# --- Nahkampf gegen Gegner (Messer/Schwert) -----------------------------
+
+## Greift einen Gegner (mage) an: in Reichweite sofort zuschlagen, sonst
+## hinlaufen und beim Ankommen zuschlagen. `dmg` = Schaden pro Treffer.
+func attack_mage(target, dmg: int) -> bool:
+	if not is_instance_valid(target):
+		return false
+	_cancel_task()
+	_melee_dmg = dmg
+	_face_point(target.global_position)
+	if global_position.distance_to(target.global_position) <= MELEE_RANGE:
+		_swing_at(target)
+		return true
+	# Hinlaufen: neben die Gegner-Zelle.
+	var here := world.world_to_cell(global_position, level)
+	var tcell := world.world_to_cell(target.global_position, level)
+	var stand := GridPath.adjacent_to(world, tcell, here, max_step)
+	if stand.x == 2147483647:
+		return false
+	if stand != here:
+		path = GridPath.find(world, here, stand, max_step)
+		if path.is_empty():
+			return false
+	_pending_attack = target
+	return true
+
+
+## Ein Schwung (nutzt die Axt-Animation) + Schaden auf der Trefferphase.
+func _swing_at(target) -> void:
+	_face_point(target.global_position)
+	_start_axe()                     # busy + Schwung + axe_swung (Waffe nutzt sich ab)
+	var dmg := _melee_dmg
+	get_tree().create_timer(0.18).timeout.connect(func():
+		if is_instance_valid(target) and target.has_method("take_damage"):
+			target.take_damage(float(dmg))
+			_shake(hit_shake))
+
+
+func _face_point(p: Vector2) -> void:
+	var to := p - global_position
+	if to.length() > 1.0:
+		facing = DIRS[_dir_index(Vector2(to.x, to.y / y_squash))]
+
+
+# --- Schaden am Spieler (Magier-Kugel) ----------------------------------
+
+signal took_damage(amount: float)
+
+## Der Spieler nimmt Schaden (z. B. von einer Magier-Kugel). Bei 0 Leben:
+## Wiederbelebung am Spawnpunkt (Bett/Start), Werte zurueck.
+func take_damage(amount: float) -> void:
+	if _sleeping:
+		return
+	PlayerStatsScript.health = maxf(0.0, PlayerStatsScript.health - amount)
+	_shake(hit_shake)
+	_hit_flash()
+	took_damage.emit(amount)
+	if PlayerStatsScript.health <= 0.0:
+		PlayerStatsScript.health = PlayerStatsScript.health_max
+		respawn()
+
+
+func _hit_flash() -> void:
+	sprite.modulate = Color(1.7, 0.5, 0.5)
+	var tw := create_tween()
+	tw.tween_property(sprite, "modulate", Color(1, 1, 1), 0.25)
+
+
 ## Setzt einen Crop-Node in die Welt (lokal wie beim Sync-Replay). `started` ist
 ## der Pflanzzeitpunkt (Unix-Zeit) - daraus ergibt sich die Wachstumsstufe.
 func do_plant_at(cell: Vector2i, crop_id: String, started: float) -> bool:
@@ -1188,6 +1270,7 @@ func _cancel_task() -> void:
 	_mine_target = INVALID_CELL
 	_mine_state = -1
 	_mining = false
+	_pending_attack = null
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false

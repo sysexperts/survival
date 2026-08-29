@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scripts/survival_needs.gd" id="23_needs"]
 [ext_resource type="Script" path="res://scripts/skills_xp.gd" id="24_skills"]
 [ext_resource type="Script" path="res://scripts/weather.gd" id="25_weather"]
+[ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="26_enemy"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -84,6 +85,9 @@ script = ExtResource("19_drop")
 
 [node name="DeerSpawner" type="Node" parent="." unique_id=1564797178]
 script = ExtResource("20_deer")
+
+[node name="EnemySpawner" type="Node" parent="." unique_id=1562186432]
+script = ExtResource("26_enemy")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1562186431]
 zoom = Vector2(2.5, 2.5)

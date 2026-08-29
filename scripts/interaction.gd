@@ -190,6 +190,22 @@ func _crop_under_mouse():
 	return best
 
 
+## Gegner (Magier) unter der Maus - ueber den Body-Sprite (48er), oder null.
+func _mage_under_mouse():
+	var mouse := get_global_mouse_position()
+	var best = null
+	var best_y := -INF
+	for m in get_tree().get_nodes_in_group("mage"):
+		if not is_instance_valid(m) or m._body == null or m._body.texture == null:
+			continue
+		var sz: Vector2 = m._body.texture.get_size()
+		var rect := Rect2(m.global_position + m._body.offset, sz)
+		if rect.has_point(mouse) and m.global_position.y > best_y:
+			best_y = m.global_position.y
+			best = m
+	return best
+
+
 ## Setzt/loescht die Restzeit-Anzeige ueber der zuletzt ueberfahrenen Pflanze.
 func _set_crop_hover(crop) -> void:
 	if crop == _hovered_crop:
@@ -250,6 +266,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				_ask_destroy(target)
 			get_viewport().set_input_as_handled()
 			return
+		# Gegner (Magier) mit Messer/Schwert angreifen - hat Vorrang.
+		if ItemDB.is_knife(player.held_item_id):
+			var mage = _mage_under_mouse()
+			if mage != null:
+				player.attack_mage(mage, ItemDB.melee_damage(player.held_item_id))
+				get_viewport().set_input_as_handled()
+				return
 		# Giesskanne: auf Pflanze giessen, auf Wasser auffuellen (vor dem Ernten,
 		# damit man eine Pflanze mit der Kanne giesst statt sie zu ernten).
 		if ItemDB.is_watering_can(player.held_item_id) and _inv != null:

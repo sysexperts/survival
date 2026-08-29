@@ -88,7 +88,7 @@ func _ensure_debug() -> void:
 func _update_debug() -> void:
 	if _debug_label:
 		if Features.on("thirst"):
-			_debug_label.text = "Aclik %d  Susuzluk %d  Can %d" % [
-				int(PlayerStats.hunger), int(PlayerStats.thirst), int(PlayerStats.health)]
+			_debug_label.text = "Can %d  Aclik %d  Susuzluk %d" % [
+				int(PlayerStats.health), int(PlayerStats.hunger), int(PlayerStats.thirst)]
 		else:
-			_debug_label.text = "Aclik %d" % int(PlayerStats.hunger)
+			_debug_label.text = "Can %d  Aclik %d" % [int(PlayerStats.health), int(PlayerStats.hunger)]
