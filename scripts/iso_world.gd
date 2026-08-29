@@ -262,9 +262,12 @@ func dig_cell(cell: Vector2i) -> bool:
 	if not can_dig(cell):
 		return false
 	var top := top_level_at(cell)
-	# Sicherheitsnetz: falls der Untergrund an dieser Zelle noch nicht befuellt
-	# war (z. B. am Chunk-Rand), jetzt nachziehen, damit kein Loch ohne Boden entsteht.
+	# Sicherheitsnetz: Untergrund der Zelle UND der Nachbarn befuellen, falls noch
+	# nicht geschehen (Chunk-Rand). Ohne die Nachbarn haette das Loch stellenweise
+	# keine Wand (dann scheint der dunkle Hintergrund durch = "Border").
 	_fill_underground(cell)
+	for n in neighbors(cell):
+		_fill_underground(n)
 	erase_block(cell, top)
 	return true
 
@@ -282,6 +285,32 @@ func raise_cell(cell: Vector2i) -> bool:
 		return false                     # nicht hoeher als die oberste Ebene
 	set_block(cell, new_level, DIRT_ATLAS)
 	return true
+
+
+## Textur des obersten Bodenblocks einer Zelle (fuer die Maus-Hervorhebung beim
+## Buddeln). null, wenn dort kein Block liegt.
+func block_texture(cell: Vector2i) -> Texture2D:
+	var lvl := top_level_at(cell)
+	var l := _lay(lvl)
+	if l == null:
+		return null
+	var atlas := l.get_cell_atlas_coords(cell)
+	if atlas == Vector2i(-1, -1):
+		return null
+	var src := tile_set_res.get_source(SOURCE_ID) as TileSetAtlasSource
+	if src == null:
+		return null
+	var at := AtlasTexture.new()
+	at.atlas = src.texture
+	at.region = src.get_tile_texture_region(atlas)
+	return at
+
+
+## Obere-linke Ecke des obersten Bodenblocks in Weltkoordinaten (32x32-Kachel;
+## der Top-Diamant-Mittelpunkt liegt bei (16,8) innerhalb der Kachel).
+func block_top_left(cell: Vector2i) -> Vector2:
+	var lvl := top_level_at(cell)
+	return cell_to_world(cell, lvl) + Vector2(-16, -8)
 
 
 # --- Nachbarschaft ------------------------------------------------------

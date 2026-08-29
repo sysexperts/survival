@@ -55,10 +55,32 @@ func _process(_delta: float) -> void:
 		return
 	# Kein Prop unter der Maus - vielleicht ein Moebel (Werkbank, Bett ...).
 	_furn_hover = _furniture_under_mouse()
-	if _furn_hover.is_empty():
+	if not _furn_hover.is_empty():
+		_highlight_furniture(_furn_hover[1])
+		return
+	# Sonst: mit Schaufel/Dirt die Bodenzelle unter der Maus hervorheben,
+	# damit man sieht, was man abbaut/aufschuettet.
+	if player != null and (player.held_tool == "Showel" or player.held_is_dirt):
+		_highlight_ground()
+		return
+	highlight.visible = false
+
+
+## Weisser Rand um den obersten Bodenblock unter der Maus (Buddeln/Aufschuetten).
+func _highlight_ground() -> void:
+	var hit := world.pick_block(get_global_mouse_position())
+	if hit.is_empty():
 		highlight.visible = false
 		return
-	_highlight_furniture(_furn_hover[1])
+	var tex := world.block_texture(hit[0])
+	if tex == null:
+		highlight.visible = false
+		return
+	highlight.texture = tex
+	highlight.flip_h = false
+	highlight.scale = Vector2.ONE
+	highlight.global_position = world.block_top_left(hit[0])
+	highlight.visible = true
 
 
 func _highlight_prop() -> void:

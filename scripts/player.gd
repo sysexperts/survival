@@ -130,6 +130,10 @@ var _reach_destroy := Vector2i(2147483647, 2147483647)  ## Objekt, das nach dem 
 ## nach dem Hinlaufen ausgefuehrt. Waehrend der Grab-Animation ist busy=true.
 var _dig_target := Vector2i(2147483647, 2147483647)
 var _dig_action := ""
+## Waehrend der Grab-Animation gemerkte Aktion - wird beim Start gesetzt und der
+## Zielzeiger geleert, damit nichts doppelt abgebaut wird.
+var _pending_dig_cell := Vector2i(2147483647, 2147483647)
+var _pending_dig_action := ""
 var _tree: TreeActor = null      ## Baum als Node, solange gefällt wird
 var _camera: Camera2D = null
 ## WorldSync-Node (Multiplayer): geteilte Baum-HP. Im Einzelspieler null bzw.
@@ -453,8 +457,11 @@ func _try_move(delta_pos: Vector2) -> void:
 	if world.has_prop(cell):
 		return                                  # Baum o. ae. im Weg
 	var top := world.top_level_at(cell)
-	if top < 0 or absi(top - level) > max_step:
-		return                                  # Loch oder zu hohe Stufe
+	# Kein Boden (echtes Loch/Leere) oder zu hohe Stufe -> blockiert. Ein
+	# gebuddeltes Loch hat negativen, aber gueltigen Boden (bis NO_FLOOR), da
+	# darf man rein, solange die Stufe <= max_step ist.
+	if top <= world.NO_FLOOR or absi(top - level) > max_step:
+		return
 	if top != level:
 		# Höhe wechseln: die Standfläche liegt (top - level) * 8 px höher
 		var dy := float(top - level) * IsoWorld.LEVEL_STEP_PX
@@ -845,10 +852,16 @@ func _walk_then_dig(cell: Vector2i, action: String) -> bool:
 	return true
 
 
-## Startet die Grab-Animation Richtung Zielzelle (blockierend bis fertig).
+## Startet die Grab-Animation Richtung Zielzelle (blockierend bis fertig). Der
+## Zielzeiger wird SOFORT in _pending_* verschoben und geleert, damit ein
+## zweiter idle-Frame die Animation nicht erneut startet (sonst 2 Ebenen).
 func _begin_dig() -> void:
-	var ground := maxi(world.top_level_at(_dig_target), 0)
-	var to_cell := world.cell_to_world(_dig_target, ground) - global_position
+	_pending_dig_cell = _dig_target
+	_pending_dig_action = _dig_action
+	_dig_target = INVALID_CELL
+	_dig_action = ""
+	var ground := maxi(world.top_level_at(_pending_dig_cell), 0)
+	var to_cell := world.cell_to_world(_pending_dig_cell, ground) - global_position
 	facing = DIRS[_dir_index(Vector2(to_cell.x, to_cell.y / y_squash))]
 	busy = true
 	_sync_armed()
@@ -856,13 +869,13 @@ func _begin_dig() -> void:
 	sprite.play("dig_%s" % facing.replace("-", "_"))
 
 
-## Grab-Animation fertig: Welt aendern und Signal (Inventar + world_sync).
+## Grab-Animation fertig: GENAU EINE Ebene aendern und Signal (Inventar + Sync).
 func _finish_dig() -> void:
 	busy = false
-	var cell := _dig_target
-	var action := _dig_action
-	_dig_target = INVALID_CELL
-	_dig_action = ""
+	var cell := _pending_dig_cell
+	var action := _pending_dig_action
+	_pending_dig_cell = INVALID_CELL
+	_pending_dig_action = ""
 	if cell == INVALID_CELL:
 		_play("idle")
 		return
@@ -919,6 +932,8 @@ func _cancel_task() -> void:
 	_reach_destroy = INVALID_CELL
 	_dig_target = INVALID_CELL
 	_dig_action = ""
+	_pending_dig_cell = INVALID_CELL
+	_pending_dig_action = ""
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false
