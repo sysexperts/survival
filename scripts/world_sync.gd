@@ -150,12 +150,13 @@ func _on_local_furniture(id: String, cell: Vector2i, orient: int) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "furniture", cell, 0, Vector2i.ZERO, id, orient)
 
 
-func _on_local_building(id: String, cell: Vector2i, started: float) -> void:
+func _on_local_building(id: String, cell: Vector2i, orient: int, started: float) -> void:
 	if _suppress:
 		return
-	# Der Baubeginn (Unix-Sekunden) reist im ungenutzten `level`-Feld mit - so
-	# zeigt jeder Client dieselbe Phase und der Stand ueberlebt einen Neustart.
-	_event.rpc(multiplayer.get_unique_id(), "building", cell, int(started), Vector2i.ZERO, id, 0)
+	# Der Baubeginn (Unix-Sekunden) reist im ungenutzten `level`-Feld mit, die
+	# Blickrichtung im `flag`-Feld - so zeigt jeder Client dieselbe Phase und
+	# Ausrichtung, und der Stand ueberlebt einen Neustart.
+	_event.rpc(multiplayer.get_unique_id(), "building", cell, int(started), Vector2i.ZERO, id, orient)
 
 
 func _on_local_destroy(cell: Vector2i) -> void:
@@ -186,8 +187,8 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 		if kind == "furniture":
 			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "orient": flag})
 		elif kind == "building":
-			# level = Baubeginn (Unix-Sekunden).
-			_record_build({"kind": "building", "x": cell.x, "y": cell.y, "id": s, "orient": 0, "started": level})
+			# level = Baubeginn (Unix-Sekunden), flag = Ausrichtung.
+			_record_build({"kind": "building", "x": cell.x, "y": cell.y, "id": s, "orient": flag, "started": level})
 		elif kind == "campfire":
 			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "orient": 0})
 		elif kind == "destroy":
@@ -240,7 +241,7 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 		"building":
 			if _player:
 				_suppress = true
-				_player.place_building_at(ItemDB.canonical(s), cell, float(level))  # level = started
+				_player.place_building_at(ItemDB.canonical(s), cell, flag, float(level))  # flag=orient, level=started
 				_suppress = false
 		"destroy":
 			# Bei einem anderen Spieler abgerissen -> lokal auch entfernen.
@@ -320,7 +321,7 @@ func _apply_build(b: Dictionary) -> bool:
 	if b["kind"] == "campfire":
 		ok = _player.place_campfire_at(cell)
 	elif b["kind"] == "building":
-		ok = _player.place_building_at(ItemDB.canonical(String(b["id"])), cell, float(b.get("started", 0)))
+		ok = _player.place_building_at(ItemDB.canonical(String(b["id"])), cell, _orient_of(b), float(b.get("started", 0)))
 	else:
 		# Alte deutsche Moebel-Id (aus build.json) auf den neuen Namen heben.
 		ok = _player.place_furniture_at(ItemDB.canonical(String(b["id"])), cell, _orient_of(b))

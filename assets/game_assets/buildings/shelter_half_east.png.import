@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5e6tpiahdfmn"
-path="res://.godot/imported/shelter_scaffold.png-f315069d299da3b122bd23e1c79050d8.ctex"
+uid="uid://d0ndpcwnfbh0j"
+path="res://.godot/imported/shelter_half_east.png-206df5051755d29b539717e1ef08b2fe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game_assets/buildings/shelter_scaffold.png"
-dest_files=["res://.godot/imported/shelter_scaffold.png-f315069d299da3b122bd23e1c79050d8.ctex"]
+source_file="res://assets/game_assets/buildings/shelter_half_east.png"
+dest_files=["res://.godot/imported/shelter_half_east.png-206df5051755d29b539717e1ef08b2fe.ctex"]
 
 [params]
 

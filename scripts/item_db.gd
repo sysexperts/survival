@@ -293,7 +293,7 @@ const FURNITURE := {
 const BUILDINGS := {
 	"baraka": {
 		"name": "Baraka",
-		"texture": "res://assets/game_assets/buildings/shelter_done.png",
+		"texture": "res://assets/game_assets/buildings/shelter_done_south-east.png",
 	},
 }
 

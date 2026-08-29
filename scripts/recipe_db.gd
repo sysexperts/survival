@@ -134,14 +134,13 @@ const RECIPES := [
 	},
 
 	# --- Gebaeude (eigener Tab "Yapilar") --------------------------------
-	# Die Baraka ist kein Item, das in die Bauliste wandert: ein Klick auf
-	# "Insa" startet stattdessen die 4x4-Platzierung (nur auf ebenem Boden).
-	# Erst beim Setzen werden die 64 Bretter verbraucht; danach baut sich das
-	# Haus vor Ort in 10 Minuten in drei Phasen selbst (siehe building.gd).
-	# `building: true` schaltet diesen Sonderweg im Handwerk-Fenster frei.
+	# Die Baraka wird ganz normal gefertigt und landet als Item im Inventar
+	# (kurze Craft-Zeit). Platziert wird sie dann wie ein Moebel auf einem
+	# ebenen 4x4-Feld und baut sich VOR ORT in 10 Minuten in drei Phasen selbst
+	# (der 10-Minuten-Countdown steht dann ueber dem Bau, siehe building.gd).
 	{
-		"out": "baraka", "count": 1, "station": WERKBANK, "seconds": 600.0,
-		"building": true, "cost": {"tahta": 64},
+		"out": "baraka", "count": 1, "station": WERKBANK, "seconds": 4.0,
+		"cost": {"tahta": 64},
 	},
 
 	# ------------------------------------------------------------------ #
@@ -215,11 +214,6 @@ const RECIPES := [
 	{"out": "altin_bicak", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
 		"cost": {"islenmis_sopa": 1, "altin": 4}},
 ]
-
-
-## Ist dieses Rezept ein Gebaeude (4x4-Platzierung statt Bauliste)?
-static func is_building(recipe: Dictionary) -> bool:
-	return bool(recipe.get("building", false))
 
 
 ## Bauzeit für ein Stück, in Sekunden.

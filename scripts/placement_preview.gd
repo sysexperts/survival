@@ -95,10 +95,10 @@ func begin_building(id: String) -> void:
 	kind = Kind.BUILDING
 	item_id = id
 	orient = 0
-	_still.texture = ItemDB.icon(id)          # fertiges Haus als Vorschau
 	_still.offset = _Building.ART_OFFSET
 	_still.scale = Vector2.ONE
 	_still.flip_h = false
+	_apply_orient()
 	_still.visible = true
 	_anim.visible = false
 	active = true
@@ -108,7 +108,7 @@ func begin_building(id: String) -> void:
 ## Dreht das Moebel eine Stufe weiter (8 Richtungen im Uhrzeigersinn).
 ## Nicht-Richtungs-Moebel spiegeln dabei nur (ungerade Stufe).
 func rotate_step() -> void:
-	if not active or kind != Kind.FURNITURE:
+	if not active or (kind != Kind.FURNITURE and kind != Kind.BUILDING):
 		return
 	orient = (orient + 1) % 8
 	_apply_orient()
@@ -116,7 +116,11 @@ func rotate_step() -> void:
 
 ## Setzt Sprite/Spiegelung passend zur aktuellen Ausrichtung.
 func _apply_orient() -> void:
-	if ItemDB.has_dirs(item_id):
+	if kind == Kind.BUILDING:
+		# Gebaeude zeigen als Geist das fertige Haus in der gewaehlten Richtung.
+		_still.texture = _Building.tex(2, orient)
+		_still.flip_h = false
+	elif ItemDB.has_dirs(item_id):
 		_still.texture = ItemDB.dir_texture(item_id, orient)
 		_still.flip_h = false
 	else:
