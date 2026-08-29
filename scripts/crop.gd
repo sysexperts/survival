@@ -26,10 +26,12 @@ static var _sheet_img: Image
 ## Sekunden Trockenheit. Giessen (Sulama Kabi) fuellt ihn auf.
 const WATER_MAX := 100.0
 const WATER_START := 100.0
-const WATER_DRAIN := 0.35      ## pro Sekunde (leer nach ~5 min)
+## Bewusst gemuetlich: eine Fuellung haelt ~17 min, danach noch 10 min Gnadenfrist
+## bis zum Tod. Giessen soll nicht stressig sein - meist reicht 1x giessen.
+const WATER_DRAIN := 0.1       ## pro Sekunde (leer nach ~17 min)
 const RAIN_FILL := 4.0         ## pro Sekunde bei Regen (fuellt schnell)
 const WATER_PER_CAN := 60.0    ## eine Giesskannen-Ladung
-const DROUGHT_DEATH := 240.0   ## Sekunden komplett trocken bis zum Absterben
+const DROUGHT_DEATH := 600.0   ## Sekunden komplett trocken bis zum Absterben (10 min)
 
 var crop_id := ""
 var cell: Vector2i

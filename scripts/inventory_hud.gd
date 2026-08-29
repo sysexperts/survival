@@ -294,7 +294,9 @@ func _build_tabs(book: Control, book_w: int) -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 0)
 	# Ueber dem Buch; Zeilenhoehe = aktive (hoehere) Variante, damit alle sitzen.
-	tabs.position = Vector2(18 * BOOK_SCALE, -21 * TAB_SCALE)
+	# +16 px nach unten, damit die Reiter buendig am Buch sitzen (kleiner Ueber-
+	# lapp wie eingesteckte Lesezeichen) statt darueber zu schweben.
+	tabs.position = Vector2(18 * BOOK_SCALE, -21 * TAB_SCALE + 16)
 	book.add_child(tabs)
 	for i in TOP_TABS.size():
 		tabs.add_child(_make_tab(TOP_TABS[i][0], String(TOP_TABS[i][1]), i))
