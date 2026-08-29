@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cjs7cjpqkp5ct"
-path="res://.godot/imported/south-west.png-16540613d3080e7c8c0e60bf920b7a94.ctex"
+uid="uid://csbjxgklfiakm"
+path="res://.godot/imported/gold_ore.png-da41682c3f64052e5d742980b7fb5bd5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game_assets/tool_tables/isometric_pixelart_cooking_cam/rotations/south-west.png"
-dest_files=["res://.godot/imported/south-west.png-16540613d3080e7c8c0e60bf920b7a94.ctex"]
+source_file="res://assets/game_assets/items/gold_ore.png"
+dest_files=["res://.godot/imported/gold_ore.png-da41682c3f64052e5d742980b7fb5bd5.ctex"]
 
 [params]
 

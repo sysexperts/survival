@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dnhxat3mvi381"
-path="res://.godot/imported/north-west.png-f91d1bdb4048842281399ab385381e0f.ctex"
+uid="uid://h355sahu2caa"
+path="res://.godot/imported/diamond_ore.png-03f459302e4e339543a2f01748ae28f5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game_assets/tool_tables/isometric_pixelart_cooking_cam/rotations/north-west.png"
-dest_files=["res://.godot/imported/north-west.png-f91d1bdb4048842281399ab385381e0f.ctex"]
+source_file="res://assets/game_assets/items/diamond_ore.png"
+dest_files=["res://.godot/imported/diamond_ore.png-03f459302e4e339543a2f01748ae28f5.ctex"]
 
 [params]
 

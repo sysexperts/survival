@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cybellm1tq1lm"
-path="res://.godot/imported/south.png-2e24536479712b781deb194c588848cd.ctex"
+uid="uid://b6xgfoej2hpiv"
+path="res://.godot/imported/west.png-0758c8e4f9c2a9987a103fc3abcab226.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game_assets/tool_tables/isometric_pixelart_cooking_cam/rotations/south.png"
-dest_files=["res://.godot/imported/south.png-2e24536479712b781deb194c588848cd.ctex"]
+source_file="res://assets/game_assets/tool_tables/cooking_campfire/rotations/west.png"
+dest_files=["res://.godot/imported/west.png-0758c8e4f9c2a9987a103fc3abcab226.ctex"]
 
 [params]
 

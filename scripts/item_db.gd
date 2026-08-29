@@ -43,8 +43,7 @@ static var ITEMS := {
 	"tas": {
 		"name": "Tas",
 		"max_stack": 64,
-		"sheet": SHEET_ITEMS,
-		"item_cell": Vector2i(10, 2),
+		"texture": "res://assets/game_assets/items/stone.png",
 	},
 	"odun": {
 		"name": "Odun",
@@ -114,16 +113,13 @@ static var ITEMS := {
 		"name": "Demir Cevheri", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/iron_ore.png",
 	},
-	# Golderz-Icon = die Gold-Fels-Zelle aus rocks.png (Fels mit Gold), NICHT der
-	# Gold-Barren (gold.png). So sieht man, dass es Roherz ist.
 	"altin_cevheri": {
 		"name": "Altin Cevheri", "max_stack": 64,
-		"sheet": "res://assets/props/rocks.png", "region": Rect2i(0, 96, 48, 48),
+		"texture": "res://assets/game_assets/items/gold_ore.png",
 	},
-	# Rohdiamant: kein eigenes Icon vorhanden -> Diamant-Fels-Zelle aus rocks.png.
 	"ham_elmas": {
 		"name": "Ham Elmas", "max_stack": 64,
-		"sheet": "res://assets/props/rocks.png", "region": Rect2i(0, 144, 48, 48),
+		"texture": "res://assets/game_assets/items/diamond_ore.png",
 	},
 	# Islenmis Sopa = bearbeiteter Griff, Zutat der Eisenwerkzeuge.
 	"islenmis_sopa": {
