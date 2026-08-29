@@ -150,6 +150,26 @@ static var ITEMS := {
 		"name": "Misir Tohumu", "max_stack": 64,
 		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 1), "cell_size": Vector2i(32, 32),
 	},
+	# Havuc (Karotte)
+	"havuc": {"name": "Havuc", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(1, 4), "cell_size": Vector2i(32, 32)},
+	"havuc_tohumu": {"name": "Havuc Tohumu", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 3), "cell_size": Vector2i(32, 32)},
+	# Domates (Tomate)
+	"domates": {"name": "Domates", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(2, 4), "cell_size": Vector2i(32, 32)},
+	"domates_tohumu": {"name": "Domates Tohumu", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 4), "cell_size": Vector2i(32, 32)},
+	# Kabak (Kuerbis)
+	"kabak": {"name": "Kabak", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(3, 3), "cell_size": Vector2i(32, 32)},
+	"kabak_tohumu": {"name": "Kabak Tohumu", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 2), "cell_size": Vector2i(32, 32)},
+	# Bugday (Weizen)
+	"bugday": {"name": "Bugday", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 0), "cell_size": Vector2i(32, 32)},
+	"bugday_tohumu": {"name": "Bugday Tohumu", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 5), "cell_size": Vector2i(32, 32)},
 
 	# Sulama Kabi (Giesskanne): Ladungen ueber die Dayaniklilik (10). Am Wasser
 	# auffuellen (Dayaniklilik = voll), pro Giessen 1 verbrauchen. Zerbricht NICHT
@@ -333,7 +353,10 @@ static func is_hoe(id: String) -> bool:
 
 
 ## Samen -> Pflanzen-Id (crop_db). {} bei Nicht-Samen.
-const SEED_CROP := {"misir_tohumu": "misir"}
+const SEED_CROP := {
+	"misir_tohumu": "misir", "havuc_tohumu": "havuc", "domates_tohumu": "domates",
+	"kabak_tohumu": "kabak", "bugday_tohumu": "bugday",
+}
 static func is_seed(id: String) -> bool:
 	return SEED_CROP.has(id)
 static func crop_of_seed(id: String) -> String:
@@ -341,7 +364,10 @@ static func crop_of_seed(id: String) -> String:
 
 
 ## Essbares -> wie viel Hunger es fuellt.
-const FOOD := {"misir": 25, "kizarmis_et": 40}
+const FOOD := {
+	"misir": 25, "kizarmis_et": 40,
+	"havuc": 20, "domates": 15, "kabak": 40, "bugday": 10,
+}
 static func is_food(id: String) -> bool:
 	return FOOD.has(id)
 static func food_value(id: String) -> int:

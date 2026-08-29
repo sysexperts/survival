@@ -30,6 +30,38 @@ const CROPS := {
 		"produce_count": [2, 3],
 		"seed_return": [1, 2],
 	},
+	# Havuc (Karotte): schnelle Wurzel, 4 Stufen bis zur vollen Ruebe.
+	"havuc": {
+		"name": "Havuc", "seed": "havuc_tohumu", "produce": "havuc",
+		"stages": [Vector2i(6, 0), Vector2i(6, 1), Vector2i(6, 2), Vector2i(6, 3)],
+		"dead": Vector2i(6, 4),
+		"stage_secs": [120.0, 120.0, 120.0],   # 6 min bis reif
+		"rot_after": 1800.0, "produce_count": [1, 2], "seed_return": [1, 2],
+	},
+	# Domates (Tomate): am Stab, 4 Stufen bis zu den roten Fruechten.
+	"domates": {
+		"name": "Domates", "seed": "domates_tohumu", "produce": "domates",
+		"stages": [Vector2i(8, 4), Vector2i(8, 0), Vector2i(8, 1), Vector2i(8, 2)],
+		"dead": Vector2i(8, 3),
+		"stage_secs": [180.0, 180.0, 240.0],   # 10 min bis reif
+		"rot_after": 1800.0, "produce_count": [2, 4], "seed_return": [1, 2],
+	},
+	# Kabak (Kuerbis): grosse Frucht, wenige aber lange Stufen.
+	"kabak": {
+		"name": "Kabak", "seed": "kabak_tohumu", "produce": "kabak",
+		"stages": [Vector2i(9, 0), Vector2i(9, 1), Vector2i(9, 4)],
+		"dead": Vector2i(9, 2),
+		"stage_secs": [300.0, 300.0],          # 10 min bis reif
+		"rot_after": 1800.0, "produce_count": [1, 1], "seed_return": [1, 2],
+	},
+	# Bugday (Weizen): Getreide, 3 Stufen bis zur goldenen Aehre.
+	"bugday": {
+		"name": "Bugday", "seed": "bugday_tohumu", "produce": "bugday",
+		"stages": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3)],
+		"dead": Vector2i(4, 4),
+		"stage_secs": [180.0, 180.0],          # 6 min bis reif
+		"rot_after": 1800.0, "produce_count": [2, 3], "seed_return": [1, 2],
+	},
 }
 
 
