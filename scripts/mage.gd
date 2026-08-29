@@ -30,6 +30,12 @@ var _dir := 0
 var _cast_left := 0.0
 var _cooldown := 1.0              ## kurze Anfangs-Verzoegerung
 var _hit_flash := 0.0
+## Umherlaufen (an der Leine ums Haus). Waehrend des Zauberns steht die Hexe.
+const WANDER_RADIUS := 58.0
+const WALK_SPEED := 26.0
+var _home := Vector2.ZERO
+var _wtarget := Vector2.ZERO
+var _wwait := 0.0
 static var _tex_cache: Dictionary = {}
 
 signal died
@@ -66,10 +72,12 @@ func _ready() -> void:
 	modulate.a = 0.0
 	var start := global_position + Vector2(0, -6)
 	global_position = start
+	_home = start + Vector2(0, 18)     # Leine-Mittelpunkt vor dem Haus
+	_wtarget = _home
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(self, "modulate:a", 1.0, 0.5)
-	tw.tween_property(self, "global_position", start + Vector2(0, 18), 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "global_position", _home, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _dir_index(v: Vector2) -> int:
@@ -96,7 +104,6 @@ func _process(delta: float) -> void:
 		return
 	if not is_instance_valid(player):
 		return
-	_update_dir()
 	if _cast_left > 0.0:
 		_cast_left -= delta
 	if _hit_flash > 0.0:
@@ -107,8 +114,38 @@ func _process(delta: float) -> void:
 	if dist <= SHOOT_RANGE and _cooldown <= 0.0:
 		_shoot()
 		_cooldown = SHOOT_INTERVAL
+	# Waehrend des Zauberns steht die Hexe und schaut den Spieler an; sonst
+	# schlendert sie an der Leine umher (schaut in Laufrichtung).
+	if _cast_left > 0.0:
+		_update_dir()
+	else:
+		_wander(delta)
 	_refresh_body()
 	queue_redraw()
+
+
+## Zufaelliges Umherschlendern um _home (kleine Leine), auf begehbarem Boden.
+func _wander(delta: float) -> void:
+	_wwait -= delta
+	if _wwait <= 0.0 or global_position.distance_to(_wtarget) < 4.0:
+		_pick_wander()
+	var to := _wtarget - global_position
+	if to.length() > 2.0:
+		global_position += to.normalized() * WALK_SPEED * delta
+		_dir = _dir_index(to)             # Blick in Laufrichtung (Iso in _dir_index)
+	else:
+		_update_dir()
+
+
+func _pick_wander() -> void:
+	for i in 6:
+		var ang := randf() * TAU
+		var r := randf() * WANDER_RADIUS
+		var p := _home + Vector2(cos(ang) * r, sin(ang) * r * 0.55)   # Iso-Ellipse
+		if world.top_level_at(world.world_to_cell(p, 0)) >= 0:        # Boden vorhanden
+			_wtarget = p
+			break
+	_wwait = randf_range(1.2, 2.8)
 
 
 func _shoot() -> void:

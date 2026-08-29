@@ -10,6 +10,12 @@ extends Control
 const UiAtlas := preload("res://scripts/ui_atlas.gd")
 const CCFrames := preload("res://scripts/cc_frames.gd")
 const AppearanceStore := preload("res://scripts/appearance_store.gd")
+const PlayerStatsScript := preload("res://scripts/player_stats.gd")
+
+## Fuellbereich des roten Lebens-Balkens im Block (Quell-px). Darueber legen wir
+## rechts eine dunkle "Leer"-Flaeche, die mit sinkendem Leben nach links waechst.
+const HEALTH_FILL := Rect2i(20, 4, 24, 4)
+var _hp_empty: ColorRect
 
 ## Vorlage-Block (Porträt-Rahmen + 3 volle Balken) im Sheet.
 const BLOCK_REGION := Rect2i(256, 6, 48, 19)
@@ -35,6 +41,13 @@ func _ready() -> void:
 	block.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(block)
 
+	# Dynamische "Leer"-Flaeche ueber dem roten Lebens-Balken (Nimmt-ab-Anzeige).
+	_hp_empty = ColorRect.new()
+	_hp_empty.color = Color(0.09, 0.05, 0.07, 0.92)
+	_hp_empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hp_empty)
+	_update_hp()
+
 	# Kopf ÜBER den Block, auf die Porträt-Innenfläche, geclippt.
 	var head := _head_texture()
 	if head != null:
@@ -52,6 +65,22 @@ func _ready() -> void:
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		clip.add_child(tr)
+
+
+func _process(_delta: float) -> void:
+	_update_hp()
+
+
+## Rechts die "Leer"-Flaeche des Lebens-Balkens an das aktuelle Leben anpassen.
+func _update_hp() -> void:
+	if _hp_empty == null:
+		return
+	var ratio := PlayerStatsScript.health_ratio()
+	var full_w := float(HEALTH_FILL.size.x * SCALE)
+	_hp_empty.position = Vector2(
+		(HEALTH_FILL.position.x * SCALE) + full_w * ratio,
+		HEALTH_FILL.position.y * SCALE)
+	_hp_empty.size = Vector2(full_w * (1.0 - ratio), HEALTH_FILL.size.y * SCALE)
 
 
 ## Kopf des eigenen Charakters aus dem Idle-Frame ausschneiden.

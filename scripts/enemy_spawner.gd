@@ -8,8 +8,8 @@ extends Node
 
 const MageHouse := preload("res://scripts/mage_house.gd")
 
-## Ziel-Offset vom Startpunkt (Zellen) - etwas abseits, aber sichtbar nah.
-const TARGET_OFFSET := Vector2i(-7, -7)
+## Ziel-Offset vom Startpunkt (Zellen) - ein Stueck abseits vom Spawn.
+const TARGET_OFFSET := Vector2i(-16, -14)
 
 var _done := false
 
