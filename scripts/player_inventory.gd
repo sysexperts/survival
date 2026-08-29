@@ -114,6 +114,10 @@ func _ready() -> void:
 		# Buddeln gibt einen Dirt-Block, Aufschuetten verbraucht einen.
 		player.dug.connect(func(_c): _grant("toprak", 1))
 		player.raised.connect(func(_c): inventory.remove("toprak", 1))
+		# Fels abgebaut -> Drop ins Inventar; zu schwache Hacke -> Hinweis.
+		player.mined.connect(func(_c, drop_id, amount): _grant(drop_id, amount))
+		player.mine_refused.connect(func(tier):
+			_notice("Bu kaya icin en az demir kazma lazim" if tier >= 2 else "Bir kazma lazim"))
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -168,6 +172,7 @@ func _process(delta: float) -> void:
 		player.held_metal = String(hold[1])
 		player.has_axe = String(hold[0]) == "Axe"
 		player.held_is_dirt = hid == "toprak"
+		player.held_pick_tier = ItemDB.pick_tier(hid)
 
 	if _notice_left > 0.0:
 		_notice_left -= delta

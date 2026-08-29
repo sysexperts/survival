@@ -23,6 +23,7 @@ const SOURCE_ID := 0                  ## Bodenbloecke (begehbar, stapelbar)
 const PROP_SOURCE_ID := 1             ## Baeume: solide, nicht begehbar
 const STUMP_SOURCE_ID := 2            ## Baumstuempfe: begehbar, aber anklickbar
 const STONE_SOURCE_ID := 3            ## Kleine Steine: begehbar, aufsammelbar
+const ROCK_SOURCE_ID := 4            ## Felsen: solide (blockieren), mit Spitzhacke abbaubar
 
 ## --- Untergrund / Buddeln -----------------------------------------------
 ## Unter der Oberflaeche (Level 0) liegen 2 Dirt-Ebenen (-1, -2); Level -3 ist
@@ -598,6 +599,24 @@ func spawn_gather(cell: Vector2i, level: int, id: String, sheet_cell: Vector2i) 
 	return true
 
 
+## Setzt einen abbaubaren Felsen (RockDB-Zustand + Variante) auf die Zelle.
+func spawn_rock(cell: Vector2i, level: int, state: int, variant: int) -> bool:
+	if props_root == null or prop_node(cell) != null or blocker_at(cell) != null:
+		return false
+	var node := TreeActor.create_rock(cell, level, state, variant)
+	props_root.add_child(node)
+	node.global_position = cell_to_world(cell, level)
+	_prop_nodes[cell] = node
+	invalidate_props()
+	return true
+
+
+## Fels-Zustand auf dieser Zelle (RockDB-Reihe) oder -1, wenn dort kein Fels ist.
+func rock_state_at(cell: Vector2i) -> int:
+	var n := prop_node(cell)
+	return n.rock_state if n != null and n.source_id == ROCK_SOURCE_ID else -1
+
+
 ## Fertige Textur des Props - genau das, was der Node zeigt. Damit
 ## laesst sich die Hervorhebung bauen, ohne zu wissen, aus welchem Sheet
 ## das Bild stammt.
@@ -626,7 +645,11 @@ func prop_alpha_at(cell: Vector2i, local: Vector2i) -> float:
 	if tex == null:
 		return 0.0
 	var img: Image
-	if n.gather_id != "":
+	if n.rock_state >= 0:
+		if _rock_image == null:
+			_rock_image = (load(RockDB.SHEET) as Texture2D).get_image()
+		img = _rock_image
+	elif n.gather_id != "":
 		if _gather_image == null:
 			_gather_image = GatherDB.sheet().get_image()
 		img = _gather_image
@@ -760,7 +783,8 @@ func has_prop(cell: Vector2i) -> bool:
 		return true
 	var n := prop_node(cell)
 	if n:
-		return n.source_id == PROP_SOURCE_ID
+		# Baeume UND Felsen blockieren den Weg.
+		return n.source_id == PROP_SOURCE_ID or n.source_id == ROCK_SOURCE_ID
 	# Editor bzw. vor der Umwandlung: noch als Tile prüfen
 	for l in levels:
 		if l.get_cell_source_id(cell) == PROP_SOURCE_ID:
@@ -926,6 +950,8 @@ func prop_content_rect(cell: Vector2i) -> Rect2:
 
 
 var _gather_image: Image = null
+var _rock_image: Image = null
+const RockDB := preload("res://scripts/rock_db.gd")
 
 
 ## Undurchsichtiger Bereich einer Zelle im Rohstoff-Sheet, relativ zur

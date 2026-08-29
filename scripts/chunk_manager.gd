@@ -187,6 +187,10 @@ func _place_prop(cell: Vector2i, h: int, props: Array) -> void:
 			return
 		world.set_prop(cell, h + 1, p["atlas"], IsoWorld.PROP_SOURCE_ID)
 		props.append(cell)
+	elif p["kind"] == "rock":
+		# Fels: eigener Node aus dem rocks-Sheet, blockiert und ist abbaubar.
+		if world.spawn_rock(cell, h, int(p["state"]), int(p["variant"])):
+			props.append(cell)
 	else:
 		# Rohstoff: deterministisches Sheet-Bild, damit Reload dasselbe zeigt.
 		var rng := RandomNumberGenerator.new()

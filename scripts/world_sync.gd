@@ -106,6 +106,7 @@ func _ensure_player() -> bool:
 	_player.destroyed_placed.connect(_on_local_destroy)
 	_player.dug.connect(_on_local_dug)
 	_player.raised.connect(_on_local_raised)
+	_player.mined.connect(_on_local_mined)
 	return true
 
 
@@ -162,6 +163,10 @@ func _on_local_raised(cell: Vector2i) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "raise", cell, 0, Vector2i.ZERO, "", 0)
 
 
+func _on_local_mined(cell: Vector2i, _drop_id: String, _amount: int) -> void:
+	_event.rpc(multiplayer.get_unique_id(), "rock", cell, 0, Vector2i.ZERO, "", 0)
+
+
 # --- Empfang -------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
@@ -175,7 +180,7 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "orient": 0})
 		elif kind == "destroy":
 			_remove_build(cell)
-		elif kind == "fell" or kind == "stump" or kind == "stone":
+		elif kind == "fell" or kind == "stump" or kind == "stone" or kind == "rock":
 			_record_removal(kind, cell, level, atlas, s)
 		elif kind == "dig" or kind == "raise":
 			_record_terraform(kind, cell)
@@ -201,6 +206,15 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_world.remove_prop(cell, level)
 			if _regrowth:
 				_regrowth.replicate_stone_collected(cell, level, s)
+		"rock":
+			# Ein anderer Spieler hat einen Fels abgebaut -> lokal wegnehmen
+			# (mit Bruch-Animation) und Zelle endgueltig sperren.
+			var rn := _world.prop_node(cell)
+			if rn != null:
+				_world.detach_prop(cell)
+				rn.fell(Vector2(0, 1))
+			if _regrowth:
+				_regrowth.restore_cleared(cell)
 		"campfire":
 			if _player:
 				_suppress = true
@@ -354,6 +368,8 @@ func _spawn_removal(kind: String, cell: Vector2i, level: int, atlas: Vector2i, g
 			_regrowth.restore_felled(cell, level, atlas, remaining)
 		"stump":
 			_regrowth.restore_cleared(cell)
+		"rock":
+			_regrowth.restore_cleared(cell)       # abgebauter Fels: endgueltig weg
 		"stone":
 			if gid == "":
 				_regrowth.restore_stone_collected(cell, level, remaining)

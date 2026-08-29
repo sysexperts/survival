@@ -109,6 +109,20 @@ static var ITEMS := {
 		"name": "Toprak", "max_stack": 64,
 		"sheet": SHEET_TILES, "cell": Vector2i(3, 1),
 	},
+	# --- Erze (aus Felsen abgebaut, spaeter im Ofen zu Barren) --------------
+	"demir_cevheri": {
+		"name": "Demir Cevheri", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/iron_ore.png",
+	},
+	"altin_cevheri": {
+		"name": "Altin Cevheri", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/gold.png",
+	},
+	# Rohdiamant: kein eigenes Icon vorhanden -> Diamant-Fels-Zelle aus rocks.png.
+	"ham_elmas": {
+		"name": "Ham Elmas", "max_stack": 64,
+		"sheet": "res://assets/props/rocks.png", "region": Rect2i(0, 144, 48, 48),
+	},
 	# Islenmis Sopa = bearbeiteter Griff, Zutat der Eisenwerkzeuge.
 	"islenmis_sopa": {
 		"name": "Islenmis Sopa", "max_stack": 64,
@@ -220,6 +234,14 @@ const TOOL_HOLD := {
 ## Werkzeug-Halte-Sprite eines Items: [Layer, Metall] oder ["", ""] (leere Hand).
 static func hold_of(id: String) -> Array:
 	return TOOL_HOLD.get(id, ["", ""])
+
+
+## Spitzhacken-Stufe eines Items (fuers Fels-Abbauen): 1=Stein, 2=Eisen, 3=Gold.
+## 0 = keine Spitzhacke. Ein hoeheres Tier baut alles ab, was ein niedrigeres kann.
+const PICK_TIER := {"kazma": 1, "demir_kazma": 2, "altin_kazma": 3}
+
+static func pick_tier(id: String) -> int:
+	return int(PICK_TIER.get(id, 0))
 
 
 ## Die Einrichtung aus `basic furniture.png`, als {id: [Name, Zelle]}.

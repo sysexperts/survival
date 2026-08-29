@@ -34,6 +34,10 @@ var source_id: int = IsoWorld.PROP_SOURCE_ID
 ## Nur bei eingestreuten Rohstoffen gesetzt (siehe GatherDB). Leer bedeutet:
 ## ein gemaltes Prop aus dem TileSet.
 var gather_id := ""
+## Fels-Zustand (RockDB-Reihe) oder -1, wenn kein Fels. Steuert Abbau + Drop.
+var rock_state := -1
+
+const RockDB := preload("res://scripts/rock_db.gd")
 
 ## Amplitude ist immer positiv, die Richtung steckt in _dir. Ein
 ## vorzeichenbehaftetes _swing würde die Abbruchbedingung unten sofort
@@ -118,6 +122,27 @@ static func create_gather(p_cell: Vector2i, p_level: int, p_id: String,
 	# als schiefes Prop.
 	a.offset = -(anchor * s).round() / s
 	a.scale = Vector2(s, s)
+	return a
+
+
+## Ein abbaubarer Fels (RockDB). Rendert aus assets/props/rocks.png, Variante
+## `variant` (damit nicht jeder Fels gleich aussieht). Blockiert wie ein Baum,
+## wird aber mit der Spitzhacke abgebaut.
+static func create_rock(p_cell: Vector2i, p_level: int, state: int, variant: int) -> TreeActor:
+	var a := TreeActor.new()
+	a.cell = p_cell
+	a.level = p_level
+	a.atlas = Vector2i(variant, state)          # nur zur Info (Sheet-Spalte/Reihe)
+	a.source_id = IsoWorld.ROCK_SOURCE_ID
+	a.rock_state = state
+	var tex := AtlasTexture.new()
+	tex.atlas = load(RockDB.SHEET)
+	tex.region = Rect2(RockDB.region(state, variant))
+	tex.filter_clip = true
+	a.texture = tex
+	a.centered = false
+	# Fuss (Bild-Unterkante-Mitte) auf die Zellmitte: 48px-Zelle, Basis bei ~y=42.
+	a.offset = -Vector2(24, 42)
 	return a
 
 

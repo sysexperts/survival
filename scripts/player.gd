@@ -58,6 +58,11 @@ signal destroyed_placed(cell: Vector2i)
 signal dug(cell: Vector2i)
 signal raised(cell: Vector2i)
 
+## Ein Fels wurde mit der Spitzhacke abgebaut: `drop_id` x `amount` ins Inventar,
+## world_sync entfernt ihn bei allen. Bzw. Absage, wenn die Spitzhacke zu schwach ist.
+signal mined(cell: Vector2i, drop_id: String, amount: int)
+signal mine_refused(needed_tier: int)
+
 @export var world_path: NodePath = ^"../World"
 @export var walk_speed := 60.0
 @export var run_speed := 110.0
@@ -108,6 +113,18 @@ var held_metal := ""
 ## Ist das gewaehlte Hotbar-Item ein Dirt-Block (zum Aufschuetten)? Vom Inventar
 ## gesetzt, damit die Maus-Steuerung (interaction.gd) das Aufschuetten ausloest.
 var held_is_dirt := false
+## Spitzhacken-Stufe des gewaehlten Items (0 = keine). Vom Inventar gesetzt,
+## entscheidet, welche Felsen abgebaut werden koennen.
+var held_pick_tier := 0
+
+## Fels-Abbau: Zielfels + Zustand + Restschlaege, waehrend die Spitzhacke schwingt.
+const RockDBScript := preload("res://scripts/rock_db.gd")
+## Schlaege, bis ein Fels bricht.
+@export var mine_hits := 4
+var _mine_target := Vector2i(2147483647, 2147483647)
+var _mine_state := -1
+var _mine_hits_left := 0
+var _mining := false
 ## Gewaehltes Aussehen (fuer Neuaufbau bei Werkzeug-Wechsel).
 var _look: Dictionary = {}
 ## Welches Werkzeug/Metall gerade in den Frames steckt (Vergleich fuer Neuaufbau).
@@ -389,7 +406,8 @@ func _physics_process(delta: float) -> void:
 	# der gefällte Baum bliebe als Node hängen.
 	if input != Vector2.ZERO and (busy or not path.is_empty() or _chop_level >= 0
 			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed
-			or _reach_destroy != INVALID_CELL or _dig_target != INVALID_CELL):
+			or _reach_destroy != INVALID_CELL or _dig_target != INVALID_CELL
+			or _mine_target != INVALID_CELL):
 		_cancel_task()
 
 	if busy:
@@ -425,6 +443,9 @@ func _physics_process(delta: float) -> void:
 			return
 		if _dig_target != INVALID_CELL:
 			_begin_dig()
+			return
+		if _mine_target != INVALID_CELL:
+			_begin_mine()
 			return
 		_play("idle")
 		return
@@ -539,6 +560,11 @@ func _on_animation_finished() -> void:
 	# Grab-Animation (Schaufel) fertig -> Welt aendern + Signal.
 	if String(sprite.animation).begins_with("dig_"):
 		_finish_dig()
+		return
+	# Spitzhacken-Schwung fertig (nutzt dieselbe "axe_"-Swing-Animation, aber mit
+	# Spitzhacke) -> Fels-Abbau abarbeiten, VOR der Baum-Logik.
+	if _mining and String(sprite.animation).begins_with("axe_"):
+		_finish_mine()
 		return
 	if not String(sprite.animation).begins_with("axe_"):
 		return
@@ -888,6 +914,81 @@ func _finish_dig() -> void:
 	_play("idle")
 
 
+# --- Fels abbauen (Spitzhacke) ------------------------------------------
+
+## Läuft zum Fels und baut ihn mit der Spitzhacke ab (Rechtsklick). Prüft die
+## Spitzhacken-Stufe (Erze brauchen mind. Eisen). false, wenn dort kein Fels ist,
+## die Hacke zu schwach ist oder kein Weg daneben führt.
+func mine(cell: Vector2i) -> bool:
+	var state := world.rock_state_at(cell)
+	if state < 0:
+		return false
+	if held_pick_tier < RockDBScript.tier_of(state):
+		mine_refused.emit(RockDBScript.tier_of(state))
+		return false
+	_cancel_task()
+	var here := world.world_to_cell(global_position, level)
+	var stand := GridPath.adjacent_to(world, cell, here, max_step)
+	if stand.x == 2147483647:
+		return false
+	_mine_target = cell
+	_mine_state = state
+	if stand == here:
+		return true                      # naechster idle-Frame startet _begin_mine
+	path = GridPath.find(world, here, stand, max_step)
+	if path.is_empty():
+		_mine_target = INVALID_CELL
+		return false
+	return true
+
+
+## Startet die erste Spitzhacken-Schwung Richtung Fels.
+func _begin_mine() -> void:
+	if world.rock_state_at(_mine_target) < 0:
+		_mine_target = INVALID_CELL
+		_play("idle")
+		return
+	var ground := maxi(world.top_level_at(_mine_target), 0)
+	var to_rock := world.cell_to_world(_mine_target, ground) - global_position
+	facing = DIRS[_dir_index(Vector2(to_rock.x, to_rock.y / y_squash))]
+	_mine_hits_left = mine_hits
+	_mining = true
+	busy = true
+	_sync_armed()
+	sprite.flip_h = CCFrames.flipped(facing)
+	sprite.play("axe_%s" % facing.replace("-", "_"))
+
+
+## Ein Schwung ist durch: Fels wackeln lassen; nach genug Schlaegen bricht er
+## (Drop + Signal), sonst der naechste Schwung. Ist der Fels weg (Mitspieler war
+## schneller), abbrechen.
+func _finish_mine() -> void:
+	var rock := world.prop_node(_mine_target)
+	if rock == null or world.rock_state_at(_mine_target) < 0:
+		_mining = false
+		busy = false
+		_mine_target = INVALID_CELL
+		_play("idle")
+		return
+	var away := (rock.global_position - global_position).normalized()
+	rock.hit(away)
+	_shake(hit_shake)
+	_mine_hits_left -= 1
+	if _mine_hits_left > 0:
+		sprite.play("axe_%s" % facing.replace("-", "_"))   # naechster Schlag
+		return
+	_mining = false
+	busy = false
+	var cell := _mine_target
+	var state := _mine_state
+	_mine_target = INVALID_CELL
+	world.detach_prop(cell)
+	rock.fell(away)
+	_shake(fell_shake)
+	mined.emit(cell, RockDBScript.drop_of(state), RockDBScript.amount_of(state))
+	_play("idle")
+
+
 ## Läuft zum Stumpf und entfernt ihn mit einem Schlag - endgültig, es
 ## wächst danach nichts mehr nach.
 func clear_stump(cell: Vector2i, stump_level: int) -> bool:
@@ -934,6 +1035,9 @@ func _cancel_task() -> void:
 	_dig_action = ""
 	_pending_dig_cell = INVALID_CELL
 	_pending_dig_action = ""
+	_mine_target = INVALID_CELL
+	_mine_state = -1
+	_mining = false
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false

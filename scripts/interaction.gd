@@ -194,6 +194,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Stein: hinlaufen und aufheben - E geht weiter zu Fuss.
 		if int(_hovered[3]) == IsoWorld.STONE_SOURCE_ID:
 			player.fetch_stone(_hovered[0])
+		elif int(_hovered[3]) == IsoWorld.ROCK_SOURCE_ID:
+			player.mine(_hovered[0])
 		# Stumpf: ein Klick, endgueltig weg. Baum: normales Faellen.
 		elif int(_hovered[3]) == IsoWorld.STUMP_SOURCE_ID:
 			player.clear_stump(_hovered[0], _hovered[1])

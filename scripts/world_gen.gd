@@ -47,7 +47,10 @@ const TREE_P_FOREST := 0.26
 ## Rohstoff-Wahrscheinlichkeiten pro Zelle (kumulativ ausgewertet).
 const P_HOLZ := 0.020
 const P_FASER := 0.018
-const P_STEIN := 0.015
+## Felsen (abbaubar). Der Zustand (Stein/Eisen/Gold/Diamant) kommt aus RockDB.
+const P_ROCK := 0.020
+
+const RockDB := preload("res://scripts/rock_db.gd")
 
 var _seed: int
 var _height := FastNoiseLite.new()
@@ -128,8 +131,11 @@ func prop_at(cell: Vector2i) -> Dictionary:
 		return {"kind": "odun"}
 	if r < P_HOLZ + P_FASER:
 		return {"kind": "bitki_lifi"}
-	if r < P_HOLZ + P_FASER + P_STEIN:
-		return {"kind": "tas"}
+	if r < P_HOLZ + P_FASER + P_ROCK:
+		# Fels: Zustand nach Seltenheit, Variante zufaellig (8 Formen).
+		var state := RockDB.pick_state(_rand(cell, 5))
+		var variant := _hash(cell, 6) % RockDB.VARIANTS
+		return {"kind": "rock", "state": state, "variant": variant}
 	return {}
 
 
