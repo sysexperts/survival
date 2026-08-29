@@ -235,6 +235,21 @@ func _wire_left_page() -> void:
 	_points_label.position = POINTS_CENTER * BOOK_SCALE - Vector2(100, 12)
 	_points_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_page_rucksack.add_child(_points_label)
+	_build_trash()
+
+
+## Papierkorb in die leere Box der Istatik-Seite (unter den Stats, ueber den
+## Punkten). Zieht man einen Stapel darauf, wird er geloescht.
+const TRASH_BOX := Rect2i(13, 70, 84, 38)   ## Quell-px der Box (links)
+const TrashSlotScript := preload("res://scripts/trash_slot.gd")
+
+func _build_trash() -> void:
+	var trash: Control = TrashSlotScript.new()
+	trash.hud = self
+	trash.position = Vector2(TRASH_BOX.position) * BOOK_SCALE
+	trash.custom_minimum_size = Vector2(TRASH_BOX.size) * BOOK_SCALE
+	trash.size = Vector2(TRASH_BOX.size) * BOOK_SCALE
+	_page_rucksack.add_child(trash)
 
 
 ## Rechte Seite: Scrollleiste anhaengen, wenn es mehr Taschen-Reihen als
