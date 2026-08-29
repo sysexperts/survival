@@ -70,6 +70,11 @@ signal tilled(cell: Vector2i)
 signal planted(cell: Vector2i, crop_id: String, started: float)
 signal crop_harvested(cell: Vector2i, crop_id: String)
 signal crop_cleared(cell: Vector2i)
+## Eine Pflanze wurde gegossen (Wasserstand aufgefuellt) - world_sync verteilt es,
+## das Inventar zieht eine Giesskannen-Ladung ab. `can_filled` = Kanne am Wasser
+## aufgefuellt (Inventar setzt die Ladungen auf voll).
+signal watered_crop(cell: Vector2i)
+signal can_filled
 
 ## Ein Fels ist gebrochen (nach genug Schlaegen). `drop_id` sagt den Typ (fuer XP);
 ## world_sync entfernt ihn bei allen. Die eigentlichen Items fallen ueber
@@ -956,6 +961,13 @@ func _finish_dig() -> void:
 				var cid := String(crop.crop_id)
 				world.remove_crop(cell)
 				crop_harvested.emit(cell, cid)
+	elif action == "water":
+		var crop = world.crop_at(cell)
+		if crop != null and not crop.is_dead():
+			crop.add_water(Crop.WATER_PER_CAN)
+			watered_crop.emit(cell)
+	elif action == "fill":
+		can_filled.emit()
 	_play("idle")
 
 
@@ -989,6 +1001,21 @@ func harvest(cell: Vector2i) -> bool:
 	if crop == null or not (crop.is_ripe() or crop.is_dead()):
 		return false
 	return _walk_then_dig(cell, "harvest")
+
+
+## Giesst die Pflanze auf einer Zelle (laeuft ggf. hin). Die Ladungs-Pruefung
+## macht das Inventar vor dem Aufruf.
+func water_crop(cell: Vector2i) -> bool:
+	var crop = world.crop_at(cell)
+	if crop == null or crop.is_dead():
+		return false
+	return _walk_then_dig(cell, "water")
+
+
+## Fuellt die Giesskanne an einer Wasserquelle auf (Su Ficisi) - laeuft hin.
+## Der Aufrufer (interaction) hat die Quelle bereits geprueft.
+func fill_can(cell: Vector2i) -> bool:
+	return _walk_then_dig(cell, "fill")
 
 
 ## Setzt einen Crop-Node in die Welt (lokal wie beim Sync-Replay). `started` ist

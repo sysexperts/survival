@@ -151,6 +151,15 @@ static var ITEMS := {
 		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 1), "cell_size": Vector2i(32, 32),
 	},
 
+	# Sulama Kabi (Giesskanne): Ladungen ueber die Dayaniklilik (10). Am Wasser
+	# auffuellen (Dayaniklilik = voll), pro Giessen 1 verbrauchen. Zerbricht NICHT
+	# bei 0 - dann nur leer (siehe player_inventory, kein _wear_selected). Icon
+	# vorerst das Wasserfass als Platzhalter (leicht ersetzbar).
+	"sulama_kabi": {
+		"name": "Sulama Kabi", "max_stack": 1, "durability": 10,
+		"sheet": SHEET_FURNITURE, "item_cell": Vector2i(2, 2), "cell_size": Vector2i(64, 64),
+	},
+
 	# --- Steinwerkzeuge (Basit Üretim Masasi) -------------------------------
 	# Dayaniklilik wie die Steinaxt (200). Funktion (Abbau) folgt spaeter -
 	# vorerst nur craftbar, siehe Outline.
@@ -329,6 +338,19 @@ static func is_seed(id: String) -> bool:
 	return SEED_CROP.has(id)
 static func crop_of_seed(id: String) -> String:
 	return SEED_CROP.get(id, "")
+
+
+## Essbares -> wie viel Hunger es fuellt.
+const FOOD := {"misir": 25, "kizarmis_et": 40}
+static func is_food(id: String) -> bool:
+	return FOOD.has(id)
+static func food_value(id: String) -> int:
+	return int(FOOD.get(id, 0))
+
+
+## Giesskanne? (zum Pflanzen-Bewaessern; Ladungen ueber die Dayaniklilik.)
+static func is_watering_can(id: String) -> bool:
+	return id == "sulama_kabi"
 
 
 ## Richtungs-Sprites: Stationen, die als 8-Richtungs-Satz (68x68) unter

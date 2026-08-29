@@ -14,7 +14,8 @@ extends RefCounted
 ## name -> [aktiv, Kurzbeschreibung]. Beschreibung nur zur Doku/Übersicht.
 static var FLAGS := {
 	# --- Überlebens-Grundbedürfnisse ---
-	"survival_needs":   [false, "Hunger/Durst/Stamina sinken mit der Zeit; Essen/Trinken füllt auf"],
+	"survival_needs":   [true,  "Hunger sinkt mit der Zeit; Essen füllt auf"],
+	"thirst":           [false, "Durst sinkt zusätzlich (braucht eine Trinkquelle) - vorerst aus"],
 	"health_regen":     [false, "Leben regeneriert langsam, solange Bedürfnisse gedeckt sind"],
 	"temperature":      [false, "Kälte nachts / fern vom Feuer, Wärme am Lagerfeuer"],
 	"fatigue":          [false, "Müdigkeit steigt; Schlafen setzt sie zurück"],

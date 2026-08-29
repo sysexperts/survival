@@ -33,6 +33,7 @@ var station_huds: Dictionary = {}
 var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
+var _needs: Node = null                  ## SurvivalNeeds (Hunger/Essen), kann null sein
 ## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null.
 ## Per preload statt ueber den class_name CreativeHUD - sonst kennt der
 ## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
@@ -43,6 +44,7 @@ var creative: Node
 ## Admin-Pruefung zentral (per preload, nicht ueber das Net-Autoload - das wird
 ## vom Auto-Updater nicht ersetzt, siehe admins.gd).
 const AdminsScript := preload("res://scripts/admins.gd")
+const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
@@ -99,6 +101,7 @@ func _ready() -> void:
 
 	_drop = get_node_or_null(^"../DropSync")
 	hud.drop_sync = _drop
+	_needs = get_node_or_null(^"../SurvivalNeeds")
 
 	player = get_tree().get_first_node_in_group("player")
 	if player:
@@ -124,6 +127,9 @@ func _ready() -> void:
 		# Ackerbau: Pflanzen verbraucht 1 Samen; Ernten gibt Produkt + Samen zurueck.
 		player.planted.connect(_on_planted)
 		player.crop_harvested.connect(_on_crop_harvested)
+		# Giessen zieht eine Kannen-Ladung ab; Auffuellen setzt sie auf voll.
+		player.watered_crop.connect(func(_c): _use_can_charge())
+		player.can_filled.connect(_fill_can_full)
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -429,6 +435,66 @@ func _on_crop_harvested(_cell: Vector2i, crop_id: String) -> void:
 	_grant(String(d["seed"]), randi_range(int(sc[0]), int(sc[1])))
 
 
+# --- Essen (Hunger) -----------------------------------------------------
+
+## Isst ein Stueck des gewaehlten Essens: stillt Hunger, verbraucht 1.
+func _eat_selected(id: String) -> void:
+	if _needs == null or not _needs.has_method("eat"):
+		_notice("Aclik sistemi kapali")
+		return
+	if PlayerStatsScript.hunger >= PlayerStatsScript.hunger_max:
+		_notice("Karnin tok")
+		return
+	_needs.eat(float(ItemDB.food_value(id)))
+	inventory.remove(id, 1)
+	_notice("%s yedin" % ItemDB.display_name(id))
+
+
+# --- Giesskanne (Sulama Kabi) -------------------------------------------
+
+## Aktuelle Ladungen der gewaehlten Kanne (Dayaniklilik). -1 = keine Kanne.
+func _can_charges() -> int:
+	var slot: Dictionary = inventory.slots[hud.selected]
+	if slot.is_empty() or not ItemDB.is_watering_can(String(slot["id"])):
+		return -1
+	return int(slot.get("dur", ItemDB.max_durability("sulama_kabi")))
+
+
+## Giessen anstossen (von interaction): nur wenn Ladung da ist.
+func try_water(cell: Vector2i) -> void:
+	if _can_charges() <= 0:
+		_notice("Sulama kabi bos")
+		return
+	player.water_crop(cell)
+
+
+## Auffuellen anstossen (von interaction): an eine Wasserkachel laufen.
+func try_fill(cell: Vector2i) -> void:
+	player.fill_can(cell)
+
+
+## Zieht nach erfolgreichem Giessen 1 Ladung ab (zerbricht NICHT bei 0).
+func _use_can_charge() -> void:
+	var i := hud.selected
+	var slot: Dictionary = inventory.slots[i]
+	if slot.is_empty() or not ItemDB.is_watering_can(String(slot["id"])):
+		return
+	var dur := int(slot.get("dur", ItemDB.max_durability("sulama_kabi")))
+	slot["dur"] = maxi(0, dur - 1)
+	inventory.changed.emit()
+
+
+## Kanne am Wasser voll auffuellen.
+func _fill_can_full() -> void:
+	var i := hud.selected
+	var slot: Dictionary = inventory.slots[i]
+	if slot.is_empty() or not ItemDB.is_watering_can(String(slot["id"])):
+		return
+	slot["dur"] = ItemDB.max_durability("sulama_kabi")
+	inventory.changed.emit()
+	_notice("Sulama kabi dolu")
+
+
 func _grant(id: String, amount: int) -> void:
 	var left := inventory.add(id, amount)
 	if left > 0:
@@ -484,6 +550,10 @@ func _use_selected() -> void:
 		return
 	var slot: Dictionary = inventory.slots[hud.selected]
 	if slot.is_empty():
+		return
+	# Essbares (Mais, Fleisch): F stillt den Hunger.
+	if ItemDB.is_food(slot["id"]):
+		_eat_selected(slot["id"])
 		return
 	if preview == null:
 		return

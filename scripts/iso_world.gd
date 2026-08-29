@@ -533,6 +533,15 @@ func is_tilled(cell: Vector2i) -> bool:
 	return _tilled.has(cell)
 
 
+## Wasser-Kacheln (See/Teich) - zum Auffuellen der Giesskanne. Die tuerkisen
+## Kacheln aus dem Boden-Atlas.
+const WATER_ATLAS := [Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3),
+	Vector2i(1, 1), Vector2i(1, 2), Vector2i(1, 3)]
+
+func is_water(cell: Vector2i) -> bool:
+	return top_atlas_at(cell) in WATER_ATLAS
+
+
 ## Laesst sich diese Zelle hacken? Begehbarer Gras-/Erdboden, frei, noch nicht
 ## gehackt und ohne Pflanze.
 func can_till(cell: Vector2i) -> bool:

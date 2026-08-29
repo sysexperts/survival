@@ -55,9 +55,10 @@ const CAT_OF := {
 	"demir_cekic": "alet", "demir_capa": "alet", "demir_bicak": "alet",
 	"altin_balta": "alet", "altin_kazma": "alet", "altin_kurek": "alet",
 	"altin_capa": "alet", "altin_bicak": "alet",
+	"sulama_kabi": "alet",
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
-	"yatak": "mobilya", "portatif_yatak": "mobilya",
+	"yatak": "mobilya", "portatif_yatak": "mobilya", "su_ficisi": "mobilya",
 	"baraka": "yapi",
 }
 
@@ -132,6 +133,11 @@ const RECIPES := [
 		"out": "yatak", "count": 1, "station": WERKBANK, "seconds": 12.0,
 		"cost": {"tahta": 10, "kumas": 5},
 	},
+	# Su Ficisi (Wasserfass): Wasserquelle zum Auffuellen der Giesskanne.
+	{
+		"out": "su_ficisi", "count": 1, "station": WERKBANK, "seconds": 8.0,
+		"cost": {"tahta": 8, "tas": 4},
+	},
 
 	# --- Gebaeude (eigener Tab "Yapilar") --------------------------------
 	# Die Baraka wird ganz normal gefertigt und landet als Item im Inventar
@@ -166,6 +172,11 @@ const RECIPES := [
 		"cost": {"odun": 2, "tas": 3}},
 	{"out": "bicak", "count": 1, "station": WERKBANK, "seconds": 4.0,
 		"cost": {"odun": 2, "tas": 3}},
+
+	# Sulama Kabi (Giesskanne) fuer den Ackerbau - am Wasser auffuellen.
+	# Aus Holz + Stein, damit sie ohne die (noch fehlende) Eisenkette craftbar ist.
+	{"out": "sulama_kabi", "count": 1, "station": WERKBANK, "seconds": 5.0,
+		"cost": {"tahta": 4, "tas": 4}},
 
 	# Eritme Firini (Schmelzofen): Stein + Ton. Ton (kil) ist noch nicht
 	# sammelbar - Rezept steht, ist aber vorerst nicht erreichbar.

@@ -121,6 +121,7 @@ func _ensure_player() -> bool:
 	_player.planted.connect(_on_local_planted)
 	_player.crop_harvested.connect(func(cell, _cid): _on_local_cropdel(cell))
 	_player.crop_cleared.connect(_on_local_cropdel)
+	_player.watered_crop.connect(_on_local_watered)
 	return true
 
 
@@ -207,6 +208,14 @@ func _on_local_cropdel(cell: Vector2i) -> void:
 	if _suppress:
 		return
 	_event.rpc(multiplayer.get_unique_id(), "cropdel", cell, 0, Vector2i.ZERO, "", 0)
+
+
+func _on_local_watered(cell: Vector2i) -> void:
+	if _suppress:
+		return
+	# Wasserstand ist transient (nicht persistiert) - nur an die anderen Clients,
+	# damit die Pflanze auch bei ihnen aufgefuellt wird.
+	_event.rpc(multiplayer.get_unique_id(), "water", cell, 0, Vector2i.ZERO, "", 0)
 
 
 # --- Empfang -------------------------------------------------------------
@@ -304,6 +313,10 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 				_player.do_plant_at(cell, s, float(level))
 		"cropdel":
 			_world.remove_crop(cell)
+		"water":
+			var wc = _world.crop_at(cell)
+			if wc != null:
+				wc.add_water(wc.WATER_PER_CAN)
 
 
 # --- Bau-Persistenz (Server) + Replay (Client) ---------------------------

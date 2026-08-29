@@ -15,11 +15,28 @@ const CropDB := preload("res://scripts/crop_db.gd")
 ## Anker: das 32er-Bild steht mit seinem Fuss auf der Zellmitte.
 const ART_OFFSET := Vector2(-16, -30)
 
+## Wasserstand: fuellt sich bei Regen, sinkt sonst. Ist er leer, waechst die
+## Pflanze nicht weiter (die Zeit wird eingefroren) und stirbt nach DROUGHT_DEATH
+## Sekunden Trockenheit. Giessen (Sulama Kabi) fuellt ihn auf.
+const WATER_MAX := 100.0
+const WATER_START := 100.0
+const WATER_DRAIN := 0.35      ## pro Sekunde (leer nach ~5 min)
+const RAIN_FILL := 4.0         ## pro Sekunde bei Regen (fuellt schnell)
+const WATER_PER_CAN := 60.0    ## eine Giesskannen-Ladung
+const DROUGHT_DEATH := 240.0   ## Sekunden komplett trocken bis zum Absterben
+
 var crop_id := ""
 var cell: Vector2i
 var level: int
 var planted := 0.0
 var world = null
+
+var water := WATER_START
+var _dry_time := 0.0           ## Sekunden am Stueck komplett trocken
+var _drought_dead := false
+var _weather = null
+var _bar_water: ColorRect
+var _bar_water_bg: ColorRect
 
 var _atlas: Texture2D
 var _shown := ""            ## zuletzt gesetztes Bild (Stufe/tot), gegen Neubau
@@ -48,6 +65,7 @@ static func create(p_world, p_crop_id: String, p_cell: Vector2i, p_level: int, p
 func _ready() -> void:
 	add_to_group("crop")
 	_atlas = load(CropDB.SHEET)
+	_weather = get_tree().get_first_node_in_group("weather")
 	z_index = 1                          # knapp ueber dem Boden
 	_build_info()
 	_apply()
@@ -66,9 +84,10 @@ func _build_info() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.06, 0.08, 0.82)
 	bg.position = Vector2(-BAR_W * 0.5 - 4, -4)
-	bg.size = Vector2(BAR_W + 8, 26)
+	bg.size = Vector2(BAR_W + 8, 34)     # Platz fuer zwei Balken (Wachstum + Wasser)
 	_panel.add_child(bg)
 
+	# Wachstums-Balken (oben).
 	_bar_bg = ColorRect.new()
 	_bar_bg.color = Color(0.15, 0.17, 0.2, 0.95)
 	_bar_bg.position = Vector2(-BAR_W * 0.5, 16)
@@ -80,6 +99,19 @@ func _build_info() -> void:
 	_bar_fill.position = Vector2(-BAR_W * 0.5, 16)
 	_bar_fill.size = Vector2(0, BAR_H)
 	_panel.add_child(_bar_fill)
+
+	# Wasser-Balken (darunter, blau).
+	_bar_water_bg = ColorRect.new()
+	_bar_water_bg.color = Color(0.12, 0.15, 0.2, 0.95)
+	_bar_water_bg.position = Vector2(-BAR_W * 0.5, 24)
+	_bar_water_bg.size = Vector2(BAR_W, BAR_H)
+	_panel.add_child(_bar_water_bg)
+
+	_bar_water = ColorRect.new()
+	_bar_water.color = Color(0.35, 0.65, 0.95, 1.0)
+	_bar_water.position = Vector2(-BAR_W * 0.5, 24)
+	_bar_water.size = Vector2(BAR_W, BAR_H)
+	_panel.add_child(_bar_water)
 
 	_label = Label.new()
 	_label.add_theme_font_size_override("font_size", 11)
@@ -109,7 +141,36 @@ func is_ripe() -> bool:
 
 
 func is_dead() -> bool:
-	return _elapsed() >= ripe_seconds() + float(_data()["rot_after"])
+	return _drought_dead or _elapsed() >= ripe_seconds() + float(_data()["rot_after"])
+
+
+## Von der Giesskanne aufgerufen (auch per Sync): Wasserstand auffuellen.
+func add_water(amount: float) -> void:
+	if _drought_dead:
+		return
+	water = clampf(water + amount, 0.0, WATER_MAX)
+	_dry_time = 0.0
+
+
+## Wasser-Simulation: Regen fuellt, sonst sinkt es. Ist es leer, friert das
+## Wachstum ein (planted mitschieben) und die Trockenzeit laeuft bis zum Tod.
+func _sim_water(delta: float) -> void:
+	if _drought_dead:
+		return
+	var raining: bool = _weather != null and _weather.has_method("is_raining") and _weather.is_raining()
+	if raining:
+		water = minf(WATER_MAX, water + RAIN_FILL * delta)
+	else:
+		water = maxf(0.0, water - WATER_DRAIN * delta)
+	if water <= 0.0:
+		# Kein Wasser: Wachstum eingefroren (verstrichene Zeit bleibt gleich),
+		# stattdessen zaehlt die Trockenzeit.
+		planted += delta
+		_dry_time += delta
+		if _dry_time >= DROUGHT_DEATH:
+			_drought_dead = true
+	else:
+		_dry_time = 0.0
 
 
 ## 0..N-1 (aktuelle Wachstumsstufe), unabhaengig von reif/tot.
@@ -148,7 +209,13 @@ func _apply() -> void:
 
 
 func _update_info() -> void:
-	if is_dead():
+	var dead := is_dead()
+	# Wasser-Balken (bei toter Pflanze aus).
+	_bar_water_bg.visible = not dead
+	_bar_water.visible = not dead
+	if not dead:
+		_bar_water.size.x = BAR_W * clampf(water / WATER_MAX, 0.0, 1.0)
+	if dead:
 		_label.text = "Öldü"
 		_label.add_theme_color_override("font_color", Color(0.95, 0.55, 0.5))
 		_bar_bg.visible = false
@@ -161,14 +228,19 @@ func _update_info() -> void:
 		_bar_fill.size.x = BAR_W
 		_bar_fill.color = Color(0.55, 0.9, 0.4, 1.0)
 	else:
-		var ripe := ripe_seconds()
-		var rest := int(ceil(ripe - _elapsed()))
-		_label.text = "%d:%02d" % [rest / 60, rest % 60]
-		_label.add_theme_color_override("font_color", Color(0.92, 0.95, 0.85))
 		_bar_bg.visible = true
 		_bar_fill.visible = true
+		var ripe := ripe_seconds()
 		_bar_fill.size.x = BAR_W * clampf(_elapsed() / ripe, 0.0, 1.0)
 		_bar_fill.color = Color(0.85, 0.75, 0.3, 1.0)
+		if water <= 0.0:
+			# Trocken: Wachstum steht, Warnung statt Restzeit.
+			_label.text = "Susuz!"
+			_label.add_theme_color_override("font_color", Color(0.95, 0.7, 0.4))
+		else:
+			var rest := int(ceil(ripe - _elapsed()))
+			_label.text = "%d:%02d" % [rest / 60, rest % 60]
+			_label.add_theme_color_override("font_color", Color(0.92, 0.95, 0.85))
 
 
 ## Von der Interaktion gesetzt: Restzeit/Status ueber der Pflanze zeigen.
@@ -179,5 +251,6 @@ func set_hovered(on: bool) -> void:
 		_update_info()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_sim_water(delta)
 	_apply()

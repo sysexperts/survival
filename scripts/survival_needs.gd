@@ -33,9 +33,13 @@ func _process(delta: float) -> void:
 	_ensure_debug()
 
 	PlayerStats.hunger = maxf(0.0, PlayerStats.hunger - HUNGER_RATE * delta)
-	PlayerStats.thirst = maxf(0.0, PlayerStats.thirst - THIRST_RATE * delta)
+	# Durst nur, wenn eigens aktiviert (sonst gaebe es ohne Trinkquelle keinen
+	# Ausweg). Bleibt sonst voll und loest keinen Schaden aus.
+	var thirst_on := Features.on("thirst")
+	if thirst_on:
+		PlayerStats.thirst = maxf(0.0, PlayerStats.thirst - THIRST_RATE * delta)
 
-	if PlayerStats.hunger <= 0.0 or PlayerStats.thirst <= 0.0:
+	if PlayerStats.hunger <= 0.0 or (thirst_on and PlayerStats.thirst <= 0.0):
 		PlayerStats.health = maxf(0.0, PlayerStats.health - STARVE_DMG * delta)
 	elif Features.on("health_regen") and PlayerStats.health < PlayerStats.health_max:
 		PlayerStats.health = minf(PlayerStats.health_max, PlayerStats.health + REGEN_RATE * delta)
@@ -83,5 +87,8 @@ func _ensure_debug() -> void:
 
 func _update_debug() -> void:
 	if _debug_label:
-		_debug_label.text = "Aclik %d  Susuzluk %d  Can %d" % [
-			int(PlayerStats.hunger), int(PlayerStats.thirst), int(PlayerStats.health)]
+		if Features.on("thirst"):
+			_debug_label.text = "Aclik %d  Susuzluk %d  Can %d" % [
+				int(PlayerStats.hunger), int(PlayerStats.thirst), int(PlayerStats.health)]
+		else:
+			_debug_label.text = "Aclik %d" % int(PlayerStats.hunger)

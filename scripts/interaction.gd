@@ -17,6 +17,7 @@ var _hovered: Array = []           ## [cell, level, atlas] oder leer
 var _furn_hover: Array = []        ## [cell, Furniture] oder leer
 var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Alpha-Test)
 var _hovered_crop = null           ## Crop-Node unter der Maus (oder null)
+var _inv: Node = null              ## player_inventory (fuer Giesskannen-Ladungen)
 var preview: PlacementPreview
 
 
@@ -28,6 +29,7 @@ func _ready() -> void:
 	preview = PlacementPreview.new()
 	preview.world = world
 	add_child(preview)
+	_inv = get_node_or_null(^"../Inventory")
 
 
 func _build_highlight() -> void:
@@ -248,6 +250,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				_ask_destroy(target)
 			get_viewport().set_input_as_handled()
 			return
+		# Giesskanne: auf Pflanze giessen, auf Wasser auffuellen (vor dem Ernten,
+		# damit man eine Pflanze mit der Kanne giesst statt sie zu ernten).
+		if ItemDB.is_watering_can(player.held_item_id) and _inv != null:
+			if _hovered_crop != null:
+				_inv.try_water(_hovered_crop.cell)
+				get_viewport().set_input_as_handled()
+				return
+			# Am Su Ficisi (Wasserfass) auffuellen.
+			var f := _furniture_under_mouse()
+			if not f.is_empty() and String((f[1] as Furniture).id) == "su_ficisi":
+				_inv.try_fill(f[0])
+				get_viewport().set_input_as_handled()
+				return
 		# Ackerbau: reife/tote Pflanze ernten (Vorrang vor allem anderen).
 		if _hovered_crop != null:
 			player.harvest(_hovered_crop.cell)
