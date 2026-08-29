@@ -115,10 +115,15 @@ func _fill_underground_authored() -> void:
 		_fill_underground(cell)
 
 
-## Legt unter EINE Zelle die Untergrund-Bloecke (falls noch nicht da).
+## Legt unter EINE Zelle die Untergrund-Bloecke (falls noch nicht da) - aber nur
+## UNTER dem aktuellen Boden. Sonst wuerde ein bereits gebuddeltes Loch wieder
+## aufgefuellt (Block "poppt" daneben auf, sobald man nebenan gräbt).
 func _fill_underground(cell: Vector2i) -> void:
+	var top := top_level_at(cell)
 	for i in range(UNDER_COUNT):
 		var lvl := -(i + 1)
+		if lvl >= top:
+			continue                     # nicht auf/ueber dem aktuellen Boden
 		var l := _lay(lvl)
 		if l != null and l.get_cell_source_id(cell) == -1:
 			l.set_cell(cell, SOURCE_ID, DIRT_ATLAS)

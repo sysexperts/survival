@@ -81,20 +81,54 @@ func _process(_delta: float) -> void:
 	highlight.visible = false
 
 
-## Diamant-Umriss der Top-Flaeche des Bodenblocks unter der Maus (Buddeln/
-## Aufschuetten). Liegt exakt auf dem Standpunkt der Zelle - keine Ebenen-
-## Verschiebung. Der Sprite-Hover (fuer Props/Moebel) bleibt dabei aus.
+## Diamant-Umriss der Top-Flaeche des Bodenblocks unter der Maus. Beim BUDDELN
+## (Schaufel) die angeklickte Zelle. Beim AUFSCHUETTEN (Dirt) die Stelle, wo der
+## neue Block LANDET: Top-Flaeche -> oben drauf; Seitenflaeche -> Nachbar davor
+## (Wand bauen). So sieht man, ob man drauf oder daneben platziert.
 func _highlight_ground() -> void:
 	highlight.visible = false
 	var hit := world.pick_block(get_global_mouse_position())
 	if hit.is_empty():
 		return
-	var c := world.cell_to_world(hit[0], int(hit[1]))
-	# Top-Diamant: 32 breit, 16 hoch, Mittelpunkt = Standpunkt.
+	var mark_cell: Vector2i
+	var mark_level: int
+	if player.held_is_dirt:
+		var t := _dirt_target(hit)       # [cell, level] wo der Block landet
+		mark_cell = t[0]
+		mark_level = int(t[1])
+	else:
+		mark_cell = hit[0]               # Buddeln: die angeklickte Zelle
+		mark_level = int(hit[1])
+	var c := world.cell_to_world(mark_cell, mark_level)
 	_ground_hl.points = PackedVector2Array([
 		c + Vector2(0, -8), c + Vector2(16, 0),
 		c + Vector2(0, 8), c + Vector2(-16, 0)])
 	_ground_hl.visible = true
+
+
+## Welche Zelle/Ebene bekommt beim Aufschuetten den Block? Anhand der getroffenen
+## Flaeche des Blocks unter der Maus: Top-Raute -> selbe Zelle eine Ebene hoeher;
+## linke/rechte Seitenflaeche -> vordere Nachbarzelle (links/rechts), auf deren
+## Oberkante. Gibt [cell, level] des NEUEN Blocks zurueck (fuer die Markierung).
+func _dirt_target(hit: Array) -> Array:
+	var cell: Vector2i = hit[0]
+	var lvl := int(hit[1])
+	var center := world.cell_to_world(cell, lvl)
+	var rel := get_global_mouse_position() - center
+	# Innerhalb der Top-Raute? -> oben drauf.
+	if absf(rel.x) / 16.0 + absf(rel.y) / 8.0 <= 1.0:
+		return [cell, lvl + 1]
+	# Sonst Seitenflaeche: vordere Nachbarn (weiter unten am Schirm), links/rechts
+	# ueber die Welt-x-Position bestimmt (robust gegen die Stacked-Paritaet).
+	var fronts: Array = []
+	for n in world.neighbors(cell):
+		if world.cell_to_world(n, lvl).y > center.y:
+			fronts.append(n)
+	if fronts.size() < 2:
+		return [cell, lvl + 1]           # Fallback: oben drauf
+	fronts.sort_custom(func(a, b): return world.cell_to_world(a, lvl).x < world.cell_to_world(b, lvl).x)
+	var target: Vector2i = fronts[0] if rel.x < 0 else fronts[1]
+	return [target, world.top_level_at(target) + 1]
 
 
 func _highlight_prop() -> void:
@@ -185,7 +219,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				if player.held_tool == "Showel":
 					player.dig(ground_hit[0])
 				elif player.held_is_dirt:
-					player.raise_ground(ground_hit[0])
+					player.raise_ground(_dirt_target(ground_hit)[0])
 			return
 		# Stein: hinlaufen und aufheben - E geht weiter zu Fuss.
 		if int(_hovered[3]) == IsoWorld.STONE_SOURCE_ID:
