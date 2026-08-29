@@ -45,6 +45,9 @@ var creative: Node
 ## vom Auto-Updater nicht ersetzt, siehe admins.gd).
 const AdminsScript := preload("res://scripts/admins.gd")
 const PlayerStatsScript := preload("res://scripts/player_stats.gd")
+const ChestHUDScript := preload("res://scripts/chest_hud.gd")
+var chest_hud                             ## Lagertruhen-Fenster (online)
+var _chest_sync                           ## ChestSync-Node
 var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
@@ -77,6 +80,12 @@ func _ready() -> void:
 	crafting = CraftingHUD.new()
 	add_child(crafting)
 	crafting.setup(inventory, queue, RecipeDB.HAND, "Üretim")
+
+	# Lagertruhen-Fenster (online) - eine Instanz, oeffnet je nach Truhe.
+	_chest_sync = get_node_or_null(^"../ChestSync")
+	chest_hud = ChestHUDScript.new()
+	add_child(chest_hud)
+	chest_hud.setup(inventory, _chest_sync)
 
 	for id in starting_items:
 		inventory.add(id, int(starting_items[id]))
@@ -543,6 +552,14 @@ func _use_selected() -> void:
 	if fire != null and fire.collect():
 		_grant("kizarmis_et", meat_per_fire)
 		return
+	# Lagertruhe in Reichweite? Ihr Online-Fenster oeffnen.
+	var chest := player.chest_in_reach()
+	if chest != Player.INVALID_CELL and chest_hud != null:
+		if hud.bag_open():
+			hud.toggle_bag()
+		_close_all_crafting()
+		chest_hud.open(chest)
+		return
 	# Steht eine Handwerks-Station in Reichweite, ihr Fenster oeffnen. Vor
 	# dem Platzieren, damit man an der Bank ihr Menue bekommt statt eine
 	# zweite danebenzustellen.
@@ -589,6 +606,9 @@ func _on_placement_confirmed(top_cell: Vector2i) -> void:
 ## Schliesst das oberste offene Fenster. false, wenn keines offen war -
 ## dann darf Escape weiterlaufen (die Platzieren-Vorschau haengt daran).
 func _close_windows() -> bool:
+	if chest_hud != null and chest_hud.is_open():
+		chest_hud.set_open(false)
+		return true
 	if creative != null and creative.is_open():
 		creative.set_open(false)
 		return true

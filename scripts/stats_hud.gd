@@ -12,10 +12,14 @@ const CCFrames := preload("res://scripts/cc_frames.gd")
 const AppearanceStore := preload("res://scripts/appearance_store.gd")
 const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 
-## Fuellbereich des roten Lebens-Balkens im Block (Quell-px). Darueber legen wir
-## rechts eine dunkle "Leer"-Flaeche, die mit sinkendem Leben nach links waechst.
+## Fuellbereiche der Balken im Block (Quell-px). Darueber legen wir rechts eine
+## dunkle "Leer"-Flaeche, die mit sinkendem Wert nach links waechst.
+## Rot = Leben (oben), Gruen = Hunger (unten; das dritte Balken-Feld nutzen wir
+## fuer den Hunger, da Mana/Stamina im Spiel keine Rolle spielen).
 const HEALTH_FILL := Rect2i(20, 4, 24, 4)
+const HUNGER_FILL := Rect2i(20, 14, 24, 4)
 var _hp_empty: ColorRect
+var _hunger_empty: ColorRect
 
 ## Vorlage-Block (Porträt-Rahmen + 3 volle Balken) im Sheet.
 const BLOCK_REGION := Rect2i(256, 6, 48, 19)
@@ -46,6 +50,10 @@ func _ready() -> void:
 	_hp_empty.color = Color(0.09, 0.05, 0.07, 0.92)
 	_hp_empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hp_empty)
+	_hunger_empty = ColorRect.new()
+	_hunger_empty.color = Color(0.05, 0.08, 0.05, 0.92)
+	_hunger_empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hunger_empty)
 	_update_hp()
 
 	# Kopf ÜBER den Block, auf die Porträt-Innenfläche, geclippt.
@@ -71,16 +79,19 @@ func _process(_delta: float) -> void:
 	_update_hp()
 
 
-## Rechts die "Leer"-Flaeche des Lebens-Balkens an das aktuelle Leben anpassen.
+## Rechts die "Leer"-Flaechen der Balken (Leben rot, Hunger gruen) anpassen.
 func _update_hp() -> void:
 	if _hp_empty == null:
 		return
-	var ratio := PlayerStatsScript.health_ratio()
-	var full_w := float(HEALTH_FILL.size.x * SCALE)
-	_hp_empty.position = Vector2(
-		(HEALTH_FILL.position.x * SCALE) + full_w * ratio,
-		HEALTH_FILL.position.y * SCALE)
-	_hp_empty.size = Vector2(full_w * (1.0 - ratio), HEALTH_FILL.size.y * SCALE)
+	_apply_empty(_hp_empty, HEALTH_FILL, PlayerStatsScript.health_ratio())
+	var h: float = clampf(PlayerStatsScript.hunger / maxf(PlayerStatsScript.hunger_max, 1.0), 0.0, 1.0)
+	_apply_empty(_hunger_empty, HUNGER_FILL, h)
+
+
+func _apply_empty(rect: ColorRect, fill: Rect2i, ratio: float) -> void:
+	var full_w := float(fill.size.x * SCALE)
+	rect.position = Vector2((fill.position.x * SCALE) + full_w * ratio, fill.position.y * SCALE)
+	rect.size = Vector2(full_w * (1.0 - ratio), fill.size.y * SCALE)
 
 
 ## Kopf des eigenen Charakters aus dem Idle-Frame ausschneiden.

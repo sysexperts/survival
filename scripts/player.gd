@@ -1545,3 +1545,15 @@ func station_in_reach() -> String:
 		if node is Furniture and RecipeDB.is_station(node.id):
 			return node.id
 	return ""
+
+
+## Zelle einer Lagertruhe (sandik) in Reichweite, oder INVALID_CELL.
+func chest_in_reach() -> Vector2i:
+	var here := world.world_to_cell(global_position, level)
+	var cells: Array[Vector2i] = [here]
+	cells.append_array(world.neighbors(here))
+	for c in cells:
+		var node := world.blocker_at(c)
+		if node is Furniture and node.id == "sandik":
+			return node.cell
+	return INVALID_CELL

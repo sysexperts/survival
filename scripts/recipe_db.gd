@@ -59,6 +59,7 @@ const CAT_OF := {
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
 	"yatak": "mobilya", "portatif_yatak": "mobilya", "su_ficisi": "mobilya",
+	"sandik": "mobilya",
 	"baraka": "yapi",
 }
 
@@ -100,6 +101,17 @@ const RECIPES := [
 	{
 		"out": "calisma_tezgahi", "count": 1, "station": HAND, "seconds": 5.0,
 		"cost": {"tahta": 16},
+	},
+	# Lagertruhe (Sandik): 3x10 Online-Lager. Ueberall craftbar - im Grundhandwerk
+	# UND an jeder Üretim Masasi. Deshalb ein HAND-Eintrag (Basic Crafts) und ein
+	# WERKBANK-Eintrag (Basit + geerbt an Ileri/Üstün, siehe for_station).
+	{
+		"out": "sandik", "count": 1, "station": HAND, "seconds": 3.0,
+		"cost": {"tahta": 8},
+	},
+	{
+		"out": "sandik", "count": 1, "station": WERKBANK, "seconds": 3.0,
+		"cost": {"tahta": 8},
 	},
 	{
 		"out": "dokuma_tezgahi", "count": 1, "station": HAND, "seconds": 8.0,
