@@ -66,6 +66,8 @@ signal mined(cell: Vector2i, drop_id: String)
 signal mine_drop(cell: Vector2i, drop_id: String)
 ## Absage, wenn die Spitzhacke zu schwach fuer diesen Fels ist.
 signal mine_refused(needed_tier: int)
+## Ein Werkzeug wurde beim Abbauen abgenutzt (Dayaniklilik `amount` abziehen).
+signal tool_worn(amount: int)
 
 @export var world_path: NodePath = ^"../World"
 @export var walk_speed := 60.0
@@ -125,6 +127,8 @@ var held_pick_tier := 0
 const RockDBScript := preload("res://scripts/rock_db.gd")
 ## Schlaege, bis ein Fels bricht (Abbau soll sich lohnen/dauern).
 @export var mine_hits := 12
+## Dayaniklilik-Verbrauch der Spitzhacke pro abgebautem Fels (Gold x1.5).
+const MINE_WEAR := 4
 var _mine_target := Vector2i(2147483647, 2147483647)
 var _mine_state := -1
 var _mine_hits_left := 0
@@ -960,6 +964,9 @@ func _begin_mine() -> void:
 	_mine_hits_left = mine_hits
 	_mine_drop_id = RockDBScript.drop_of(_mine_state)
 	_mine_drops_left = RockDBScript.amount_of(_mine_state)
+	# Gold-Werkzeug: 25% Chance auf doppelte Beute (dafuer schneller kaputt, s.u.).
+	if held_metal == "Gold" and randf() < 0.25:
+		_mine_drops_left *= 2
 	_mining = true
 	busy = true
 	_sync_armed()
@@ -1005,6 +1012,8 @@ func _finish_mine() -> void:
 	world.detach_prop(cell)
 	rock.fell(away)
 	_shake(fell_shake)
+	# Spitzhacke abnutzen (pro Fels). Gold-Werkzeug nutzt sich 50% schneller ab.
+	tool_worn.emit(int(ceil(MINE_WEAR * (1.5 if held_metal == "Gold" else 1.0))))
 	mined.emit(cell, drop)
 	_play("idle")
 

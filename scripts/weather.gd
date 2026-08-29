@@ -38,7 +38,9 @@ var _overlay: ColorRect
 ## wiederhergestellt.
 var _env: Environment
 var _glow_clear := 0.72
-const GLOW_RAIN_MUL := 0.65
+## Glow bei Regen NICHT daempfen: der Glow ueberstrahlt die duennen Kachel-Naehte;
+## weniger Glow liess sie durchscheinen (Kacheln wirkten "durchsichtig"). Voll lassen.
+const GLOW_RAIN_MUL := 1.0
 
 
 func _ready() -> void:

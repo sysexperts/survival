@@ -15,8 +15,10 @@ const ROWS := 4
 ##   drop   = Item, das beim Abbau faellt
 ##   amount = wie viele
 ##   tier   = benoetigte Spitzhacken-Stufe (1=Stein, 2=Eisen+)
+## amount = feste Menge; amount_max (optional) macht daraus eine Spanne
+## [amount, amount_max], die pro Fels ausgewuerfelt wird.
 const STATES := [
-	{"name": "Kaya", "drop": "tas", "amount": 3, "tier": 1},              # 0 Stein
+	{"name": "Kaya", "drop": "tas", "amount": 5, "amount_max": 10, "tier": 1},   # 0 Stein
 	{"name": "Demir Cevheri", "drop": "demir_cevheri", "amount": 2, "tier": 2},  # 1 Eisen
 	{"name": "Altin Cevheri", "drop": "altin_cevheri", "amount": 2, "tier": 2},  # 2 Gold
 	{"name": "Ham Elmas", "drop": "ham_elmas", "amount": 1, "tier": 2},   # 3 Diamant
@@ -45,8 +47,13 @@ static func drop_of(state: int) -> String:
 	return String(STATES[clampi(state, 0, ROWS - 1)]["drop"])
 
 
+## Menge fuer diesen Fels - feste Zahl oder zufaellig aus [amount, amount_max].
 static func amount_of(state: int) -> int:
-	return int(STATES[clampi(state, 0, ROWS - 1)]["amount"])
+	var s: Dictionary = STATES[clampi(state, 0, ROWS - 1)]
+	var lo := int(s["amount"])
+	if s.has("amount_max"):
+		return randi_range(lo, int(s["amount_max"]))
+	return lo
 
 
 ## Benoetigte Spitzhacken-Stufe fuer diesen Zustand.

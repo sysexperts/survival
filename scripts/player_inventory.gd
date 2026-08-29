@@ -119,6 +119,8 @@ func _ready() -> void:
 		player.mine_drop.connect(_on_mine_drop)
 		player.mine_refused.connect(func(tier):
 			_notice("Bu kaya icin en az demir kazma lazim" if tier >= 2 else "Bir kazma lazim"))
+		# Spitzhacke nutzt sich beim Abbauen ab (Gold schneller, siehe player.gd).
+		player.tool_worn.connect(_wear_selected)
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -339,13 +341,19 @@ func _on_chop_refused() -> void:
 ## selbst auf false setzen, damit der laufende Faell-Auftrag noch in
 ## derselben Runde stoppt (nicht erst beim naechsten _process).
 func _on_axe_swung() -> void:
+	_wear_selected(1)
+
+
+## Nutzt das ausgewaehlte Werkzeug um `amount` Dayaniklilik ab (Axtschlag,
+## Fels-Abbau). Bei 0 zerbricht es - Feld leeren, Meldung, has_axe zuruecksetzen.
+func _wear_selected(amount: int) -> void:
 	var i := hud.selected
 	var slot: Dictionary = inventory.slots[i]
 	if slot.is_empty() or not ItemDB.has_durability(slot["id"]):
 		return
 	# Frische Alete tragen noch kein "dur" - dann als voll behandeln.
 	var dur: int = int(slot.get("dur", ItemDB.max_durability(slot["id"])))
-	dur -= 1
+	dur -= amount
 	if dur > 0:
 		slot["dur"] = dur
 		inventory.changed.emit()   # Dayaniklilik-Cubugu neu zeichnen
@@ -355,7 +363,7 @@ func _on_axe_swung() -> void:
 	inventory.changed.emit()
 	if player != null:
 		player.has_axe = false
-	_notice("Balta kirildi")
+	_notice("Alet kirildi")
 
 
 func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> void:
