@@ -46,12 +46,13 @@ const CROPS := {
 		"stage_secs": [180.0, 180.0, 240.0],   # 10 min bis reif
 		"rot_after": 1800.0, "produce_count": [2, 4], "seed_return": [1, 2],
 	},
-	# Kabak (Kuerbis): grosse Frucht, wenige aber lange Stufen.
+	# Kabak (Kuerbis): Sproessling -> gruener Kuerbis -> orange -> grosser Kuerbis.
+	# (7,5) ist ein neutraler Keimling; (9,3) der grosse reife Kuerbis, (9,2) tot.
 	"kabak": {
 		"name": "Kabak", "seed": "kabak_tohumu", "produce": "kabak",
-		"stages": [Vector2i(9, 0), Vector2i(9, 1), Vector2i(9, 4)],
+		"stages": [Vector2i(7, 5), Vector2i(9, 0), Vector2i(9, 1), Vector2i(9, 3)],
 		"dead": Vector2i(9, 2),
-		"stage_secs": [300.0, 300.0],          # 10 min bis reif
+		"stage_secs": [200.0, 200.0, 200.0],   # 10 min bis reif
 		"rot_after": 1800.0, "produce_count": [1, 1], "seed_return": [1, 2],
 	},
 	# Bugday (Weizen): Getreide, 3 Stufen bis zur goldenen Aehre.

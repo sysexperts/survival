@@ -12,8 +12,14 @@ extends Sprite2D
 
 const CropDB := preload("res://scripts/crop_db.gd")
 
-## Anker: das 32er-Bild steht mit seinem Fuss auf der Zellmitte.
+## Anker (nur noch fuer die Info-Karte). Das Sprite selbst wird pro Stufe
+## anhand seines Bildinhalts zentriert (siehe _content_offset).
 const ART_OFFSET := Vector2(-16, -30)
+## Wie tief der Fuss der Pflanze unter der Rautenmitte sitzt (px).
+const GROUND_Y := 3.0
+
+## Das Sheet als Image (einmal, fuer die Inhalts-Bounds je Stufe).
+static var _sheet_img: Image
 
 ## Wasserstand: fuellt sich bei Regen, sinkt sonst. Ist er leer, waechst die
 ## Pflanze nicht weiter (die Zeit wird eingefroren) und stirbt nach DROUGHT_DEATH
@@ -204,8 +210,34 @@ func _apply() -> void:
 		t.region = Rect2(atlas_cell.x * CropDB.CELL, atlas_cell.y * CropDB.CELL, CropDB.CELL, CropDB.CELL)
 		t.filter_clip = true
 		texture = t
+		# Pro Stufe zentrieren: waagerecht auf die Inhalts-Mitte, Fuss auf die
+		# Rautenmitte - so sitzt jede Grafik unabhaengig von ihrer Lage im 32er-
+		# Feld mittig auf der Kachel.
+		offset = _content_offset(atlas_cell)
 	if _hovered:
 		_update_info()
+
+
+## Offset, der den sichtbaren Inhalt der 32er-Zelle waagerecht zentriert und
+## seinen unteren Rand auf die Rautenmitte (+GROUND_Y) legt.
+func _content_offset(atlas_cell: Vector2i) -> Vector2:
+	if _sheet_img == null:
+		_sheet_img = _atlas.get_image()
+	var ox := atlas_cell.x * CropDB.CELL
+	var oy := atlas_cell.y * CropDB.CELL
+	var minx := CropDB.CELL
+	var maxx := -1
+	var maxy := -1
+	for y in CropDB.CELL:
+		for x in CropDB.CELL:
+			if _sheet_img.get_pixel(ox + x, oy + y).a > 0.15:
+				minx = mini(minx, x)
+				maxx = maxi(maxx, x)
+				maxy = maxi(maxy, y)
+	if maxx < minx:
+		return ART_OFFSET               # leere Zelle: Fallback
+	var center_x := (minx + maxx) * 0.5
+	return Vector2(-center_x, GROUND_Y - float(maxy))
 
 
 func _update_info() -> void:
