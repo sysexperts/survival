@@ -52,6 +52,14 @@ func _process(delta: float) -> void:
 	time_of_day = fposmod(time_of_day + delta / day_length, 1.0)
 
 
+## Basis-Hintergrundfarbe (aus project.godot). Scheint zwischen den Iso-Kacheln
+## und in unbemalten Luecken (See) durch. Wird mit der Tagesfarbe mitgedunkelt,
+## sonst bleibt sie nachts/bei Regen hell stehen und die Kachel-Naehte treten als
+## dunkles Diamant-Gitter hervor (die Kacheln dunkelt der CanvasModulate ab, die
+## Hintergrundfarbe aber nicht).
+const BASE_CLEAR := Color(0.1, 0.11, 0.15)
+
+
 func _apply() -> void:
 	var g := sky_gradient if sky_gradient != null else _default_gradient()
 	var c := g.sample(time_of_day)
@@ -59,6 +67,10 @@ func _apply() -> void:
 	if _rain_dim_shown > 0.0:
 		c = c.lerp(c * RAIN_MIN_MUL, _rain_dim_shown)
 	color = c
+	# Hintergrundfarbe im Gleichschritt mitdunkeln (siehe BASE_CLEAR). So bleibt
+	# das Verhaeltnis Kachel<->Naht wie am hellen Tag - kein Gitter.
+	if not Engine.is_editor_hint():
+		RenderingServer.set_default_clear_color(BASE_CLEAR * c)
 
 
 ## Nacht -> Daemmerung -> Tag -> Abendrot -> Nacht

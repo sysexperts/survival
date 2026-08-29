@@ -38,7 +38,7 @@ var _overlay: ColorRect
 ## wiederhergestellt.
 var _env: Environment
 var _glow_clear := 0.72
-const GLOW_RAIN_MUL := 0.18
+const GLOW_RAIN_MUL := 0.65
 
 
 func _ready() -> void:
@@ -117,7 +117,9 @@ func _apply_visuals() -> void:
 		# Sanft ein-/ausblenden.
 		create_tween().tween_property(_overlay, "color:a", 0.14 if _raining else 0.0, 0.8)
 	if _env:
-		# Glow bei Regen fast aus (sonst Diamant-Gitter), beim Aufklaren zurueck.
+		# Glow bei Regen etwas zuruecknehmen (bewoelkt = weniger Nachglueh). Das
+		# Diamant-Gitter kam aber NICHT vom Glow, sondern von der durchscheinenden
+		# Hintergrundfarbe - das behebt der Kamera-Hintergrund (follow_camera.gd).
 		var target: float = _glow_clear * GLOW_RAIN_MUL if _raining else _glow_clear
 		create_tween().tween_property(_env, "glow_intensity", target, 0.8)
 
