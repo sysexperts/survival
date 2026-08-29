@@ -204,12 +204,6 @@ func _ready() -> void:
 	# Umriss-Anzeige zur Laufzeit anhaengen - so bleibt player.tscn unberuehrt.
 	add_child(OcclusionOutline.create(self, sprite, world))
 	add_child(CastShadow.create(sprite))
-	# Terrain, das hoeher ist UND vor der Figur liegt (selbst gebaute Waende,
-	# Huegel), ueber die Figur zeichnen - sonst stuende sie faelschlich davor.
-	# Dynamisch (die Figur laeuft), Quelle = ihr Sprite, Zelle = aktuelle Standzelle.
-	var self_ref := self
-	add_child(TerrainOcclusion.create(world, sprite,
-		func(): return [world.world_to_cell(self_ref.global_position, self_ref.level)], true))
 	# Die Axt ist Teil des Charakters (Pack-Layer), kein Overlay mehr - siehe
 	# _sync_armed(): bei has_axe werden die "_hold"-Frames mit Axt gezeigt.
 	sprite.frame_changed.connect(_on_frame_changed)

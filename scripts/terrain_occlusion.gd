@@ -24,7 +24,7 @@ const TILE_TOPLEFT := Vector2(-16, -8)
 const AHEAD := 4
 
 var world: IsoWorld
-var source: Node2D            ## Quelle: Möbel-Sprite2D ODER Figur-AnimatedSprite2D
+var source: Sprite2D          ## das Möbel (Maske + Fußpunkt)
 var get_cells: Callable
 
 var _atlas: TileSetAtlasSource
@@ -33,33 +33,26 @@ var _occ: Array = []          ## [ [Vector2 welt_pos, Rect2 region], ... ]
 var _redraw: _Redraw
 
 
-## `p_dynamic` = true fuer bewegte, animierte Quellen (die Figur): dann wird jeden
-## Frame Textur/Position/Spiegelung nachgezogen und neu gesucht (die Figur laeuft).
-static func create(p_world: IsoWorld, p_source: Node2D, p_get_cells: Callable, p_dynamic := false) -> TerrainOcclusion:
+static func create(p_world: IsoWorld, p_source: Sprite2D, p_get_cells: Callable) -> TerrainOcclusion:
 	var t := TerrainOcclusion.new()
 	t.world = p_world
 	t.source = p_source
 	t.get_cells = p_get_cells
-	t.dynamic = p_dynamic
 	return t
 
 
-var dynamic := false
-
-
 func _ready() -> void:
-	# Maske = exakte Kopie des Quell-Sprites (Textur, Anker, Skalierung,
+	# Maske = exakte Kopie des Möbel-Sprites (Textur, Anker, Skalierung,
 	# Spiegelung, Position). clip_children macht sie unsichtbar und nutzt ihre
 	# Deckkraft als Schablone für das Kind.
-	texture = _source_frame()
-	centered = source.get("centered")
-	offset = source.get("offset")
-	scale = source.get("scale")
-	flip_h = bool(source.get("flip_h"))
+	texture = source.texture
+	centered = source.centered
+	offset = source.offset
+	scale = source.scale
+	flip_h = source.flip_h
 	global_position = source.global_position
-	z_index = 1                       # knapp über der Quelle (Props-Container trägt z16)
+	z_index = 1                       # knapp über dem Möbel (Props-Container trägt z16)
 	clip_children = CLIP_CHILDREN_ONLY
-	set_process(dynamic)
 
 	var ts := world.tile_set_res
 	if ts != null:
@@ -71,29 +64,6 @@ func _ready() -> void:
 	_redraw.occ = self
 	add_child(_redraw)
 	_rebuild()
-
-
-## Aktuelles Einzelbild der Quelle (AnimatedSprite2D) bzw. deren Textur (Sprite2D).
-func _source_frame() -> Texture2D:
-	if source is AnimatedSprite2D:
-		var a: AnimatedSprite2D = source
-		if a.sprite_frames != null and a.sprite_frames.has_animation(a.animation):
-			return a.sprite_frames.get_frame_texture(a.animation, a.frame)
-		return null
-	return source.get("texture")
-
-
-## Bewegte Quelle (Figur): jeden Frame Maske + Suche nachziehen.
-func _process(_delta: float) -> void:
-	if not dynamic or not is_instance_valid(source):
-		return
-	texture = _source_frame()
-	offset = source.get("offset")
-	flip_h = bool(source.get("flip_h"))
-	global_position = source.global_position
-	_rebuild()
-	if _redraw != null:
-		_redraw.queue_redraw()
 
 
 ## Sucht Kacheln, die höher als das Möbel und vor ihm liegen.

@@ -25,13 +25,13 @@ const STUMP_SOURCE_ID := 2            ## Baumstuempfe: begehbar, aber anklickbar
 const STONE_SOURCE_ID := 3            ## Kleine Steine: begehbar, aufsammelbar
 
 ## --- Untergrund / Buddeln -----------------------------------------------
-## Unter der Oberflaeche (Level 0) liegen 4 Dirt-Ebenen (-1..-4); Level -5 ist
-## Grundgestein (schwarz, nicht abbaubar). Diese Ebenen werden unter jeder
-## Bodenzelle vorbefuellt (siehe _fill_underground), damit die Waende eines Lochs
-## solide sind. Gebuddelt wird von oben nach unten (erase_block), aufgeschuettet
-## nach oben (set_block).
-const MIN_LEVEL := -5                 ## Grundgestein-Ebene (nicht abbaubar)
-const UNDER_COUNT := 5                ## Ebenen -1..-5
+## Unter der Oberflaeche (Level 0) liegen 2 Dirt-Ebenen (-1, -2); Level -3 ist
+## Grundgestein (schwarz, nicht abbaubar) - danach kommt kein tieferes Buddeln.
+## Buddeln dient v. a. zum Einebnen von Flaechen, nicht zum tiefen Graben. Die
+## Ebenen werden unter jeder Bodenzelle vorbefuellt (siehe _fill_underground),
+## damit die Waende eines Lochs solide sind.
+const MIN_LEVEL := -3                 ## Grundgestein-Ebene (schwarz, nicht abbaubar)
+const UNDER_COUNT := 3                ## Ebenen -1..-3
 ## Sentinel von top_level_at: gar kein Boden in dieser Saeule (frueher -1, jetzt
 ## unter MIN_LEVEL, weil -1..-5 jetzt gueltige Boeden sind).
 const NO_FLOOR := MIN_LEVEL - 1       ## -6
