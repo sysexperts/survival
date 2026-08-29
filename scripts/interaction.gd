@@ -12,6 +12,7 @@ extends Node2D
 var world: IsoWorld
 var player: Player
 var highlight: Sprite2D
+var _ground_hl: Line2D             ## Diamant-Umriss fuer den Boden-Hover (Buddeln)
 var _hovered: Array = []           ## [cell, level, atlas] oder leer
 var _furn_hover: Array = []        ## [cell, Furniture] oder leer
 var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Alpha-Test)
@@ -39,9 +40,23 @@ func _build_highlight() -> void:
 	highlight.visible = false
 	highlight.z_index = IsoWorld.TALL_Z_INDEX + 1
 	add_child(highlight)
+	# Boden-Hover (Buddeln): flacher Diamant-Umriss der Top-Flaeche, exakt am
+	# Standpunkt (cell_to_world). Eigener Node, weil die Wuerfel-Textur des Blocks
+	# keinen sauberen texture_origin hat und sonst um eine Ebene versetzt liegt.
+	_ground_hl = Line2D.new()
+	_ground_hl.top_level = true            # Punkte in Weltkoordinaten
+	_ground_hl.width = 1.5
+	_ground_hl.default_color = outline_color
+	_ground_hl.closed = true
+	_ground_hl.antialiased = false
+	_ground_hl.z_index = IsoWorld.TALL_Z_INDEX + 1
+	_ground_hl.visible = false
+	add_child(_ground_hl)
 
 
 func _process(_delta: float) -> void:
+	# Boden-Hover standardmaessig aus; nur _highlight_ground schaltet ihn ein.
+	_ground_hl.visible = false
 	# Waehrend des Platzierens kein Hover - sonst leuchten beide.
 	if preview.active:
 		highlight.visible = false
@@ -66,21 +81,20 @@ func _process(_delta: float) -> void:
 	highlight.visible = false
 
 
-## Weisser Rand um den obersten Bodenblock unter der Maus (Buddeln/Aufschuetten).
+## Diamant-Umriss der Top-Flaeche des Bodenblocks unter der Maus (Buddeln/
+## Aufschuetten). Liegt exakt auf dem Standpunkt der Zelle - keine Ebenen-
+## Verschiebung. Der Sprite-Hover (fuer Props/Moebel) bleibt dabei aus.
 func _highlight_ground() -> void:
+	highlight.visible = false
 	var hit := world.pick_block(get_global_mouse_position())
 	if hit.is_empty():
-		highlight.visible = false
 		return
-	var tex := world.block_texture(hit[0])
-	if tex == null:
-		highlight.visible = false
-		return
-	highlight.texture = tex
-	highlight.flip_h = false
-	highlight.scale = Vector2.ONE
-	highlight.global_position = world.block_top_left(hit[0])
-	highlight.visible = true
+	var c := world.cell_to_world(hit[0], int(hit[1]))
+	# Top-Diamant: 32 breit, 16 hoch, Mittelpunkt = Standpunkt.
+	_ground_hl.points = PackedVector2Array([
+		c + Vector2(0, -8), c + Vector2(16, 0),
+		c + Vector2(0, 8), c + Vector2(-16, 0)])
+	_ground_hl.visible = true
 
 
 func _highlight_prop() -> void:

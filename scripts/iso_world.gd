@@ -267,7 +267,10 @@ func dig_cell(cell: Vector2i) -> bool:
 	# keine Wand (dann scheint der dunkle Hintergrund durch = "Border").
 	_fill_underground(cell)
 	for n in neighbors(cell):
-		_fill_underground(n)
+		# NUR Nachbarn, die selbst Boden haben (Wand). Leere Nachbarn (Lueckenrand,
+		# See, ungeladener Chunk) NICHT befuellen - sonst poppt daneben ein Block auf.
+		if top_level_at(n) > NO_FLOOR:
+			_fill_underground(n)
 	erase_block(cell, top)
 	return true
 
