@@ -198,13 +198,15 @@ static var ITEMS := {
 ## Layer-Namen sind die des Packs (siehe cc_frames.TOOL_LAYERS). Metall-Tiers auf
 ## Pack-Metalle gemappt (Stein/Eisen -> Iron, Gold -> Gold; das Item-Icon im
 ## Inventar unterscheidet die Stufen ohnehin klar). Hoe (capa) fehlt im Pack ->
-## leere Hand ([]).
+## leere Hand ([]). Metall-Tiers so gewaehlt, dass die Stufen am Character
+## unterscheidbar sind: Stein -> Iron (mattes Grau), Eisen -> Silver (heller
+## Stahl), Gold -> Gold. (Ein echtes Stein-Material hat das Pack nicht.)
 const TOOL_HOLD := {
-	"balta": ["Axe", "Iron"], "demir_balta": ["Axe", "Iron"], "altin_balta": ["Axe", "Gold"],
-	"kazma": ["PickAxe", "Iron"], "demir_kazma": ["PickAxe", "Iron"], "altin_kazma": ["PickAxe", "Gold"],
-	"kurek": ["Showel", "Iron"], "demir_kurek": ["Showel", "Iron"], "altin_kurek": ["Showel", "Gold"],
-	"bicak": ["Sword", "Iron"], "demir_bicak": ["Sword", "Iron"], "altin_bicak": ["Sword", "Gold"],
-	"cekic": ["Hammer", "Iron"], "demir_cekic": ["Hammer", "Iron"],
+	"balta": ["Axe", "Iron"], "demir_balta": ["Axe", "Silver"], "altin_balta": ["Axe", "Gold"],
+	"kazma": ["PickAxe", "Iron"], "demir_kazma": ["PickAxe", "Silver"], "altin_kazma": ["PickAxe", "Gold"],
+	"kurek": ["Showel", "Iron"], "demir_kurek": ["Showel", "Silver"], "altin_kurek": ["Showel", "Gold"],
+	"bicak": ["Sword", "Iron"], "demir_bicak": ["Sword", "Silver"], "altin_bicak": ["Sword", "Gold"],
+	"cekic": ["Hammer", "Iron"], "demir_cekic": ["Hammer", "Silver"],
 	# capa/demir_capa/altin_capa (Hoe): kein Pack-Sprite -> leere Hand.
 }
 
