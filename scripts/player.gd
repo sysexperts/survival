@@ -48,6 +48,10 @@ signal reached_station(station: String)
 ## Lagerfeuer und Moebel bei allen erscheinen.
 signal placed_campfire(top: Vector2i)
 signal placed_furniture(id: String, cell: Vector2i, orient: int)
+## Ein Gebaeude (4x4, Baraka) wurde gesetzt. `started` ist der Unix-Zeitpunkt
+## des Baubeginns - world_sync verteilt/persistiert ihn, damit alle Clients und
+## ein neu geladener Spielstand dieselbe Bauphase zeigen.
+signal placed_building(id: String, cell: Vector2i, started: float)
 ## Ein platziertes Objekt (Moebel/Lagerfeuer) wurde zerstoert. `cell` ist die
 ## Ankerzelle. world_sync entfernt es aus der Persistenz und bei allen anderen.
 ## Es kommt bewusst NICHT ins Inventar zurueck - Zerstoeren heisst weg.
@@ -1225,6 +1229,32 @@ func place_furniture_at(id: String, cell: Vector2i, orient: int) -> bool:
 		for c in taken:
 			world.unblock_cell(c))
 	placed_furniture.emit(id, cell, orient)
+	return true
+
+
+const Building := preload("res://scripts/building.gd")
+
+## Stellt ein Gebaeude (4x4) auf ebenen Boden. `top` ist die oberste Zelle der
+## Raute, `started` der Baubeginn (Unix-Zeit; 0.0 = jetzt). Gibt false zurueck,
+## wenn dort kein ebener Platz ist - dann werden auch keine Bretter verbraucht.
+func place_building_at(id: String, top: Vector2i, started := 0.0) -> bool:
+	if not world.can_place_4x4(top):
+		return false
+	if started <= 0.0:
+		started = Time.get_unix_time_from_system()
+	var lvl := maxi(world.top_level_at(top), 0)
+	var cells := world.footprint_4x4(top)
+	var b = Building.create(world, id, top, lvl, started)
+	b.cells = cells
+	world.props_root.add_child(b)
+	b.global_position = world.footprint_nxn_center(top, 4, lvl)
+	for c in cells:
+		world.block_cell(c, b)
+	var taken := cells.duplicate()
+	b.tree_exiting.connect(func():
+		for c in taken:
+			world.unblock_cell(c))
+	placed_building.emit(id, top, started)
 	return true
 
 

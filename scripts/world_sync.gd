@@ -103,6 +103,7 @@ func _ensure_player() -> bool:
 	_player.stone_collected.connect(_on_local_stone_collected)
 	_player.placed_campfire.connect(_on_local_campfire)
 	_player.placed_furniture.connect(_on_local_furniture)
+	_player.placed_building.connect(_on_local_building)
 	_player.destroyed_placed.connect(_on_local_destroy)
 	_player.dug.connect(_on_local_dug)
 	_player.raised.connect(_on_local_raised)
@@ -149,6 +150,14 @@ func _on_local_furniture(id: String, cell: Vector2i, orient: int) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "furniture", cell, 0, Vector2i.ZERO, id, orient)
 
 
+func _on_local_building(id: String, cell: Vector2i, started: float) -> void:
+	if _suppress:
+		return
+	# Der Baubeginn (Unix-Sekunden) reist im ungenutzten `level`-Feld mit - so
+	# zeigt jeder Client dieselbe Phase und der Stand ueberlebt einen Neustart.
+	_event.rpc(multiplayer.get_unique_id(), "building", cell, int(started), Vector2i.ZERO, id, 0)
+
+
 func _on_local_destroy(cell: Vector2i) -> void:
 	if _suppress:
 		return
@@ -176,6 +185,9 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 	if Net.is_dedicated:
 		if kind == "furniture":
 			_record_build({"kind": "furniture", "x": cell.x, "y": cell.y, "id": s, "orient": flag})
+		elif kind == "building":
+			# level = Baubeginn (Unix-Sekunden).
+			_record_build({"kind": "building", "x": cell.x, "y": cell.y, "id": s, "orient": 0, "started": level})
 		elif kind == "campfire":
 			_record_build({"kind": "campfire", "x": cell.x, "y": cell.y, "id": "", "orient": 0})
 		elif kind == "destroy":
@@ -225,6 +237,11 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 				_suppress = true
 				_player.place_furniture_at(ItemDB.canonical(s), cell, flag)  # flag = orient
 				_suppress = false
+		"building":
+			if _player:
+				_suppress = true
+				_player.place_building_at(ItemDB.canonical(s), cell, float(level))  # level = started
+				_suppress = false
 		"destroy":
 			# Bei einem anderen Spieler abgerissen -> lokal auch entfernen.
 			if _player:
@@ -257,7 +274,9 @@ func _request_builds() -> void:
 	var id := multiplayer.get_remote_sender_id()
 	print("WorldSync(server): sende %d Bauten, %d Abbauten an peer %d" % [_builds.size(), _removed.size(), id])
 	for b in _builds:
-		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), _orient_of(b))
+		# Gebaeude tragen ihren Baubeginn (Unix-Sekunden) im letzten Feld, damit
+		# der Beitretende dieselbe Phase sieht; andere Bauten lassen es auf 0.
+		_spawn_build.rpc_id(id, b["kind"], Vector2i(b["x"], b["y"]), String(b["id"]), _orient_of(b), int(b.get("started", 0)))
 	# Abbau-Ereignisse mit der jeweiligen RESTZEIT senden; Abgelaufenes (Baum
 	# nachgewachsen, Stein wieder da) ueberspringen.
 	var now := Time.get_unix_time_from_system()
@@ -278,8 +297,8 @@ func _request_builds() -> void:
 ## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
 ## mit, landet sie in _pending und wird spaeter nachgezogen.
 @rpc("any_peer", "reliable")
-func _spawn_build(kind: String, cell: Vector2i, id: String, orient: int) -> void:
-	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "orient": orient}
+func _spawn_build(kind: String, cell: Vector2i, id: String, orient: int, started := 0) -> void:
+	var b := {"kind": kind, "x": cell.x, "y": cell.y, "id": id, "orient": orient, "started": started}
 	var ok := _apply_build(b)
 	print("WorldSync(client): Baute %s '%s' @ %s -> %s" % [kind, id, cell, "gesetzt" if ok else "wartet auf Chunk"])
 	if not ok:
@@ -300,6 +319,8 @@ func _apply_build(b: Dictionary) -> bool:
 	var ok: bool
 	if b["kind"] == "campfire":
 		ok = _player.place_campfire_at(cell)
+	elif b["kind"] == "building":
+		ok = _player.place_building_at(ItemDB.canonical(String(b["id"])), cell, float(b.get("started", 0)))
 	else:
 		# Alte deutsche Moebel-Id (aus build.json) auf den neuen Namen heben.
 		ok = _player.place_furniture_at(ItemDB.canonical(String(b["id"])), cell, _orient_of(b))

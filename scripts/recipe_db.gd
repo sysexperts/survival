@@ -35,12 +35,13 @@ static func is_station(id: String) -> bool:
 # --- Kategorien (Tabs im Handwerk-Fenster) ------------------------------ #
 # Reihenfolge der Tabs von oben nach unten. Jede Kategorie hat einen Namen
 # und ein stellvertretendes Icon (ein Item, dessen Grafik den Tab schmueckt).
-const CAT_ORDER := ["masa", "alet", "malzeme", "mobilya"]
+const CAT_ORDER := ["masa", "alet", "malzeme", "mobilya", "yapi"]
 const CATEGORIES := {
 	"masa": {"name": "Masalar", "icon": "calisma_tezgahi"},
 	"alet": {"name": "Aletler", "icon": "balta"},
 	"malzeme": {"name": "Malzemeler", "icon": "tahta"},
 	"mobilya": {"name": "Mobilya", "icon": "yatak"},
+	"yapi": {"name": "Yapilar", "icon": "baraka"},
 }
 ## Kategorie je Ergebnis-Item. Was hier fehlt, gilt als "malzeme".
 const CAT_OF := {
@@ -57,6 +58,7 @@ const CAT_OF := {
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
 	"yatak": "mobilya", "portatif_yatak": "mobilya",
+	"baraka": "yapi",
 }
 
 
@@ -131,6 +133,17 @@ const RECIPES := [
 		"cost": {"tahta": 10, "kumas": 5},
 	},
 
+	# --- Gebaeude (eigener Tab "Yapilar") --------------------------------
+	# Die Baraka ist kein Item, das in die Bauliste wandert: ein Klick auf
+	# "Insa" startet stattdessen die 4x4-Platzierung (nur auf ebenem Boden).
+	# Erst beim Setzen werden die 64 Bretter verbraucht; danach baut sich das
+	# Haus vor Ort in 10 Minuten in drei Phasen selbst (siehe building.gd).
+	# `building: true` schaltet diesen Sonderweg im Handwerk-Fenster frei.
+	{
+		"out": "baraka", "count": 1, "station": WERKBANK, "seconds": 600.0,
+		"building": true, "cost": {"tahta": 64},
+	},
+
 	# ------------------------------------------------------------------ #
 	# Aus den Outline-Rezepten (Item Crafts) uebernommen. Mengen/Zeiten
 	# sind erste Vorschlaege - in Outline als Notiz vermerkt, dort leicht
@@ -202,6 +215,11 @@ const RECIPES := [
 	{"out": "altin_bicak", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
 		"cost": {"islenmis_sopa": 1, "altin": 4}},
 ]
+
+
+## Ist dieses Rezept ein Gebaeude (4x4-Platzierung statt Bauliste)?
+static func is_building(recipe: Dictionary) -> bool:
+	return bool(recipe.get("building", false))
 
 
 ## Bauzeit für ein Stück, in Sekunden.

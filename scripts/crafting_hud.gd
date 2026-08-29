@@ -24,6 +24,11 @@ const MAX_BATCH := 99
 ## Höhe des scrollbaren Rezeptbereichs (px). Deckelt die Fensterhöhe.
 const LIST_HEIGHT := 460
 
+## Ein Gebaeude-Rezept wurde angeklickt: nicht in die Bauliste, sondern in den
+## 4x4-Platzieren-Modus. player_inventory faengt das ab, schliesst das Fenster
+## und startet die Vorschau. Die Zutaten werden erst beim Setzen verbraucht.
+signal build_requested(recipe: Dictionary)
+
 var inventory: Inventory
 var queue: CraftQueue
 var station := RecipeDB.HAND
@@ -231,7 +236,12 @@ func _make_row(recipe: Dictionary) -> Control:
 	name_label.text = ItemDB.display_name(recipe["out"])
 	if amount > 1:
 		name_label.text += "  ×%d" % amount
-	name_label.text += "   (%s s)" % _seconds_text(RecipeDB.seconds(recipe))
+	# Gebaeude zeigen ihre Bauzeit in Minuten (600 s -> "10 dk"), gewoehnliche
+	# Rezepte in Sekunden.
+	if RecipeDB.is_building(recipe):
+		name_label.text += "   (%d dk)" % int(RecipeDB.seconds(recipe) / 60.0)
+	else:
+		name_label.text += "   (%s s)" % _seconds_text(RecipeDB.seconds(recipe))
 	texts.add_child(name_label)
 
 	# Je Zutat eine eigene Zeile: nur so lässt sich einzeln einfärben,
@@ -303,6 +313,12 @@ func _make_row(recipe: Dictionary) -> Control:
 		"minus": minus,
 		"plus": plus,
 	}
+	entry["building"] = RecipeDB.is_building(recipe)
+	# Gebaeude: keine Stueckzahl (immer 1) und statt der Bauliste der
+	# Platzieren-Modus. Der Regler waere sinnlos, also ausgeblendet.
+	if entry["building"]:
+		stepper.visible = false
+		button.text = "Insa et"
 	minus.pressed.connect(_on_step.bind(entry, -1))
 	plus.pressed.connect(_on_step.bind(entry, 1))
 	button.pressed.connect(_on_craft.bind(entry))
@@ -444,6 +460,10 @@ func _on_step(entry: Dictionary, delta: int) -> void:
 
 
 func _on_craft(entry: Dictionary) -> void:
+	# Gebaeude wandern nicht in die Bauliste: Fenster zu, 4x4-Vorschau auf.
+	if entry.get("building", false):
+		build_requested.emit(entry["recipe"])
+		return
 	queue.enqueue(entry["recipe"], int(entry["amount"]))
 	_refresh()
 

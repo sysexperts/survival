@@ -17,7 +17,7 @@ signal confirmed(top_cell: Vector2i)
 ## Wird immer gefeuert, wenn die Vorschau endet - gesetzt oder abgebrochen.
 signal ended
 
-enum Kind { CAMPFIRE, FURNITURE }
+enum Kind { CAMPFIRE, FURNITURE, BUILDING }
 
 @export var ok_color := Color(1, 1, 1, 0.95)
 @export var blocked_color := Color(1, 0.28, 0.28, 0.95)
@@ -88,6 +88,23 @@ func begin_furniture(id: String) -> void:
 	visible = true
 
 
+## Startet die Vorschau fuer ein Gebaeude (4x4). Zeigt die fertige Baraka als
+## Geist, gueltig nur auf ebenem, freiem 4x4-Boden.
+const _Building := preload("res://scripts/building.gd")
+func begin_building(id: String) -> void:
+	kind = Kind.BUILDING
+	item_id = id
+	orient = 0
+	_still.texture = ItemDB.icon(id)          # fertiges Haus als Vorschau
+	_still.offset = _Building.ART_OFFSET
+	_still.scale = Vector2.ONE
+	_still.flip_h = false
+	_still.visible = true
+	_anim.visible = false
+	active = true
+	visible = true
+
+
 ## Dreht das Moebel eine Stufe weiter (8 Richtungen im Uhrzeigersinn).
 ## Nicht-Richtungs-Moebel spiegeln dabei nur (ungerade Stufe).
 func rotate_step() -> void:
@@ -120,6 +137,8 @@ func _process(_delta: float) -> void:
 		return
 	if kind == Kind.CAMPFIRE:
 		_track_campfire()
+	elif kind == Kind.BUILDING:
+		_track_building()
 	else:
 		_track_furniture()
 	_mat.set_shader_parameter("outline_color", ok_color if valid else blocked_color)
@@ -149,6 +168,19 @@ func _track_furniture() -> void:
 	else:
 		valid = world.can_place_1x1(top_cell, Furniture.tileable(item_id))
 		global_position = world.cell_to_world(top_cell, lvl)
+
+
+func _track_building() -> void:
+	# Die Maus liegt in der MITTE der 4x4-Raute (32 px hoch je halbe Raute):
+	# eine ganze halbe Rautenhoehe (32 px) abziehen, damit die oberste Zelle
+	# ueber dem Cursor sitzt und man mittig zielt.
+	var probe := get_global_mouse_position() - Vector2(0, 32)
+	var hit := world.pick_block(probe)
+	var level: int = hit[1] if not hit.is_empty() else 0
+	top_cell = world.world_to_cell(probe, level)
+	valid = world.can_place_4x4(top_cell)
+	var lvl := maxi(world.top_level_at(top_cell), 0)
+	global_position = world.footprint_nxn_center(top_cell, 4, lvl)
 
 
 ## Linksklick: setzen, wenn gueltig. Gibt true zurueck, wenn der Klick

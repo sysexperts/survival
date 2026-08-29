@@ -33,6 +33,9 @@ var station_huds: Dictionary = {}
 var queue: CraftQueue
 var player: Player
 var preview: PlacementPreview
+## Das Gebaeude-Rezept, dessen 4x4-Vorschau gerade laeuft - erst beim Setzen
+## werden seine Zutaten verbraucht. {} = keine Gebaeude-Vorschau aktiv.
+var _pending_build: Dictionary = {}
 ## Kreativ-Inventar (Taste X), nur fuer Admins - sonst null.
 ## Per preload statt ueber den class_name CreativeHUD - sonst kennt der
 ## Auto-Updater die neue Klasse nicht (siehe chunk_manager.gd/WorldGen).
@@ -75,6 +78,7 @@ func _ready() -> void:
 	crafting = CraftingHUD.new()
 	add_child(crafting)
 	crafting.setup(inventory, queue, RecipeDB.HAND, "Üretim")
+	crafting.build_requested.connect(_on_build_requested)
 
 	for id in starting_items:
 		inventory.add(id, int(starting_items[id]))
@@ -95,7 +99,9 @@ func _ready() -> void:
 	if interaction:
 		preview = interaction.preview
 		preview.confirmed.connect(_on_placement_confirmed)
-		preview.ended.connect(func(): hud.set_hint(""))
+		preview.ended.connect(func():
+			hud.set_hint("")
+			_pending_build = {})
 
 	_drop = get_node_or_null(^"../DropSync")
 	hud.drop_sync = _drop
@@ -246,6 +252,7 @@ func _station_hud(station: String) -> CraftingHUD:
 		var h := CraftingHUD.new()
 		add_child(h)
 		h.setup(inventory, queue, station, ItemDB.display_name(station))
+		h.build_requested.connect(_on_build_requested)
 		station_huds[station] = h
 	return station_huds[station]
 
@@ -473,12 +480,36 @@ func _use_selected() -> void:
 		hud.set_hint("Sol tik koy  ·  R döndür  ·  Sag tik veya Esc iptal")
 
 
+## Ein Gebaeude-Rezept wurde im Handwerk-Fenster gewaehlt: Fenster schliessen
+## und die 4x4-Vorschau starten. Verbraucht wird noch nichts - erst beim Setzen.
+func _on_build_requested(recipe: Dictionary) -> void:
+	if preview == null:
+		return
+	# Ohne Material gar nicht erst anfangen zu platzieren.
+	if not RecipeDB.can_craft(inventory, recipe):
+		_notice("Malzeme eksik")
+		return
+	_pending_build = recipe
+	if hud.bag_open():
+		hud.toggle_bag()
+	_close_all_crafting()
+	preview.begin_building(String(recipe["out"]))
+	hud.set_hint("Sol tik koy  ·  Sag tik veya Esc iptal  ·  duz zemin gerekli")
+
+
 func _on_placement_confirmed(top_cell: Vector2i) -> void:
 	# Was gesetzt wird, verraet die Vorschau - so bleibt hier eine Stelle,
-	# egal ob Lagerfeuer oder Moebel.
+	# egal ob Lagerfeuer, Moebel oder Gebaeude.
 	if preview.kind == PlacementPreview.Kind.CAMPFIRE:
 		if player.place_campfire_at(top_cell):
 			inventory.remove("kamp_atesi", 1)
+	elif preview.kind == PlacementPreview.Kind.BUILDING:
+		# Zutaten erst jetzt abbuchen, nachdem der Platz wirklich gepasst hat.
+		if not _pending_build.is_empty() and RecipeDB.can_craft(inventory, _pending_build) \
+				and player.place_building_at(preview.item_id, top_cell):
+			for cid in _pending_build["cost"]:
+				inventory.remove(cid, int(_pending_build["cost"][cid]))
+		_pending_build = {}
 	elif player.place_furniture_at(preview.item_id, top_cell, preview.orient):
 		inventory.remove(preview.item_id, 1)
 

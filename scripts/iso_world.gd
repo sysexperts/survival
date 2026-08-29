@@ -445,6 +445,64 @@ func can_place_long(top: Vector2i) -> bool:
 	return not _furniture_adjacent(footprint_long(top))
 
 
+## Die Nachbarzelle unten LINKS auf dem Bildschirm (Gegenstueck zu
+## down_right_cell). Zusammen spannen die beiden die zwei Iso-Achsen auf, mit
+## denen sich ein NxN-Block sauber ablaufen laesst.
+func down_left_cell(cell: Vector2i) -> Vector2i:
+	var base := cell_to_world(cell, 0)
+	for n in neighbors(cell):
+		var d := cell_to_world(n, 0) - base
+		if d.x < 0.0 and d.y > 0.0:
+			return n
+	return cell
+
+
+## Die Zellen eines NxN-Iso-Blocks, ausgehend von der OBERSTEN Zelle `top`.
+## Von dort je Reihe `n`-mal nach unten-rechts, die Reihenanfaenge `n`-mal nach
+## unten-links - das ergibt eine grosse Raute (bei n=4: 128x64 px auf dem
+## Schirm). Ueber die beiden Iso-Achsen berechnet statt ueber feste Offsets,
+## damit die Stacked-Paritaet an jeder Zeile stimmt.
+func footprint_nxn(top: Vector2i, n: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var row_start := top
+	for i in n:
+		var c := row_start
+		for j in n:
+			out.append(c)
+			c = down_right_cell(c)
+		row_start = down_left_cell(row_start)
+	return out
+
+
+func footprint_4x4(top: Vector2i) -> Array[Vector2i]:
+	return footprint_nxn(top, 4)
+
+
+## Mittelpunkt eines NxN-Feldes in Weltkoordinaten (Schnitt der Diagonalen:
+## Mittel aus oberster und unterster Ecke der Raute).
+func footprint_nxn_center(top: Vector2i, n: int, level: int) -> Vector2:
+	var cells := footprint_nxn(top, n)
+	var bottom := cells[cells.size() - 1]   # letzte Zelle = untere Ecke
+	return (cell_to_world(top, level) + cell_to_world(bottom, level)) * 0.5
+
+
+## Passt hier ein 4x4-Gebaeude hin? ALLE sechzehn Zellen muessen Boden haben,
+## frei sein UND auf exakt derselben Hoehe liegen - "der Boden darunter muss
+## komplett eben sein".
+func can_place_4x4(top: Vector2i) -> bool:
+	var foot := footprint_4x4(top)
+	var level := -9999
+	for c in foot:
+		var l := top_level_at(c)
+		if l <= NO_FLOOR or has_prop(c) or has_stump(c) or blocker_at(c) != null:
+			return false
+		if level == -9999:
+			level = l
+		elif l != level:
+			return false          # nicht eben -> abgelehnt
+	return not _furniture_adjacent(foot)
+
+
 ## Kann man von `from` nach `to` treten? Prueft Loch, Prop und Stufenhoehe.
 func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 	if has_prop(to):

@@ -285,6 +285,25 @@ const FURNITURE := {
 }
 
 
+## Gebaeude (Baraka ...). Anders als Moebel belegen sie ein 4x4-Feld, brauchen
+## ebenen Boden und werden vor Ort ueber mehrere Minuten in drei Phasen gebaut
+## (siehe scripts/building.gd). Als Item registriert (fuer Rezept-/Inventar-Icon);
+## das Icon ist das fertige Haus. Die Phasen-Sprites liegen daneben und werden
+## direkt in building.gd geladen.
+const BUILDINGS := {
+	"baraka": {
+		"name": "Baraka",
+		"texture": "res://assets/game_assets/buildings/shelter_done.png",
+	},
+}
+
+
+## Ist das ein Gebaeude? Gebaeude werden ueber die 4x4-Vorschau aufgestellt und
+## bauen sich vor Ort selbst (Phasen-Sprites, 10 Minuten).
+static func is_building(id: String) -> bool:
+	return BUILDINGS.has(id)
+
+
 ## Richtungs-Sprites: Stationen, die als 8-Richtungs-Satz (68x68) unter
 ## assets/game_assets/tool_tables liegen. Statt eines Sheet-Ausschnitts
 ## bekommt so ein Moebel je nach Ausrichtung (orient 0..3 = S/O/N/W) ein
@@ -342,6 +361,14 @@ static func _fold_in_furniture() -> void:
 			"sheet": SHEET_FURNITURE,
 			"item_cell": entry[1],
 			"cell_size": FURNITURE_CELL,
+		}
+	# Gebaeude als gewoehnliche Items einreihen (fuers Rezept-/Inventar-Icon).
+	for id in BUILDINGS:
+		var info: Dictionary = BUILDINGS[id]
+		ITEMS[id] = {
+			"name": info["name"],
+			"max_stack": 1,
+			"texture": info["texture"],
 		}
 
 
