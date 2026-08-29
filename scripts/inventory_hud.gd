@@ -240,7 +240,8 @@ func _wire_left_page() -> void:
 
 ## Papierkorb in die leere Box der Istatik-Seite (unter den Stats, ueber den
 ## Punkten). Zieht man einen Stapel darauf, wird er geloescht.
-const TRASH_BOX := Rect2i(13, 70, 84, 38)   ## Quell-px der Box (links)
+## Kleiner Papierkorb oben-rechts IN der Box (Quell-px), nicht die ganze Box.
+const TRASH_BOX := Rect2i(73, 70, 20, 20)
 const TrashSlotScript := preload("res://scripts/trash_slot.gd")
 
 func _build_trash() -> void:
