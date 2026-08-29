@@ -23,16 +23,17 @@ const LOOPING := ["idle", "walk", "run", "sleep"]
 const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0}
 const DEFAULT_FPS := 10.0
 
-## Mit Axt in der Hand: eigene Körperposen für idle/walk (Hand greift die Axt);
-## run/axe nutzen dieselbe Pose, nur mit Axt-Layern. sleep hat keine Axt.
+## Mit Werkzeug in der Hand: eigene Körperposen für idle/walk (Hand greift das
+## Werkzeug); run/axe nutzen dieselbe Pose, nur mit Werkzeug-Layern. sleep nie.
 const STATE_DIR_ARMED := {
 	"idle": "idle_hold", "walk": "walk_hold",
 	"run": "run", "axe": "axe", "sleep": "sleep",
 }
-## Zustände, die im bewaffneten Modus die Axt-Layer bekommen.
-const AXE_STATES := ["idle", "walk", "run", "axe"]
-## Axt-Ausführung (Metall). Die Layer liegen in cc_scaled/<dir>/ neben dem Körper.
-const AXE_METAL := "Iron"
+## Zustände, die im bewaffneten Modus die Werkzeug-Layer bekommen.
+const TOOL_STATES := ["idle", "walk", "run", "axe"]
+## Bekannte Werkzeug-Layer-Namen im Pack (Layer13_<Tool>_<Metal>). Nur diese
+## haben Sprites; der Hoe (capa) fehlt im Pack -> leere Hand.
+const TOOL_LAYERS := ["Axe", "PickAxe", "Showel", "Sword", "Hammer"]
 
 ## Fertige SpriteFrames je Aussehen zwischenspeichern - mehrere Mitspieler mit
 ## gleichem Look teilen sich dann eine Instanz.
@@ -44,27 +45,33 @@ static func flipped(facing: String) -> bool:
 	return facing.ends_with("east")
 
 
-static func _key(look: Dictionary, armed: bool) -> String:
-	var parts: Array = ["armed=%s" % armed]
+static func _key(look: Dictionary, tool: String, metal: String) -> String:
+	var parts: Array = ["tool=%s_%s" % [tool, metal]]
 	for slot in CCCatalog.DRAW_ORDER:
 		parts.append("%s=%s" % [slot, look.get(slot, "")])
 	return "|".join(parts)
 
 
-static func build(look: Dictionary, armed: bool = false) -> SpriteFrames:
-	var key := _key(look, armed)
+## `tool` = "" (leere Hand) oder ein Layer-Name aus TOOL_LAYERS; `metal` z. B.
+## "Iron"/"Gold". Unbekannte/fehlende Werkzeug-Layer werden einfach nicht
+## gezeichnet (z. B. Hoe, oder Sword in der Swing-Pose) - dann leere Hand.
+static func build(look: Dictionary, tool: String = "", metal: String = "") -> SpriteFrames:
+	if tool != "" and not (tool in TOOL_LAYERS):
+		tool = ""                     # unbekanntes Werkzeug -> leere Hand
+	var key := _key(look, tool, metal)
 	if _cache.has(key):
 		return _cache[key]
 
 	var sf := SpriteFrames.new()
 	sf.remove_animation("default")
 	var cell: int = CCCatalog.CELL
+	var armed := tool != ""
 
 	for state in CCCatalog.STATE_COLS:
 		var cols: int = CCCatalog.STATE_COLS[state]
 		var dir_name: String = STATE_DIR_ARMED[state] if armed else String(state)
-		var with_axe: bool = armed and (String(state) in AXE_STATES)
-		var tex := _composite(dir_name, cols, look, with_axe)
+		var with_tool: bool = armed and (String(state) in TOOL_STATES)
+		var tex := _composite(dir_name, cols, look, with_tool, tool, metal)
 		if tex == null:
 			continue
 		for facing in ROW_OF:
@@ -89,16 +96,16 @@ static func build(look: Dictionary, armed: bool = false) -> SpriteFrames:
 ## Blendet die gewählten Layer eines Zustands zu einer Textur zusammen. `dir_name`
 ## ist der cc_scaled-Ordner (z. B. "idle" oder "idle_hold"). Mit `with_axe` wird
 ## die Pack-Axt unter (NegativeLayer1) und über (Layer13) dem Körper eingefügt.
-static func _composite(dir_name: String, cols: int, look: Dictionary, with_axe: bool) -> Texture2D:
+static func _composite(dir_name: String, cols: int, look: Dictionary, with_tool: bool, tool: String = "", metal: String = "") -> Texture2D:
 	var cell: int = CCCatalog.CELL
 	var w := cols * cell
 	var h := CCCatalog.ROWS * cell
 	var canvas := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var any := false
-	# Reihenfolge: Axt-Rückseite ganz unten, dann Körper/Kleidung, Axt vorn oben.
+	# Reihenfolge: Werkzeug-Rückseite ganz unten, dann Körper/Kleidung, Werkzeug vorn.
 	var order: Array = []
-	if with_axe:
-		order.append("NegativeLayer1_Axe_" + AXE_METAL)
+	if with_tool:
+		order.append("NegativeLayer1_%s_%s" % [tool, metal])
 	# Haare und Kopfbedeckung liegen im Pack auf derselben Ebene (Layer11) und
 	# sind nicht fürs gemeinsame Tragen gedacht: mit Mütze/Helm ragen die Haare
 	# sonst darüber. Deshalb Haare unterdrücken, sobald ein Hut gewählt ist.
@@ -107,8 +114,8 @@ static func _composite(dir_name: String, cols: int, look: Dictionary, with_axe: 
 		if slot == "hair" and has_hat:
 			continue
 		order.append(String(look.get(slot, "")))
-	if with_axe:
-		order.append("Layer13_Axe_" + AXE_METAL)
+	if with_tool:
+		order.append("Layer13_%s_%s" % [tool, metal])
 	for token_v in order:
 		var token := String(token_v)
 		if token == "":

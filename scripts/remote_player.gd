@@ -68,8 +68,9 @@ func _ready() -> void:
 
 ## Aussehen dieses Mitspielers. Standard, bis das echte über das Netz kommt.
 var _look: Dictionary = CCCatalog.default_look()
-## Hält der Mitspieler gerade die Axt? Steuert die bewaffneten Frames.
-var _armed := false
+## Welches Werkzeug der Mitspieler hält (Pack-Layer + Metall), "" = leere Hand.
+var _tool := ""
+var _metal := ""
 
 
 ## Übernimmt ein über das Netz empfangenes Aussehen und baut die Figur neu.
@@ -83,7 +84,7 @@ func _rebuild() -> void:
 	if _sprite == null:
 		return
 	var a := _sprite.animation
-	_sprite.sprite_frames = CCFrames.build(_look, _armed)
+	_sprite.sprite_frames = CCFrames.build(_look, _tool, _metal)
 	if _sprite.sprite_frames.has_animation(a):
 		_sprite.play(a)
 
@@ -103,16 +104,17 @@ var _has_target := false
 ## Uebernimmt eine ueber das Netz empfangene Momentaufnahme. Die Position wird
 ## nur als ZIEL gemerkt und in _process weich angefahren - sonst springt die
 ## Figur bei 15 Paketen/s sichtbar.
-func apply_state(pos: Vector2, anim: StringName, frame: int, armed: bool = false) -> void:
+func apply_state(pos: Vector2, anim: StringName, frame: int, tool: String = "", metal: String = "") -> void:
 	if not _has_target:
 		global_position = pos        # erstes Paket: direkt hinsetzen
 		_has_target = true
 	_target = pos
 	if _sprite == null:
 		return
-	# Axt aufgenommen/abgelegt? Frames umbauen (mit/ohne Axt-Pose).
-	if armed != _armed:
-		_armed = armed
+	# Werkzeug gewechselt/abgelegt? Frames umbauen (mit/ohne Werkzeug-Pose).
+	if tool != _tool or metal != _metal:
+		_tool = tool
+		_metal = metal
 		_rebuild()
 	# Ost-Richtungen werden gespiegelt gezeichnet (siehe cc_frames.gd).
 	_sprite.flip_h = String(anim).ends_with("east")

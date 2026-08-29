@@ -194,6 +194,26 @@ static var ITEMS := {
 	},
 }
 
+## Welches Werkzeug die Figur beim Halten zeigt: item_id -> [Layer-Name, Metall].
+## Layer-Namen sind die des Packs (siehe cc_frames.TOOL_LAYERS). Metall-Tiers auf
+## Pack-Metalle gemappt (Stein/Eisen -> Iron, Gold -> Gold; das Item-Icon im
+## Inventar unterscheidet die Stufen ohnehin klar). Hoe (capa) fehlt im Pack ->
+## leere Hand ([]).
+const TOOL_HOLD := {
+	"balta": ["Axe", "Iron"], "demir_balta": ["Axe", "Iron"], "altin_balta": ["Axe", "Gold"],
+	"kazma": ["PickAxe", "Iron"], "demir_kazma": ["PickAxe", "Iron"], "altin_kazma": ["PickAxe", "Gold"],
+	"kurek": ["Showel", "Iron"], "demir_kurek": ["Showel", "Iron"], "altin_kurek": ["Showel", "Gold"],
+	"bicak": ["Sword", "Iron"], "demir_bicak": ["Sword", "Iron"], "altin_bicak": ["Sword", "Gold"],
+	"cekic": ["Hammer", "Iron"], "demir_cekic": ["Hammer", "Iron"],
+	# capa/demir_capa/altin_capa (Hoe): kein Pack-Sprite -> leere Hand.
+}
+
+
+## Werkzeug-Halte-Sprite eines Items: [Layer, Metall] oder ["", ""] (leere Hand).
+static func hold_of(id: String) -> Array:
+	return TOOL_HOLD.get(id, ["", ""])
+
+
 ## Die Einrichtung aus `basic furniture.png`, als {id: [Name, Zelle]}.
 ## Steht getrennt, weil alle dasselbe Sheet und dasselbe 64er-Raster
 ## benutzen - so muss das nicht siebzehnmal danebenstehen.

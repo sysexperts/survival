@@ -157,7 +157,13 @@ func _process(delta: float) -> void:
 	# das sind Tastendruck, Klick und jedes Umlegen im Inventar.
 	if player != null:
 		var held: Dictionary = inventory.slots[hud.selected]
-		player.has_axe = not held.is_empty() and held["id"] == "balta"
+		var hid := "" if held.is_empty() else String(held["id"])
+		# Welches Werkzeug die Figur zeigt (Halte-Sprite). Faellen weiterhin nur
+		# mit einer Axt - aber jetzt jede Stufe (Stein/Eisen/Gold), nicht nur Stein.
+		var hold: Array = ItemDB.hold_of(hid)
+		player.held_tool = String(hold[0])
+		player.held_metal = String(hold[1])
+		player.has_axe = String(hold[0]) == "Axe"
 
 	if _notice_left > 0.0:
 		_notice_left -= delta

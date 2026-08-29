@@ -162,19 +162,21 @@ func _process(delta: float) -> void:
 	if sprite == null:
 		return
 	_recv_state.rpc(multiplayer.get_unique_id(), Net.player_name,
-		_local.global_position, sprite.animation, sprite.frame, _local.has_axe)
+		_local.global_position, sprite.animation, sprite.frame,
+		_local.held_tool, _local.held_metal)
 
 
 ## Zustand eines Spielers. Unreliable - bei 15 Paketen/s ist ein verlorenes egal.
+## tool/metal = gehaltenes Werkzeug (Pack-Layer + Metall), "" = leere Hand.
 @rpc("any_peer", "unreliable")
-func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, frame: int, armed: bool) -> void:
+func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, frame: int, tool: String, metal: String) -> void:
 	# Server: an alle anderen Clients weiterreichen, selbst nichts anzeigen.
 	if Net.is_dedicated:
 		# Fuer Admin-Befehle merken, wer wo steht (Name -> Peer -> Position).
 		_server_states[owner_id] = {"name": pname, "pos": pos}
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
-				_recv_state.rpc_id(pid, owner_id, pname, pos, anim, frame, armed)
+				_recv_state.rpc_id(pid, owner_id, pname, pos, anim, frame, tool, metal)
 		return
 
 	if owner_id == multiplayer.get_unique_id():
@@ -185,7 +187,7 @@ func _recv_state(owner_id: int, pname: String, pos: Vector2, anim: StringName, f
 		if av == null:
 			return
 	av.set_player_name(pname)
-	av.apply_state(pos, anim, frame, armed)
+	av.apply_state(pos, anim, frame, tool, metal)
 
 
 ## Weltpositionen aller sichtbaren Spieler (eigener + Mitspieler). Der

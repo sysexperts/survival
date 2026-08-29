@@ -95,10 +95,16 @@ var world: IsoWorld
 ## Haelt Jack gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
 ## danach, was in der Hotbar ausgewaehlt ist. Ohne Axt kein Baum.
 var has_axe := false
-## Gewaehltes Aussehen (fuer Neuaufbau bei Axt-Wechsel).
+## Welches Werkzeug Jack gerade in der Hand zeigt (Pack-Layer-Name + Metall),
+## vom Inventar nach der Hotbar-Auswahl gesetzt. "" = leere Hand. has_axe bleibt
+## als eigener Schalter fuer das Faellen (nur die Axt faellt Baeume).
+var held_tool := ""
+var held_metal := ""
+## Gewaehltes Aussehen (fuer Neuaufbau bei Werkzeug-Wechsel).
 var _look: Dictionary = {}
-## Werden gerade die bewaffneten Frames (Axt in der Hand) gezeigt?
-var _armed_shown := false
+## Welches Werkzeug/Metall gerade in den Frames steckt (Vergleich fuer Neuaufbau).
+var _tool_shown := ""
+var _metal_shown := ""
 var level := 0                   ## Ebene des Blocks, auf dem Jack steht
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
@@ -170,7 +176,7 @@ func _ready() -> void:
 	world = get_node(world_path) as IsoWorld
 	# Figur aus dem gewaehlten Aussehen bauen (statt festem jack_frames.tres).
 	_look = AppearanceStore.local()
-	sprite.sprite_frames = CCFrames.build(_look, has_axe)
+	sprite.sprite_frames = CCFrames.build(_look, held_tool, held_metal)
 	sprite.offset = sprite_offset
 	# Ruhelagen der sichtbaren Kinder merken - darauf wird der Stufen-Versatz
 	# addiert (siehe _step_lag).
@@ -199,22 +205,24 @@ func _ready() -> void:
 func apply_look(look: Dictionary) -> void:
 	_look = look
 	var a := sprite.animation
-	sprite.sprite_frames = CCFrames.build(_look, has_axe)
-	_armed_shown = has_axe
+	sprite.sprite_frames = CCFrames.build(_look, held_tool, held_metal)
+	_tool_shown = held_tool
+	_metal_shown = held_metal
 	if sprite.sprite_frames.has_animation(a):
 		sprite.play(a)
 	else:
 		_play("idle")
 
 
-## Wechselt zwischen unbewaffneten und bewaffneten Frames, sobald sich has_axe
-## ändert. Die laufende Animation (gleicher Name in beiden Sätzen) läuft weiter.
+## Wechselt die gezeigten Frames, sobald sich das gehaltene Werkzeug/Metall
+## ändert. Die laufende Animation (gleicher Name in allen Sätzen) läuft weiter.
 func _sync_armed() -> void:
-	if _armed_shown == has_axe:
+	if _tool_shown == held_tool and _metal_shown == held_metal:
 		return
-	_armed_shown = has_axe
+	_tool_shown = held_tool
+	_metal_shown = held_metal
 	var a := sprite.animation
-	sprite.sprite_frames = CCFrames.build(_look, has_axe)
+	sprite.sprite_frames = CCFrames.build(_look, held_tool, held_metal)
 	if sprite.sprite_frames.has_animation(a):
 		sprite.play(a)
 
