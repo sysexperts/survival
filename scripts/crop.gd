@@ -23,8 +23,14 @@ var world = null
 
 var _atlas: Texture2D
 var _shown := ""            ## zuletzt gesetztes Bild (Stufe/tot), gegen Neubau
-var _info: Label
+var _panel: Control         ## kleine Info-Karte ueber der Pflanze (Hover)
+var _bar_fill: ColorRect    ## Fortschrittsbalken (Wachstum)
+var _bar_bg: ColorRect
+var _label: Label
 var _hovered := false
+
+const BAR_W := 40.0
+const BAR_H := 5.0
 
 
 static func create(p_world, p_crop_id: String, p_cell: Vector2i, p_level: int, p_planted: float):
@@ -43,16 +49,46 @@ func _ready() -> void:
 	add_to_group("crop")
 	_atlas = load(CropDB.SHEET)
 	z_index = 1                          # knapp ueber dem Boden
-	_info = Label.new()
-	_info.add_theme_font_size_override("font_size", 11)
-	_info.add_theme_color_override("font_color", Color(0.85, 1, 0.8))
-	_info.add_theme_constant_override("outline_size", 4)
-	_info.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_info.z_index = 100
-	_info.visible = false
-	add_child(_info)
+	_build_info()
 	_apply()
+
+
+## Kleine Info-Karte: dunkle Pille mit Fortschrittsbalken + Restzeit-Text.
+func _build_info() -> void:
+	_panel = Control.new()
+	_panel.z_index = 100
+	# Kinder des Sprites sitzen an der Sprite-Position (= Zellmitte), NICHT am
+	# offset - also horizontal genau ueber der Pflanzenmitte. Etwas nach oben.
+	_panel.position = Vector2(0, ART_OFFSET.y - 12)
+	_panel.visible = false
+	add_child(_panel)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.06, 0.08, 0.82)
+	bg.position = Vector2(-BAR_W * 0.5 - 4, -4)
+	bg.size = Vector2(BAR_W + 8, 26)
+	_panel.add_child(bg)
+
+	_bar_bg = ColorRect.new()
+	_bar_bg.color = Color(0.15, 0.17, 0.2, 0.95)
+	_bar_bg.position = Vector2(-BAR_W * 0.5, 16)
+	_bar_bg.size = Vector2(BAR_W, BAR_H)
+	_panel.add_child(_bar_bg)
+
+	_bar_fill = ColorRect.new()
+	_bar_fill.color = Color(0.5, 0.85, 0.35, 1.0)
+	_bar_fill.position = Vector2(-BAR_W * 0.5, 16)
+	_bar_fill.size = Vector2(0, BAR_H)
+	_panel.add_child(_bar_fill)
+
+	_label = Label.new()
+	_label.add_theme_font_size_override("font_size", 11)
+	_label.add_theme_constant_override("outline_size", 4)
+	_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label.position = Vector2(-BAR_W * 0.5, -2)
+	_label.size = Vector2(BAR_W, 16)
+	_panel.add_child(_label)
 
 
 func _data() -> Dictionary:
@@ -113,20 +149,32 @@ func _apply() -> void:
 
 func _update_info() -> void:
 	if is_dead():
-		_info.text = "Öldü"
+		_label.text = "Öldü"
+		_label.add_theme_color_override("font_color", Color(0.95, 0.55, 0.5))
+		_bar_bg.visible = false
+		_bar_fill.visible = false
 	elif is_ripe():
-		_info.text = "Hasada hazir"
+		_label.text = "Hazir"
+		_label.add_theme_color_override("font_color", Color(0.6, 0.95, 0.55))
+		_bar_bg.visible = true
+		_bar_fill.visible = true
+		_bar_fill.size.x = BAR_W
+		_bar_fill.color = Color(0.55, 0.9, 0.4, 1.0)
 	else:
-		var rest := int(ceil(ripe_seconds() - _elapsed()))
-		_info.text = "%d:%02d" % [rest / 60, rest % 60]
-	_info.reset_size()
-	_info.position = Vector2(-_info.size.x * 0.5, ART_OFFSET.y - 14)
+		var ripe := ripe_seconds()
+		var rest := int(ceil(ripe - _elapsed()))
+		_label.text = "%d:%02d" % [rest / 60, rest % 60]
+		_label.add_theme_color_override("font_color", Color(0.92, 0.95, 0.85))
+		_bar_bg.visible = true
+		_bar_fill.visible = true
+		_bar_fill.size.x = BAR_W * clampf(_elapsed() / ripe, 0.0, 1.0)
+		_bar_fill.color = Color(0.85, 0.75, 0.3, 1.0)
 
 
 ## Von der Interaktion gesetzt: Restzeit/Status ueber der Pflanze zeigen.
 func set_hovered(on: bool) -> void:
 	_hovered = on
-	_info.visible = on
+	_panel.visible = on
 	if on:
 		_update_info()
 

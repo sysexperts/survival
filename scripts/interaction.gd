@@ -87,7 +87,33 @@ func _process(_delta: float) -> void:
 	if player != null and (player.held_tool == "Showel" or player.held_is_dirt):
 		_highlight_ground()
 		return
+	# Hacke: zeigt die Zelle, die zu Acker wird (gruen = geht). Samen: zeigt die
+	# gehackte Zelle, auf die gepflanzt wird.
+	if player != null and ItemDB.is_hoe(player.held_item_id):
+		_highlight_farm_cell(true)
+		return
+	if player != null and ItemDB.is_seed(player.held_item_id):
+		_highlight_farm_cell(false)
+		return
 	highlight.visible = false
+
+
+## Diamant-Umriss der Zielzelle beim Hacken/Pflanzen. `till_mode`: hackbar?
+## sonst pflanzbar (gehackt, frei). Gruen = geht, Rot = nicht.
+func _highlight_farm_cell(till_mode: bool) -> void:
+	highlight.visible = false
+	var hit := world.pick_block(get_global_mouse_position())
+	if hit.is_empty():
+		return
+	var cell: Vector2i = hit[0]
+	var ok := world.can_till(cell) if till_mode else \
+		(world.is_tilled(cell) and not world.has_crop(cell))
+	_ground_hl.default_color = Color(0.45, 1.0, 0.45, 0.95) if ok else Color(1.0, 0.4, 0.4, 0.9)
+	var c := world.cell_to_world(cell, int(hit[1]))
+	_ground_hl.points = PackedVector2Array([
+		c + Vector2(0, -8), c + Vector2(16, 0),
+		c + Vector2(0, 8), c + Vector2(-16, 0)])
+	_ground_hl.visible = true
 
 
 ## Diamant-Umriss der Top-Flaeche des Bodenblocks unter der Maus. Beim BUDDELN
@@ -96,6 +122,7 @@ func _process(_delta: float) -> void:
 ## (Wand bauen). So sieht man, ob man drauf oder daneben platziert.
 func _highlight_ground() -> void:
 	highlight.visible = false
+	_ground_hl.default_color = outline_color   # nach Hacke/Samen (gruen/rot) zuruecksetzen
 	var hit := world.pick_block(get_global_mouse_position())
 	if hit.is_empty():
 		return
@@ -140,17 +167,22 @@ func _highlight_furniture(node: Furniture) -> void:
 	highlight.visible = true
 
 
-## Vorderste Pflanze unter der Maus (pixelgenau), oder null.
+## Vorderste Pflanze unter der Maus - PIXELGENAU (Alpha), damit die Nachbarzellen
+## frei anklickbar bleiben (sonst deckt das 32er-Rechteck die Nachbarn ab und man
+## koennte nicht direkt daneben pflanzen).
 func _crop_under_mouse():
 	var mouse := get_global_mouse_position()
 	var best = null
 	var best_y := -INF
 	for node in get_tree().get_nodes_in_group("crop"):
-		var tex: Texture2D = node.texture
+		var tex := node.texture as AtlasTexture
 		if tex == null:
 			continue
 		var rect := Rect2(node.global_position + node.offset, tex.get_size())
-		if rect.has_point(mouse) and node.global_position.y > best_y:
+		if not rect.has_point(mouse):
+			continue
+		var local := mouse - rect.position
+		if _furn_alpha(tex, local) > 0.1 and node.global_position.y > best_y:
 			best_y = node.global_position.y
 			best = node
 	return best
