@@ -127,6 +127,11 @@ static var ITEMS := {
 		"name": "Ham Elmas", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/diamond_ore.png",
 	},
+	# Kohle: Icon vorerst die Coal-Fels-Zelle aus rocks.png (Reihe 4).
+	"komur": {
+		"name": "Kömür", "max_stack": 64,
+		"sheet": "res://assets/props/rocks.png", "region": Rect2i(0, 192, 48, 48),
+	},
 	# Islenmis Sopa = bearbeiteter Griff, Zutat der Eisenwerkzeuge.
 	"islenmis_sopa": {
 		"name": "Islenmis Sopa", "max_stack": 64,

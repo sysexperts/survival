@@ -20,7 +20,7 @@ const XP_PER_BUILD := 10.0
 ## Itemleiste. Bewusst NICHT ans Feature-Flag gebunden (Test/Grundfortschritt).
 const XP_PER_FELL := 4.0
 ## XP pro abgebautem Fels, je nach Wert: Stein wenig, Diamant viel.
-const XP_MINE := {"tas": 2.0, "demir_cevheri": 8.0, "altin_cevheri": 16.0, "ham_elmas": 45.0}
+const XP_MINE := {"tas": 2.0, "komur": 4.0, "demir_cevheri": 8.0, "altin_cevheri": 16.0, "ham_elmas": 45.0}
 
 var _player: Node = null
 var _label: Label = null
