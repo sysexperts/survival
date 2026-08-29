@@ -103,6 +103,12 @@ static var ITEMS := {
 		"name": "Demir", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/iron.png",
 	},
+	# Toprak = Dirt-Block vom Buddeln (Schaufel). Icon = die Dirt-Wuerfelkachel
+	# aus dem Boden-Sheet. Zum Aufschuetten (Terraforming) wieder platzierbar.
+	"toprak": {
+		"name": "Toprak", "max_stack": 64,
+		"sheet": SHEET_TILES, "cell": Vector2i(3, 1),
+	},
 	# Islenmis Sopa = bearbeiteter Griff, Zutat der Eisenwerkzeuge.
 	"islenmis_sopa": {
 		"name": "Islenmis Sopa", "max_stack": 64,

@@ -111,6 +111,9 @@ func _ready() -> void:
 		player.axe_swung.connect(_on_axe_swung)
 		player.reached_station.connect(_on_reached_station)
 		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
+		# Buddeln gibt einen Dirt-Block, Aufschuetten verbraucht einen.
+		player.dug.connect(func(_c): _grant("toprak", 1))
+		player.raised.connect(func(_c): inventory.remove("toprak", 1))
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -164,6 +167,7 @@ func _process(delta: float) -> void:
 		player.held_tool = String(hold[0])
 		player.held_metal = String(hold[1])
 		player.has_axe = String(hold[0]) == "Axe"
+		player.held_is_dirt = hid == "toprak"
 
 	if _notice_left > 0.0:
 		_notice_left -= delta

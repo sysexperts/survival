@@ -27,10 +27,10 @@ const DEFAULT_FPS := 10.0
 ## Werkzeug); run/axe nutzen dieselbe Pose, nur mit Werkzeug-Layern. sleep nie.
 const STATE_DIR_ARMED := {
 	"idle": "idle_hold", "walk": "walk_hold",
-	"run": "run", "axe": "axe", "sleep": "sleep",
+	"run": "run", "axe": "axe", "sleep": "sleep", "dig": "dig",
 }
 ## Zustände, die im bewaffneten Modus die Werkzeug-Layer bekommen.
-const TOOL_STATES := ["idle", "walk", "run", "axe"]
+const TOOL_STATES := ["idle", "walk", "run", "axe", "dig"]
 ## Bekannte Werkzeug-Layer-Namen im Pack (Layer13_<Tool>_<Metal>). Nur diese
 ## haben Sprites; der Hoe (capa) fehlt im Pack -> leere Hand.
 const TOOL_LAYERS := ["Axe", "PickAxe", "Showel", "Sword", "Hammer"]

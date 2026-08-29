@@ -13,7 +13,7 @@ class_name GridPath
 static func find(world: IsoWorld, start: Vector2i, goal: Vector2i,
 		max_step: int = 1, max_nodes: int = 4000) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	if start == goal or world.top_level_at(goal) < 0 or world.has_prop(goal):
+	if start == goal or world.top_level_at(goal) <= IsoWorld.NO_FLOOR or world.has_prop(goal):
 		return result
 
 	var came: Dictionary = {start: start}
@@ -64,7 +64,7 @@ static func adjacent_to(world: IsoWorld, target: Vector2i, from: Vector2i,
 	var best := Vector2i(2147483647, 2147483647)
 	var best_dist := INF
 	for n in world.neighbors(target):
-		if world.top_level_at(n) < 0 or world.has_prop(n):
+		if world.top_level_at(n) <= IsoWorld.NO_FLOOR or world.has_prop(n):
 			continue
 		var d := world.cell_to_world(n, 0).distance_to(world.cell_to_world(from, 0))
 		if d < best_dist:

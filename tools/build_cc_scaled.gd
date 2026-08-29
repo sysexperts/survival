@@ -34,6 +34,7 @@ const ACTIONS := {
 	"walk":  ["Walk", 6],
 	"run":   ["Run(HoldingToolOrNot)", 4],
 	"axe":   ["Swing", 6],
+	"dig":   ["Dig", 6],
 	"sleep": ["Die(HoldingToolOrNot)", 1, 5],
 	"idle_hold": ["IdleHoldingTool", 8],
 	"walk_hold": ["WalkHoldingTool", 6],

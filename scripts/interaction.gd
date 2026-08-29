@@ -141,6 +141,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				# Ankunft) bzw. gar nichts.
 				if not player.walk_to_bed(furn[0]):
 					player.walk_to_station(furn[0])
+				return
+			# Blanker Boden: Schaufel buddelt eine Ebene ab, ein Dirt-Block
+			# schuettet eine Ebene auf (Terraforming). Sonst passiert nichts.
+			var ground_hit := world.pick_block(get_global_mouse_position())
+			if not ground_hit.is_empty():
+				if player.held_tool == "Showel":
+					player.dig(ground_hit[0])
+				elif player.held_is_dirt:
+					player.raise_ground(ground_hit[0])
 			return
 		# Stein: hinlaufen und aufheben - E geht weiter zu Fuss.
 		if int(_hovered[3]) == IsoWorld.STONE_SOURCE_ID:

@@ -53,6 +53,11 @@ signal placed_furniture(id: String, cell: Vector2i, orient: int)
 ## Es kommt bewusst NICHT ins Inventar zurueck - Zerstoeren heisst weg.
 signal destroyed_placed(cell: Vector2i)
 
+## Eine Zelle wurde abgebaut (Schaufel) - Inventar bekommt einen Dirt-Block,
+## world_sync verteilt es. Bzw. aufgeschuettet (Dirt platziert).
+signal dug(cell: Vector2i)
+signal raised(cell: Vector2i)
+
 @export var world_path: NodePath = ^"../World"
 @export var walk_speed := 60.0
 @export var run_speed := 110.0
@@ -100,6 +105,9 @@ var has_axe := false
 ## als eigener Schalter fuer das Faellen (nur die Axt faellt Baeume).
 var held_tool := ""
 var held_metal := ""
+## Ist das gewaehlte Hotbar-Item ein Dirt-Block (zum Aufschuetten)? Vom Inventar
+## gesetzt, damit die Maus-Steuerung (interaction.gd) das Aufschuetten ausloest.
+var held_is_dirt := false
 ## Gewaehltes Aussehen (fuer Neuaufbau bei Werkzeug-Wechsel).
 var _look: Dictionary = {}
 ## Welches Werkzeug/Metall gerade in den Frames steckt (Vergleich fuer Neuaufbau).
@@ -118,6 +126,10 @@ var _clearing_stump := false     ## Auftrag ist "Stumpf weg", nicht "Baum faelle
 var _pickup_cell := Vector2i(2147483647, 2147483647)  ## Stein, der nach dem Laufen dran ist
 var _reach_station := ""          ## Station, die nach dem Laufen geoeffnet wird
 var _reach_destroy := Vector2i(2147483647, 2147483647)  ## Objekt, das nach dem Laufen zerstoert wird
+## Buddeln/Aufschuetten mit der Schaufel: Zielzelle + Aktion ("dig"/"raise"),
+## nach dem Hinlaufen ausgefuehrt. Waehrend der Grab-Animation ist busy=true.
+var _dig_target := Vector2i(2147483647, 2147483647)
+var _dig_action := ""
 var _tree: TreeActor = null      ## Baum als Node, solange gefällt wird
 var _camera: Camera2D = null
 ## WorldSync-Node (Multiplayer): geteilte Baum-HP. Im Einzelspieler null bzw.
@@ -373,7 +385,7 @@ func _physics_process(delta: float) -> void:
 	# der gefällte Baum bliebe als Node hängen.
 	if input != Vector2.ZERO and (busy or not path.is_empty() or _chop_level >= 0
 			or _pickup_cell != INVALID_CELL or _reach_station != "" or _reach_bed
-			or _reach_destroy != INVALID_CELL):
+			or _reach_destroy != INVALID_CELL or _dig_target != INVALID_CELL):
 		_cancel_task()
 
 	if busy:
@@ -406,6 +418,9 @@ func _physics_process(delta: float) -> void:
 			_reach_destroy = INVALID_CELL
 			_do_destroy(dcell)
 			_play("idle")
+			return
+		if _dig_target != INVALID_CELL:
+			_begin_dig()
 			return
 		_play("idle")
 		return
@@ -514,6 +529,10 @@ func _shake(amount: float) -> void:
 
 
 func _on_animation_finished() -> void:
+	# Grab-Animation (Schaufel) fertig -> Welt aendern + Signal.
+	if String(sprite.animation).begins_with("dig_"):
+		_finish_dig()
+		return
 	if not String(sprite.animation).begins_with("axe_"):
 		return
 	busy = false
@@ -788,6 +807,74 @@ func _net_game_call(method: String, arg) -> void:
 		ng.call(method, arg)
 
 
+# --- Buddeln / Aufschuetten (Schaufel) ----------------------------------
+
+## Läuft zur Zelle und baut sie mit der Schaufel eine Ebene ab (Rechtsklick).
+## Steht Jack schon daneben, buddelt er sofort. false, wenn dort nicht abbaubar
+## ist oder kein Weg daneben führt.
+func dig(cell: Vector2i) -> bool:
+	if not world.can_dig(cell):
+		return false
+	return _walk_then_dig(cell, "dig")
+
+
+## Läuft zur Zelle und schüttet einen Dirt-Block drauf (Aufschütten).
+func raise_ground(cell: Vector2i) -> bool:
+	# raise_cell prueft selbst, ob es passt (nicht ueber die oberste Ebene, kein Prop).
+	if world.top_level_at(cell) <= world.NO_FLOOR:
+		return false
+	return _walk_then_dig(cell, "raise")
+
+
+## Gemeinsamer Ablauf: neben die Zielzelle laufen, dann die Grab-Animation.
+func _walk_then_dig(cell: Vector2i, action: String) -> bool:
+	_cancel_task()
+	var here := world.world_to_cell(global_position, level)
+	var stand := GridPath.adjacent_to(world, cell, here, max_step)
+	if stand.x == 2147483647:
+		return false
+	_dig_target = cell
+	_dig_action = action
+	if stand == here:
+		return true                      # naechster idle-Frame startet _begin_dig()
+	path = GridPath.find(world, here, stand, max_step)
+	if path.is_empty():
+		_dig_target = INVALID_CELL
+		_dig_action = ""
+		return false
+	return true
+
+
+## Startet die Grab-Animation Richtung Zielzelle (blockierend bis fertig).
+func _begin_dig() -> void:
+	var ground := maxi(world.top_level_at(_dig_target), 0)
+	var to_cell := world.cell_to_world(_dig_target, ground) - global_position
+	facing = DIRS[_dir_index(Vector2(to_cell.x, to_cell.y / y_squash))]
+	busy = true
+	_sync_armed()
+	sprite.flip_h = CCFrames.flipped(facing)
+	sprite.play("dig_%s" % facing.replace("-", "_"))
+
+
+## Grab-Animation fertig: Welt aendern und Signal (Inventar + world_sync).
+func _finish_dig() -> void:
+	busy = false
+	var cell := _dig_target
+	var action := _dig_action
+	_dig_target = INVALID_CELL
+	_dig_action = ""
+	if cell == INVALID_CELL:
+		_play("idle")
+		return
+	if action == "dig":
+		if world.dig_cell(cell):
+			dug.emit(cell)
+	elif action == "raise":
+		if world.raise_cell(cell):
+			raised.emit(cell)
+	_play("idle")
+
+
 ## Läuft zum Stumpf und entfernt ihn mit einem Schlag - endgültig, es
 ## wächst danach nichts mehr nach.
 func clear_stump(cell: Vector2i, stump_level: int) -> bool:
@@ -830,6 +917,8 @@ func _cancel_task() -> void:
 	_reach_station = ""
 	_reach_bed = false
 	_reach_destroy = INVALID_CELL
+	_dig_target = INVALID_CELL
+	_dig_action = ""
 	_chop_level = -1
 	_chops_left = 0
 	_clearing_stump = false

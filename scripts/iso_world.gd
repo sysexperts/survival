@@ -24,6 +24,22 @@ const PROP_SOURCE_ID := 1             ## Baeume: solide, nicht begehbar
 const STUMP_SOURCE_ID := 2            ## Baumstuempfe: begehbar, aber anklickbar
 const STONE_SOURCE_ID := 3            ## Kleine Steine: begehbar, aufsammelbar
 
+## --- Untergrund / Buddeln -----------------------------------------------
+## Unter der Oberflaeche (Level 0) liegen 4 Dirt-Ebenen (-1..-4); Level -5 ist
+## Grundgestein (schwarz, nicht abbaubar). Diese Ebenen werden unter jeder
+## Bodenzelle vorbefuellt (siehe _fill_underground), damit die Waende eines Lochs
+## solide sind. Gebuddelt wird von oben nach unten (erase_block), aufgeschuettet
+## nach oben (set_block).
+const MIN_LEVEL := -5                 ## Grundgestein-Ebene (nicht abbaubar)
+const UNDER_COUNT := 5                ## Ebenen -1..-5
+## Sentinel von top_level_at: gar kein Boden in dieser Saeule (frueher -1, jetzt
+## unter MIN_LEVEL, weil -1..-5 jetzt gueltige Boeden sind).
+const NO_FLOOR := MIN_LEVEL - 1       ## -6
+## Dirt-Kachel fuer Untergrund/Aufschuetten (aus WorldGen.DIRT).
+const DIRT_ATLAS := Vector2i(3, 1)
+## Untergrund-Ebenen (Index i -> Level -(i+1)), zur Laufzeit erzeugt.
+var _below: Array[TileMapLayer] = []
+
 ## Kleine Steine sind im Original-Sheet ganz normale Bodenkacheln - deshalb
 ## liegen sie in der Karte auch in Quelle 0. Beim Spielstart werden genau
 ## diese Atlas-Koordinaten herausgefischt und zu eigenen Nodes gemacht,
@@ -58,12 +74,54 @@ func _ready() -> void:
 		# Im Spiel ist der Editor-Fokus irrelevant.
 		for l in levels:
 			l.visible = true
+		# Untergrund-Ebenen (-1..-5) anlegen und unter jede Bodenzelle Dirt/
+		# Grundgestein legen - erst danach die Props umwandeln.
+		_create_underground()
+		_fill_underground_authored()
 		# Vor dem Umwandeln der Props merken, was von Hand gemalt wurde -
 		# der Weltgenerator baut nur außen herum und darf diesen Bereich nie
 		# anfassen. _spawn_prop_nodes() entfernt Prop-/Stein-Kacheln aus den
 		# Ebenen, deshalb MUSS das Erfassen davor laufen.
 		_record_authored()
 		_spawn_prop_nodes()
+
+
+## Erzeugt die Untergrund-Ebenen (-1..-5) als eigene TileMapLayer ("Under1"..).
+## Sie liegen tiefer (positiver y-Offset) und hinter der Oberflaeche (kleinerer
+## z_index). Die unterste (-5) wird fast schwarz eingefaerbt = Grundgestein.
+func _create_underground() -> void:
+	if not _below.is_empty():
+		return
+	for i in range(UNDER_COUNT):
+		var lvl := -(i + 1)
+		var l := TileMapLayer.new()
+		l.name = "Under%d" % (i + 1)
+		l.tile_set = tile_set_res
+		l.position = Vector2(0, -lvl * LEVEL_STEP_PX)
+		l.z_index = lvl
+		l.y_sort_enabled = true
+		if lvl == MIN_LEVEL:
+			l.modulate = Color(0.06, 0.06, 0.08)   # Grundgestein = schwarz
+		add_child(l)
+		_below.append(l)
+
+
+## Fuellt unter jeder Bodenzelle (Block auf Level 0) die Untergrund-Ebenen:
+## -1..-4 Dirt, -5 Grundgestein. So sind Loch-Waende solide.
+func _fill_underground_authored() -> void:
+	if levels.is_empty():
+		return
+	for cell in levels[0].get_used_cells():
+		_fill_underground(cell)
+
+
+## Legt unter EINE Zelle die Untergrund-Bloecke (falls noch nicht da).
+func _fill_underground(cell: Vector2i) -> void:
+	for i in range(UNDER_COUNT):
+		var lvl := -(i + 1)
+		var l := _lay(lvl)
+		if l != null and l.get_cell_source_id(cell) == -1:
+			l.set_cell(cell, SOURCE_ID, DIRT_ATLAS)
 
 
 func _notification(what: int) -> void:
@@ -78,7 +136,7 @@ func _sync() -> void:
 	levels.clear()
 	var found: Array = []
 	for c in get_children():
-		if c is TileMapLayer:
+		if c is TileMapLayer and not String(c.name).begins_with("Under"):
 			found.append([_level_of(c), c])
 	found.sort_custom(func(a, b): return a[0] < b[0])
 
@@ -112,10 +170,17 @@ func level_count() -> int:
 	return levels.size()
 
 
+## Ebene zu einem Level - Oberflaeche (>=0) aus `levels`, Untergrund (<0) aus
+## `_below`. null, wenn es die Ebene nicht gibt.
+func _lay(level: int) -> TileMapLayer:
+	if level >= 0:
+		return levels[level] if level < levels.size() else null
+	var i := -level - 1
+	return _below[i] if i < _below.size() else null
+
+
 func layer(level: int) -> TileMapLayer:
-	if levels.is_empty():
-		return null
-	return levels[clampi(level, 0, levels.size() - 1)]
+	return _lay(level)
 
 
 # --- Abfragen für Gameplay ---------------------------------------------
@@ -133,47 +198,90 @@ func cell_to_world(cell: Vector2i, level: int) -> Vector2:
 
 
 func has_block(cell: Vector2i, level: int) -> bool:
-	if level < 0 or level >= levels.size():
-		return false
-	return levels[level].get_cell_source_id(cell) != -1
+	var l := _lay(level)
+	return l != null and l.get_cell_source_id(cell) != -1
 
 
-## Höchste begehbare Ebene an dieser Zelle, oder -1 wenn die Säule leer ist.
-## Props zählen nicht als Boden - auf einen Baum klettert man nicht.
+## Höchste begehbare Ebene an dieser Zelle, oder NO_FLOOR wenn die Säule leer ist.
+## Sucht jetzt bis in den Untergrund (MIN_LEVEL). Props zählen nicht als Boden.
 func top_level_at(cell: Vector2i) -> int:
-	for i in range(levels.size() - 1, -1, -1):
-		if levels[i].get_cell_source_id(cell) == SOURCE_ID:
-			return i
-	return -1
+	for lvl in range(levels.size() - 1, MIN_LEVEL - 1, -1):
+		var l := _lay(lvl)
+		if l != null and l.get_cell_source_id(cell) == SOURCE_ID:
+			return lvl
+	return NO_FLOOR
 
 
 ## Atlas-Koordinate des obersten Blocks (z. B. für Ressourcen-Typ).
 func top_atlas_at(cell: Vector2i) -> Vector2i:
 	var lvl := top_level_at(cell)
-	return levels[lvl].get_cell_atlas_coords(cell) if lvl >= 0 else Vector2i(-1, -1)
+	var l := _lay(lvl)
+	return l.get_cell_atlas_coords(cell) if l != null else Vector2i(-1, -1)
 
 
 ## Findet den Block, den die Maus optisch trifft: von oben nach unten,
-## weil ein höherer Block die Zellen darunter verdeckt.
+## weil ein höherer Block die Zellen darunter verdeckt. Auch Untergrund
+## (Loch-Boden), damit man in einem Loch weitergraben kann.
 ## Gibt [cell, level] zurück, oder [] wenn nichts getroffen wurde.
 func pick_block(world_pos: Vector2) -> Array:
-	for i in range(levels.size() - 1, -1, -1):
-		var cell := world_to_cell(world_pos, i)
-		if has_block(cell, i):
-			return [cell, i]
+	for lvl in range(levels.size() - 1, MIN_LEVEL - 1, -1):
+		var cell := world_to_cell(world_pos, lvl)
+		if has_block(cell, lvl):
+			return [cell, lvl]
 	return []
 
 
 # --- Laufzeit-Änderungen (Abbauen / Bauen im Spiel) --------------------
 
 func set_block(cell: Vector2i, level: int, atlas: Vector2i) -> void:
-	if level >= 0 and level < levels.size():
-		levels[level].set_cell(cell, SOURCE_ID, atlas)
+	var l := _lay(level)
+	if l != null:
+		l.set_cell(cell, SOURCE_ID, atlas)
 
 
 func erase_block(cell: Vector2i, level: int) -> void:
-	if level >= 0 and level < levels.size():
-		levels[level].erase_cell(cell)
+	var l := _lay(level)
+	if l != null:
+		l.erase_cell(cell)
+
+
+# --- Buddeln / Aufschuetten (Terraforming) ------------------------------
+
+## Kann diese Zelle abgebaut werden? (Boden vorhanden UND nicht Grundgestein.)
+func can_dig(cell: Vector2i) -> bool:
+	if has_prop(cell) or has_stump(cell) or blocker_at(cell) != null:
+		return false
+	var top := top_level_at(cell)
+	return top > MIN_LEVEL and top > NO_FLOOR
+
+
+## Baut den obersten Block einer Zelle ab (eine Ebene tiefer). Der Block darunter
+## ist durch die Vorbefuellung schon da (Dirt bzw. Grundgestein). Gibt true
+## zurueck, wenn wirklich abgebaut wurde. Vor dem Aufruf can_dig() pruefen.
+func dig_cell(cell: Vector2i) -> bool:
+	if not can_dig(cell):
+		return false
+	var top := top_level_at(cell)
+	# Sicherheitsnetz: falls der Untergrund an dieser Zelle noch nicht befuellt
+	# war (z. B. am Chunk-Rand), jetzt nachziehen, damit kein Loch ohne Boden entsteht.
+	_fill_underground(cell)
+	erase_block(cell, top)
+	return true
+
+
+## Schuettet auf einer Zelle einen Dirt-Block oben drauf (eine Ebene hoeher).
+## Deckelt bei der obersten Oberflaechen-Ebene. Gibt true bei Erfolg zurueck.
+func raise_cell(cell: Vector2i) -> bool:
+	if has_prop(cell) or has_stump(cell) or blocker_at(cell) != null:
+		return false
+	var top := top_level_at(cell)
+	if top <= NO_FLOOR:
+		return false
+	var new_level := top + 1
+	if new_level > levels.size() - 1:
+		return false                     # nicht hoeher als die oberste Ebene
+	set_block(cell, new_level, DIRT_ATLAS)
+	return true
 
 
 # --- Nachbarschaft ------------------------------------------------------
@@ -305,7 +413,8 @@ func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 		return false
 	var a := top_level_at(from)
 	var b := top_level_at(to)
-	return a >= 0 and b >= 0 and absi(b - a) <= max_step
+	# Boden vorhanden (auch Untergrund/Loch-Boden) und Stufe begehbar.
+	return a > NO_FLOOR and b > NO_FLOOR and absi(b - a) <= max_step
 
 
 # --- Handbau-Bereich (für den Weltgenerator) ---------------------------

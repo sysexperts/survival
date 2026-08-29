@@ -25,6 +25,9 @@ extends Node
 const BUILD_DIR := "/opt/survival_world"
 const BUILD_FILE := BUILD_DIR + "/build.json"
 const REMOVED_FILE := BUILD_DIR + "/removed.json"
+## Terraforming (Buddeln/Aufschuetten): je Zelle die Netto-Hoehenaenderung
+## (negativ = abgebaut, positiv = aufgeschuettet). Wird beim Beitritt vorgespielt.
+const TERRAFORM_FILE := BUILD_DIR + "/terraform.json"
 ## Nachwachs-Zeiten - muessen zu den Defaults in regrowth.gd passen. Der Server
 ## rechnet damit die Restzeit aus und laesst Abgelaufenes weg.
 const REGROW_SECONDS := 300.0
@@ -58,6 +61,8 @@ var _removed: Dictionary = {}
 var _pending: Array = []
 ## Server: geteilte Baum-HP je Zelle (Vector2i -> int).
 var _tree_hp: Dictionary = {}
+## Server: Terraform-Diffs "x,y" -> Netto-Hoehenaenderung (int).
+var _terraform: Dictionary = {}
 ## Client: Inventar, um dem toedlichen Schlaeger Holz gutzuschreiben.
 var _pinv: Node
 
@@ -70,6 +75,7 @@ func _ready() -> void:
 	if Net.is_dedicated:
 		_load_builds()               # Register vom letzten Lauf wiederherstellen
 		_load_removed()
+		_load_terraform()
 		_drop_sync = get_node_or_null(^"../DropSync")   # Boden-Drops beim Faellen
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
@@ -98,6 +104,8 @@ func _ensure_player() -> bool:
 	_player.placed_campfire.connect(_on_local_campfire)
 	_player.placed_furniture.connect(_on_local_furniture)
 	_player.destroyed_placed.connect(_on_local_destroy)
+	_player.dug.connect(_on_local_dug)
+	_player.raised.connect(_on_local_raised)
 	return true
 
 
@@ -146,6 +154,14 @@ func _on_local_destroy(cell: Vector2i) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "destroy", cell, 0, Vector2i.ZERO, "", 0)
 
 
+func _on_local_dug(cell: Vector2i) -> void:
+	_event.rpc(multiplayer.get_unique_id(), "dig", cell, 0, Vector2i.ZERO, "", 0)
+
+
+func _on_local_raised(cell: Vector2i) -> void:
+	_event.rpc(multiplayer.get_unique_id(), "raise", cell, 0, Vector2i.ZERO, "", 0)
+
+
 # --- Empfang -------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
@@ -161,6 +177,8 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_remove_build(cell)
 		elif kind == "fell" or kind == "stump" or kind == "stone":
 			_record_removal(kind, cell, level, atlas, s)
+		elif kind == "dig" or kind == "raise":
+			_record_terraform(kind, cell)
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
 				_event.rpc_id(pid, owner_id, kind, cell, level, atlas, s, flag)
@@ -199,6 +217,12 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 				_suppress = true
 				_player._do_destroy(cell)
 				_suppress = false
+		"dig":
+			# Ein anderer Spieler hat hier abgebaut -> lokal auch (nur Welt,
+			# kein Inventar - das bekam nur der Buddelnde).
+			_world.dig_cell(cell)
+		"raise":
+			_world.raise_cell(cell)
 
 
 # --- Bau-Persistenz (Server) + Replay (Client) ---------------------------
@@ -230,6 +254,11 @@ func _request_builds() -> void:
 			continue
 		_spawn_removal.rpc_id(id, String(r["kind"]), Vector2i(int(r["x"]), int(r["y"])),
 			int(r["level"]), Vector2i(int(r["ax"]), int(r["ay"])), String(r["gid"]), remaining)
+	# Terraforming nachspielen (Netto-Hoehe je Zelle).
+	for tkey in _terraform:
+		var parts: PackedStringArray = String(tkey).split(",")
+		if parts.size() == 2:
+			_spawn_terraform.rpc_id(id, Vector2i(int(parts[0]), int(parts[1])), int(_terraform[tkey]))
 
 
 ## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
@@ -356,6 +385,55 @@ func _remaining(r: Dictionary, now: float) -> float:
 			return INF                # Chunk-Rohstoff: endgueltig
 		_:                            # "stump" (gerodet): endgueltig
 			return INF
+
+
+# --- Terraform (Buddeln/Aufschuetten) Persistenz + Replay ----------------
+
+## Server: eine Buddel-/Schuett-Aktion in die Netto-Hoehe je Zelle einrechnen.
+func _record_terraform(kind: String, cell: Vector2i) -> void:
+	var key := "%d,%d" % [cell.x, cell.y]
+	var d := int(_terraform.get(key, 0)) + (-1 if kind == "dig" else 1)
+	if d == 0:
+		_terraform.erase(key)
+	else:
+		_terraform[key] = d
+	_save_terraform()
+
+
+## Server -> beitretender Client: Terrain-Aenderungen nachspielen. Negativ =
+## so oft abbauen, positiv = so oft aufschuetten. Best-effort: liegt der Chunk
+## noch nicht, greift can_dig/raise_cell nicht - der Handbau-Bereich stimmt.
+@rpc("any_peer", "reliable")
+func _spawn_terraform(cell: Vector2i, delta: int) -> void:
+	if _world == null:
+		return
+	if delta < 0:
+		for i in range(-delta):
+			_world.dig_cell(cell)
+	else:
+		for i in range(delta):
+			_world.raise_cell(cell)
+
+
+func _save_terraform() -> void:
+	DirAccess.make_dir_recursive_absolute(BUILD_DIR)
+	var f := FileAccess.open(TERRAFORM_FILE, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(_terraform))
+		f.close()
+
+
+func _load_terraform() -> void:
+	if not FileAccess.file_exists(TERRAFORM_FILE):
+		return
+	var f := FileAccess.open(TERRAFORM_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(data) == TYPE_DICTIONARY:
+		_terraform = data
+		print("WorldSync: %d Terraform-Zellen geladen." % _terraform.size())
 
 
 func _save_removed() -> void:

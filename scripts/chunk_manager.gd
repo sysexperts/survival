@@ -155,6 +155,13 @@ func _gen_cell(cell: Vector2i, blocks: Array, props: Array) -> void:
 		world.set_block(cell, lvl, atlas if lvl == h else WorldGenScript.GRASS[0])
 		blocks.append([cell, lvl])
 
+	# Untergrund (-1..-5) unter jede generierte Zelle legen (Dirt + Grundgestein),
+	# damit man auch draussen buddeln kann und Loch-Waende solide sind.
+	for i in range(IsoWorld.UNDER_COUNT):
+		var ulvl := -(i + 1)
+		world.set_block(cell, ulvl, IsoWorld.DIRT_ATLAS)
+		blocks.append([cell, ulvl])
+
 	_place_prop(cell, h, props)
 
 
