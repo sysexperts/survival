@@ -10,13 +10,8 @@ var _name_edit: LineEdit
 var _ip_edit: LineEdit
 var _status: Label
 
-## Video-Hintergrund im Startmenue + Umschalter (oben rechts).
-const VIDEO_BG := "res://assets/UI/login.ogv"
-const TOGGLE_ICON := "res://assets/UI/landscape.png"
-const SETTINGS_CFG := "user://settings.cfg"
-var _video: VideoStreamPlayer
-var _video_toggle: TextureButton
-var _video_on := true
+## Hintergrundbild im Startmenue.
+const BG_IMAGE := "res://assets/UI/landscape2.jpg"
 
 
 const UiCursor := preload("res://scripts/ui_cursor.gd")
@@ -35,10 +30,8 @@ func _ready() -> void:
 	# Maus-Cursor aufs Pack setzen (bleibt für die ganze Sitzung, auch im Spiel).
 	UiCursor.apply()
 
-	# Video-Hintergrund (ganz hinten). Kann oben rechts an-/ausgeschaltet werden.
-	_video_on = _load_video_pref()
-	_setup_video_background()
-	_build_video_toggle()
+	# Hintergrundbild (ganz hinten).
+	_setup_background()
 
 	# Aktuelle Version immer oben sichtbar. Nach einem Auto-Update liegt die
 	# neue version.txt aus der game.pck ueber res:// - hier steht also der
@@ -160,75 +153,17 @@ func _on_connection_failed() -> void:
 	_status.text = "Baglanti basarisiz.\nSunucu calisiyor mu ve adres dogru mu?"
 
 
-# --- Video-Hintergrund ---------------------------------------------------
+# --- Hintergrundbild -----------------------------------------------------
 
-## Vollflaechiges Video ganz hinten. Laeuft in Schleife und ignoriert die Maus,
-## damit die Menue-Buttons darueber klickbar bleiben.
-func _setup_video_background() -> void:
-	_video = VideoStreamPlayer.new()
-	_video.stream = load(VIDEO_BG)
-	_video.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_video.expand = true                      # auf die Bildschirmgroesse strecken
-	_video.loop = true
-	_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_video)
-	move_child(_video, 0)                     # hinter allem anderen
-	# Fallback-Schleife, falls die loop-Eigenschaft im Build nicht greift.
-	_video.finished.connect(func(): if _video_on and _video: _video.play())
-	_apply_video_state()
-
-
-## Umschalter oben rechts (Icon = landscape.png). Aktiv = Video an.
-func _build_video_toggle() -> void:
-	_video_toggle = TextureButton.new()
-	_video_toggle.texture_normal = load(TOGGLE_ICON)
-	_video_toggle.ignore_texture_size = true
-	_video_toggle.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	_video_toggle.tooltip_text = "Video-Hintergrund an/aus"
-	# Oben rechts, ~72x40 (16:9 wie das Bild), 12 px Rand.
-	_video_toggle.anchor_left = 1.0
-	_video_toggle.anchor_right = 1.0
-	_video_toggle.offset_left = -84.0
-	_video_toggle.offset_top = 12.0
-	_video_toggle.offset_right = -12.0
-	_video_toggle.offset_bottom = 52.0
-	_video_toggle.pressed.connect(_toggle_video)
-	add_child(_video_toggle)
-	_apply_toggle_look()
-
-
-func _toggle_video() -> void:
-	_video_on = not _video_on
-	_apply_video_state()
-	_apply_toggle_look()
-	_save_video_pref(_video_on)
-
-
-func _apply_video_state() -> void:
-	if _video == null:
-		return
-	_video.visible = _video_on
-	if _video_on:
-		_video.play()
-	else:
-		_video.stop()
-
-
-## Aktiv voll sichtbar, inaktiv abgedunkelt - damit man den Zustand sieht.
-func _apply_toggle_look() -> void:
-	if _video_toggle:
-		_video_toggle.modulate = Color(1, 1, 1, 1) if _video_on else Color(1, 1, 1, 0.4)
-
-
-func _load_video_pref() -> bool:
-	var c := ConfigFile.new()
-	if c.load(SETTINGS_CFG) == OK:
-		return bool(c.get_value("ui", "video_bg", true))
-	return true
-
-
-func _save_video_pref(on: bool) -> void:
-	var c := ConfigFile.new()
-	c.load(SETTINGS_CFG)                       # vorhandene Werte behalten
-	c.set_value("ui", "video_bg", on)
-	c.save(SETTINGS_CFG)
+## Vollflaechiges Standbild ganz hinten. Deckt den Bildschirm ab (leichter
+## Beschnitt statt Verzerrung) und laesst die Maus durch, damit die Menue-
+## Buttons darueber klickbar bleiben.
+func _setup_background() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(BG_IMAGE)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+	move_child(bg, 0)                          # hinter allem anderen
