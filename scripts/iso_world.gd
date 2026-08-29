@@ -75,7 +75,6 @@ func _ready() -> void:
 		# Im Spiel ist der Editor-Fokus irrelevant.
 		for l in levels:
 			l.visible = true
-		_add_ground_backdrop()
 		# Untergrund-Ebenen (-1..-5) anlegen und unter jede Bodenzelle Dirt/
 		# Grundgestein legen - erst danach die Props umwandeln.
 		_create_underground()
@@ -86,30 +85,6 @@ func _ready() -> void:
 		# Ebenen, deshalb MUSS das Erfassen davor laufen.
 		_record_authored()
 		_spawn_prop_nodes()
-
-
-## Bodenfarbener Hintergrund HINTER allen Kacheln (im Welt-Canvas). Zwischen den
-## Iso-Kacheln scheint sonst die dunkle Environment-/Clear-Farbe durch, die NICHT
-## vom Tag/Nacht-CanvasModulate mitgedunkelt wird - beim Regen/Nachts trat das als
-## dunkles Diamant-Gitter hervor ("durchsichtige" Kacheln). Dieser Rect liegt im
-## selben Canvas, wird also mitgedunkelt; die Nachtfarbe der Kacheln und der Naht
-## bleiben im Gleichschritt. Die UI-CanvasLayer sind nicht betroffen.
-func _add_ground_backdrop() -> void:
-	if has_node("GroundBackdrop"):
-		return
-	var bg := ColorRect.new()
-	bg.name = "GroundBackdrop"
-	# Etwa die mittlere Bodenfarbe (Gras/Erde), damit die duennen Naehte darin
-	# verschwinden. Wird wie die Kacheln vom CanvasModulate multipliziert.
-	bg.color = Color(0.33, 0.37, 0.22)
-	var r := 16000.0
-	bg.position = Vector2(-r, -r)
-	bg.size = Vector2(r * 2.0, r * 2.0)
-	bg.z_index = -4096                 # hinter allen Boden-/Untergrund-Ebenen
-	bg.z_as_relative = false
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-	move_child(bg, 0)
 
 
 ## Erzeugt die Untergrund-Ebenen (-1..-5) als eigene TileMapLayer ("Under1"..).

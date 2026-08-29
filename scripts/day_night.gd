@@ -63,9 +63,14 @@ const BASE_CLEAR := Color(0.1, 0.11, 0.15)
 func _apply() -> void:
 	var g := sky_gradient if sky_gradient != null else _default_gradient()
 	var c := g.sample(time_of_day)
-	# Bei Regen die ganze Welt etwas abdunkeln (Faktor auf die Tagesfarbe).
+	# Bei Regen die ganze Welt etwas abdunkeln - NUR RGB, nicht Alpha! `c *
+	# RAIN_MIN_MUL` wuerde auch den Alpha-Kanal senken; ein CanvasModulate mit
+	# Alpha < 1 macht die Welt durchsichtig (der dunkle Hintergrund scheint durch
+	# Kacheln + Naehte -> "transparenter" Boden / Diamant-Gitter).
 	if _rain_dim_shown > 0.0:
-		c = c.lerp(c * RAIN_MIN_MUL, _rain_dim_shown)
+		var darker := Color(c.r * RAIN_MIN_MUL, c.g * RAIN_MIN_MUL, c.b * RAIN_MIN_MUL, c.a)
+		c = c.lerp(darker, _rain_dim_shown)
+	c.a = 1.0
 	color = c
 	# Hintergrundfarbe im Gleichschritt mitdunkeln (siehe BASE_CLEAR). So bleibt
 	# das Verhaeltnis Kachel<->Naht wie am hellen Tag - kein Gitter.
