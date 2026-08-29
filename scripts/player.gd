@@ -119,8 +119,8 @@ var held_pick_tier := 0
 
 ## Fels-Abbau: Zielfels + Zustand + Restschlaege, waehrend die Spitzhacke schwingt.
 const RockDBScript := preload("res://scripts/rock_db.gd")
-## Schlaege, bis ein Fels bricht.
-@export var mine_hits := 4
+## Schlaege, bis ein Fels bricht (Abbau soll sich lohnen/dauern).
+@export var mine_hits := 12
 var _mine_target := Vector2i(2147483647, 2147483647)
 var _mine_state := -1
 var _mine_hits_left := 0

@@ -114,9 +114,11 @@ static var ITEMS := {
 		"name": "Demir Cevheri", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/iron_ore.png",
 	},
+	# Golderz-Icon = die Gold-Fels-Zelle aus rocks.png (Fels mit Gold), NICHT der
+	# Gold-Barren (gold.png). So sieht man, dass es Roherz ist.
 	"altin_cevheri": {
 		"name": "Altin Cevheri", "max_stack": 64,
-		"texture": "res://assets/game_assets/items/gold.png",
+		"sheet": "res://assets/props/rocks.png", "region": Rect2i(0, 96, 48, 48),
 	},
 	# Rohdiamant: kein eigenes Icon vorhanden -> Diamant-Fels-Zelle aus rocks.png.
 	"ham_elmas": {

@@ -48,7 +48,8 @@ const TREE_P_FOREST := 0.26
 const P_HOLZ := 0.020
 const P_FASER := 0.018
 ## Felsen (abbaubar). Der Zustand (Stein/Eisen/Gold/Diamant) kommt aus RockDB.
-const P_ROCK := 0.020
+## Bewusst sparsam - Felsen sollen etwas Besonderes sein, nicht ueberall liegen.
+const P_ROCK := 0.005
 
 const RockDB := preload("res://scripts/rock_db.gd")
 
