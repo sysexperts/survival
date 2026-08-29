@@ -19,11 +19,12 @@ const HAND := ""                     ## überall, ohne Station
 const WERKBANK := "calisma_tezgahi"          ## Basit Üretim Masasi
 const WEBETISCH := "dokuma_tezgahi"          ## Dokuma Tezgahi
 const ILERI_WERKBANK := "ileri_uretim_masasi"  ## Ileri Üretim Masasi
+const USTUN_WERKBANK := "ustun_uretim_masasi"  ## Üstün Üretim Masasi (Gold)
 
 ## Die Stationen, an denen man craften kann. Die Ids sind bewusst dieselben
 ## wie die Moebel-Ids (ItemDB.FURNITURE) - ein gesetztes Moebel "calisma_tezgahi"
 ## IST damit die Station WERKBANK, ohne dass es eine zweite Zuordnung braucht.
-const STATIONS := [WERKBANK, WEBETISCH, ILERI_WERKBANK]
+const STATIONS := [WERKBANK, WEBETISCH, ILERI_WERKBANK, USTUN_WERKBANK]
 
 
 ## Ist `id` eine Handwerks-Station? (Der leere HAND-String ist keine.)
@@ -45,11 +46,14 @@ const CATEGORIES := {
 const CAT_OF := {
 	"calisma_tezgahi": "masa", "dokuma_tezgahi": "masa",
 	"ileri_uretim_masasi": "masa", "ileri_dokuma_tezgahi": "masa",
+	"ustun_uretim_masasi": "masa",
 	"eritme_firini": "masa", "kamp_atesi": "masa",
 	"balta": "alet", "kazma": "alet", "kurek": "alet", "cekic": "alet",
 	"capa": "alet", "bicak": "alet",
 	"demir_balta": "alet", "demir_kazma": "alet", "demir_kurek": "alet",
 	"demir_cekic": "alet", "demir_capa": "alet", "demir_bicak": "alet",
+	"altin_balta": "alet", "altin_kazma": "alet", "altin_kurek": "alet",
+	"altin_capa": "alet", "altin_bicak": "alet",
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
 	"yatak": "mobilya", "portatif_yatak": "mobilya",
@@ -161,6 +165,9 @@ const RECIPES := [
 		"cost": {"tahta": 16, "demir": 4}},
 	{"out": "ileri_dokuma_tezgahi", "count": 1, "station": WERKBANK, "seconds": 12.0,
 		"cost": {"tahta": 16, "ip": 8}},
+	# Üstün Üretim Masasi (Goldwerkzeug-Station): Ausbau ueber der Ileri-Bank.
+	{"out": "ustun_uretim_masasi", "count": 1, "station": ILERI_WERKBANK, "seconds": 15.0,
+		"cost": {"tahta": 24, "demir": 8}},
 
 	# --- Eisenwerkzeuge an der Ileri Üretim Masasi (Griff + Eisen) -------
 	# Islenmis Sopa und Demir haben noch keine Herstellkette (Outline-Notiz),
@@ -178,6 +185,22 @@ const RECIPES := [
 		"cost": {"islenmis_sopa": 1, "demir": 4}},
 	{"out": "demir_bicak", "count": 1, "station": ILERI_WERKBANK, "seconds": 6.0,
 		"cost": {"islenmis_sopa": 1, "demir": 4}},
+
+	# --- Goldwerkzeuge an der Üstün Üretim Masasi (Griff + Gold) ----------
+	# Wie die Eisenwerkzeuge, nur mit Gold (altin). Altin hat noch keine
+	# Sammel-/Schmelzkette (wie demir) - vorerst also noch nicht craftbar.
+	# Kein Hammer (nicht angefragt). Die Üstün-Bank kann zusaetzlich alles,
+	# was Ileri- und Basit-Bank koennen (siehe for_station()).
+	{"out": "altin_balta", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
+		"cost": {"islenmis_sopa": 1, "altin": 4}},
+	{"out": "altin_kazma", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
+		"cost": {"islenmis_sopa": 1, "altin": 4}},
+	{"out": "altin_kurek", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
+		"cost": {"islenmis_sopa": 1, "altin": 4}},
+	{"out": "altin_capa", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
+		"cost": {"islenmis_sopa": 1, "altin": 4}},
+	{"out": "altin_bicak", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
+		"cost": {"islenmis_sopa": 1, "altin": 4}},
 ]
 
 
@@ -203,7 +226,11 @@ static func for_station(station: String) -> Array:
 	for r in RECIPES:
 		if r["station"] == station:
 			out.append(r)
+		# Ausbaustufen koennen alles der niedrigeren Baenke: Ileri kann Basit,
+		# Üstün kann Basit UND Ileri.
 		elif station == ILERI_WERKBANK and r["station"] == WERKBANK:
+			out.append(r)
+		elif station == USTUN_WERKBANK and (r["station"] == WERKBANK or r["station"] == ILERI_WERKBANK):
 			out.append(r)
 	return out
 

@@ -79,7 +79,7 @@ static var ITEMS := {
 	"balta": {
 		"name": "Tas Balta",
 		"max_stack": 1,
-		"texture": "res://assets/game_assets/tools/stone_axe.png",
+		"texture": "res://assets/game_assets/tools/axe_stone.png",
 		# Dayaniklilik: her balta darbesi 1 harcar, 0'da kirilir. Kural: malzeme
 		# ne kadar sertse o kadar cok darbe. Tas balta = 200 (en dusuk seviye);
 		# demir/celik baltalar geldiginde bu deger artacak.
@@ -114,11 +114,11 @@ static var ITEMS := {
 	# vorerst nur craftbar, siehe Outline.
 	"kazma": {
 		"name": "Tas Kazma", "max_stack": 1, "durability": 200,
-		"texture": "res://assets/game_assets/tools/stone_pickaxe.png",
+		"texture": "res://assets/game_assets/tools/pickaxe_stone.png",
 	},
 	"kurek": {
 		"name": "Tas Kürek", "max_stack": 1, "durability": 200,
-		"texture": "res://assets/game_assets/tools/stone_shovel.png",
+		"texture": "res://assets/game_assets/tools/shovel_stone.png",
 	},
 	"cekic": {
 		"name": "Tas Cekic", "max_stack": 1, "durability": 200,
@@ -126,11 +126,11 @@ static var ITEMS := {
 	},
 	"capa": {
 		"name": "Tas Capa", "max_stack": 1, "durability": 200,
-		"texture": "res://assets/game_assets/tools/stone_hoe.png",
+		"texture": "res://assets/game_assets/tools/hoe_stone.png",
 	},
 	"bicak": {
 		"name": "Tas Bicak", "max_stack": 1, "durability": 200,
-		"texture": "res://assets/game_assets/tools/stone_knife.png",
+		"texture": "res://assets/game_assets/tools/knife_stone.png",
 	},
 
 	# --- Eisenwerkzeuge (Ileri Üretim Masasi) -------------------------------
@@ -138,15 +138,15 @@ static var ITEMS := {
 	# hat noch keine Herstellkette (Outline-Notiz).
 	"demir_balta": {
 		"name": "Demir Balta", "max_stack": 1, "durability": 500,
-		"texture": "res://assets/game_assets/items/iron_axe.png",
+		"texture": "res://assets/game_assets/tools/axe_iron.png",
 	},
 	"demir_kazma": {
 		"name": "Demir Kazma", "max_stack": 1, "durability": 500,
-		"texture": "res://assets/game_assets/items/iron_pickaxe.png",
+		"texture": "res://assets/game_assets/tools/pickaxe_iron.png",
 	},
 	"demir_kurek": {
 		"name": "Demir Kürek", "max_stack": 1, "durability": 500,
-		"texture": "res://assets/game_assets/items/iron_shovel.png",
+		"texture": "res://assets/game_assets/tools/shovel_iron.png",
 	},
 	"demir_cekic": {
 		"name": "Demir Cekic", "max_stack": 1, "durability": 500,
@@ -154,11 +154,43 @@ static var ITEMS := {
 	},
 	"demir_capa": {
 		"name": "Demir Capa", "max_stack": 1, "durability": 500,
-		"texture": "res://assets/game_assets/items/iron_hoe.png",
+		"texture": "res://assets/game_assets/tools/hoe_iron.png",
 	},
 	"demir_bicak": {
 		"name": "Demir Bicak", "max_stack": 1, "durability": 500,
-		"texture": "res://assets/game_assets/items/iron_knife.png",
+		"texture": "res://assets/game_assets/tools/knife_iron.png",
+	},
+
+	# --- Materialien: Gold (fuer Goldwerkzeuge, Üstün Üretim Masasi) ---------
+	# Wie "demir" ein Roh-/Barrenmaterial. Sammel-/Schmelzkette folgt spaeter,
+	# vorerst nur als Zutat definiert (Goldwerkzeuge damit noch nicht craftbar).
+	"altin": {
+		"name": "Altin", "max_stack": 64,
+		"texture": "res://assets/game_assets/items/gold.png",
+	},
+
+	# --- Goldwerkzeuge (Üstün Üretim Masasi) --------------------------------
+	# Haerter als Eisen -> mehr Dayaniklilik (800). Icons aus PixelLab
+	# (assets/game_assets/tools/*_gold.png). Kein Hammer (nicht angefragt).
+	"altin_balta": {
+		"name": "Altin Balta", "max_stack": 1, "durability": 800,
+		"texture": "res://assets/game_assets/tools/axe_gold.png",
+	},
+	"altin_kazma": {
+		"name": "Altin Kazma", "max_stack": 1, "durability": 800,
+		"texture": "res://assets/game_assets/tools/pickaxe_gold.png",
+	},
+	"altin_kurek": {
+		"name": "Altin Kürek", "max_stack": 1, "durability": 800,
+		"texture": "res://assets/game_assets/tools/shovel_gold.png",
+	},
+	"altin_capa": {
+		"name": "Altin Capa", "max_stack": 1, "durability": 800,
+		"texture": "res://assets/game_assets/tools/hoe_gold.png",
+	},
+	"altin_bicak": {
+		"name": "Altin Bicak", "max_stack": 1, "durability": 800,
+		"texture": "res://assets/game_assets/tools/knife_gold.png",
 	},
 }
 
