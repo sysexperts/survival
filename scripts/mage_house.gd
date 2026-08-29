@@ -12,7 +12,8 @@ const MageScript := preload("res://scripts/mage.gd")
 ## 136er-Bild: waagerecht mittig, Fuss knapp unter die Zellmitte.
 const ART_OFFSET := Vector2(-68, -104)
 const TRIGGER := 190.0            ## Spieler naeher -> Magier kommt heraus
-const RESPAWN := 0.5             ## fast sofort ein neuer Magier
+const RESPAWN_DEATH := 1800.0    ## nach dem TOD 30 min Sperre
+const RESPAWN_RETREAT := 0.0     ## nach Rueckkehr sofort wieder (bei Annaeherung)
 
 var world = null
 var player = null
@@ -75,4 +76,5 @@ func _spawn_mage() -> void:
 	var door := global_position + Vector2(0, 26)   # vorn an der Tuer (Fuss des Hauses)
 	_mage = MageScript.create(world, player, door)
 	get_parent().add_child(_mage)
-	_mage.died.connect(func(): _respawn_cd = RESPAWN)
+	_mage.died.connect(func(): _respawn_cd = RESPAWN_DEATH)         # getoetet -> 30 min
+	_mage.retreated.connect(func(): _respawn_cd = RESPAWN_RETREAT)  # heim -> sofort

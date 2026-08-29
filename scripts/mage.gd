@@ -30,15 +30,21 @@ var _dir := 0
 var _cast_left := 0.0
 var _cooldown := 1.0              ## kurze Anfangs-Verzoegerung
 var _hit_flash := 0.0
-## Umherlaufen (an der Leine ums Haus). Waehrend des Zauberns steht die Hexe.
-const WANDER_RADIUS := 58.0
-const WALK_SPEED := 26.0
-var _home := Vector2.ZERO
-var _wtarget := Vector2.ZERO
-var _wwait := 0.0
+## Bewegung: verfolgt den Spieler bis zur Leine (LEASH_MAX vom Haus-Posten),
+## haelt dabei CHASE_STOP Abstand (zum Schiessen). Geht der Spieler zu weit weg,
+## kehrt sie zum Haus zurueck und verschwindet hinein.
+const WALK_SPEED := 42.0          ## Verfolgungstempo
+const RETURN_SPEED := 50.0        ## Rueckweg zum Haus
+const LEASH_MAX := 240.0          ## so weit vom Posten folgt sie hoechstens
+const CHASE_STOP := 70.0          ## Wunschabstand zum Spieler (bleibt zurueck)
+var _home := Vector2.ZERO         ## Posten vor dem Haus
+var _returning := false
 static var _tex_cache: Dictionary = {}
 
+## died -> vom Spieler getoetet (Haus: 30 min Sperre). retreated -> zurueck ins
+## Haus gegangen (Haus darf sofort wieder einen schicken).
 signal died
+signal retreated
 
 
 static func tex(kind: String, dir: int) -> Texture2D:
@@ -72,8 +78,7 @@ func _ready() -> void:
 	modulate.a = 0.0
 	var start := global_position + Vector2(0, -6)
 	global_position = start
-	_home = start + Vector2(0, 30)     # Leine-Mittelpunkt klar VOR dem Haus
-	_wtarget = _home
+	_home = start + Vector2(0, 46)     # Posten deutlich VOR dem Haus
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(self, "modulate:a", 1.0, 0.5)
@@ -114,36 +119,56 @@ func _process(delta: float) -> void:
 	if dist <= SHOOT_RANGE and _cooldown <= 0.0:
 		_shoot()
 		_cooldown = SHOOT_INTERVAL
-	# IMMER Blickkontakt zum Spieler (auch beim Laufen). Steht beim Zaubern.
+	# IMMER Blickkontakt zum Spieler. Beim Zaubern steht sie.
 	_update_dir()
 	if _cast_left <= 0.0:
-		_wander(delta)
+		_move(delta)
 	_refresh_body()
 	queue_redraw()
 
 
-## Zufaelliges Umherschlendern VOR dem Haus (nur nach vorn/seitlich, nie hinein),
-## auf freiem, begehbarem Boden.
-func _wander(delta: float) -> void:
-	_wwait -= delta
-	if _wwait <= 0.0 or global_position.distance_to(_wtarget) < 4.0:
-		_pick_wander()
-	var to := _wtarget - global_position
-	if to.length() > 2.0:
-		global_position += to.normalized() * WALK_SPEED * delta
+## Verfolgt den Spieler (bis zur Leine) oder kehrt zum Haus zurueck.
+func _move(delta: float) -> void:
+	var player_from_home: float = player.global_position.distance_to(_home)
+	# Spieler zu weit weg -> heimkehren; kommt er wieder nah, Verfolgung aufnehmen.
+	if _returning and player_from_home < LEASH_MAX * 0.7:
+		_returning = false
+	if _returning or player_from_home > LEASH_MAX:
+		_returning = true
+		var toh := _home - global_position
+		if toh.length() < 8.0:
+			_go_inside()
+			return
+		_step(toh.normalized() * RETURN_SPEED * delta)
+		return
+	# Verfolgen bis CHASE_STOP; naeher nicht (dann stehen bleiben und zaubern).
+	var toP: Vector2 = player.global_position - global_position
+	if toP.length() > CHASE_STOP:
+		var stepv: Vector2 = toP.normalized() * WALK_SPEED * delta
+		# Nicht ueber die Leine hinaus.
+		if (global_position + stepv).distance_to(_home) <= LEASH_MAX:
+			_step(stepv)
 
 
-func _pick_wander() -> void:
-	for i in 8:
-		var ang := randf() * TAU
-		var r := randf() * WANDER_RADIUS
-		# abs(sin) -> y-Versatz immer nach SUEDEN (vor dem Haus), nie nach oben ins Haus.
-		var p := _home + Vector2(cos(ang) * r, absf(sin(ang)) * r * 0.6)
-		var cell: Vector2i = world.world_to_cell(p, 0)
-		if world.top_level_at(cell) >= 0 and world.blocker_at(cell) == null and not world.has_prop(cell):
-			_wtarget = p
-			break
-	_wwait = randf_range(1.2, 2.6)
+## Ein Bewegungsschritt, aber nicht auf blockierte/lochige Zellen.
+func _step(v: Vector2) -> void:
+	var np := global_position + v
+	var cell: Vector2i = world.world_to_cell(np, 0)
+	if world.top_level_at(cell) > world.NO_FLOOR and world.blocker_at(cell) == null:
+		global_position = np
+
+
+## Zurueck ins Haus: einblenden-weg + hoch (in die Tuer), dann verschwinden.
+func _go_inside() -> void:
+	if _dead:
+		return
+	_dead = true                 # keine weitere Logik/Schuesse mehr
+	retreated.emit()
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(self, "modulate:a", 0.0, 0.4)
+	tw.tween_property(self, "global_position:y", global_position.y - 20.0, 0.4)
+	tw.chain().tween_callback(queue_free)
 
 
 func _shoot() -> void:
