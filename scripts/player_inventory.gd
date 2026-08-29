@@ -121,6 +121,9 @@ func _ready() -> void:
 			_notice("Bu kaya icin en az demir kazma lazim" if tier >= 2 else "Bir kazma lazim"))
 		# Spitzhacke nutzt sich beim Abbauen ab (Gold schneller, siehe player.gd).
 		player.tool_worn.connect(_wear_selected)
+		# Ackerbau: Pflanzen verbraucht 1 Samen; Ernten gibt Produkt + Samen zurueck.
+		player.planted.connect(_on_planted)
+		player.crop_harvested.connect(_on_crop_harvested)
 
 
 ## --- Speichern/Laden (Multiplayer-Persistenz, siehe save_sync.gd) --------
@@ -176,6 +179,7 @@ func _process(delta: float) -> void:
 		player.has_axe = String(hold[0]) == "Axe"
 		player.held_is_dirt = hid == "toprak"
 		player.held_pick_tier = ItemDB.pick_tier(hid)
+		player.held_item_id = hid
 
 	if _notice_left > 0.0:
 		_notice_left -= delta
@@ -405,6 +409,24 @@ func grant_wood_for_tree() -> void:
 
 func _on_stump_cleared(_cell: Vector2i) -> void:
 	_grant("odun", wood_per_stump)
+
+
+const CropDB := preload("res://scripts/crop_db.gd")
+
+## Samen gepflanzt (nur lokal ausgeloest) -> 1 Samen abbuchen.
+func _on_planted(_cell: Vector2i, crop_id: String, _started: float) -> void:
+	var seed: String = CropDB.CROPS[crop_id]["seed"]
+	inventory.remove(seed, 1)
+
+
+## Reife Pflanze geerntet -> Produkt + ein paar Samen (Nutzerwunsch), Menge je
+## im Bereich der crop_db. So traegt sich der Anbau selbst.
+func _on_crop_harvested(_cell: Vector2i, crop_id: String) -> void:
+	var d: Dictionary = CropDB.CROPS[crop_id]
+	var pc: Array = d["produce_count"]
+	var sc: Array = d["seed_return"]
+	_grant(String(d["produce"]), randi_range(int(pc[0]), int(pc[1])))
+	_grant(String(d["seed"]), randi_range(int(sc[0]), int(sc[1])))
 
 
 func _grant(id: String, amount: int) -> void:

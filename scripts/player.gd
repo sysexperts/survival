@@ -62,6 +62,15 @@ signal destroyed_placed(cell: Vector2i)
 signal dug(cell: Vector2i)
 signal raised(cell: Vector2i)
 
+## Ackerbau. `tilled` = Zelle gehackt (zu Acker). `planted` = Samen gesetzt
+## (crop_id + Baubeginn als Unix-Zeit). `crop_harvested` = reife Pflanze
+## abgeerntet (Inventar bekommt Produkt+Samen). `crop_cleared` = tote Pflanze
+## entfernt (ohne Ertrag). world_sync verteilt/persistiert alles.
+signal tilled(cell: Vector2i)
+signal planted(cell: Vector2i, crop_id: String, started: float)
+signal crop_harvested(cell: Vector2i, crop_id: String)
+signal crop_cleared(cell: Vector2i)
+
 ## Ein Fels ist gebrochen (nach genug Schlaegen). `drop_id` sagt den Typ (fuer XP);
 ## world_sync entfernt ihn bei allen. Die eigentlichen Items fallen ueber
 ## `mine_drop` waehrend der Schlaege (wie Holz beim Baum).
@@ -126,6 +135,8 @@ var held_is_dirt := false
 ## Spitzhacken-Stufe des gewaehlten Items (0 = keine). Vom Inventar gesetzt,
 ## entscheidet, welche Felsen abgebaut werden koennen.
 var held_pick_tier := 0
+## Id des gewaehlten Hotbar-Items ("" = leer). Fuer Hacke/Samen-Erkennung.
+var held_item_id := ""
 
 ## Fels-Abbau: Zielfels + Zustand + Restschlaege, waehrend die Spitzhacke schwingt.
 const RockDBScript := preload("res://scripts/rock_db.gd")
@@ -925,7 +936,72 @@ func _finish_dig() -> void:
 	elif action == "raise":
 		if world.raise_cell(cell):
 			raised.emit(cell)
+	elif action == "till":
+		if world.till_cell(cell):
+			tilled.emit(cell)
+	elif action == "plant":
+		var crop_id := _plant_seed
+		_plant_seed = ""
+		if crop_id != "" and world.is_tilled(cell) and not world.has_crop(cell):
+			var started := Time.get_unix_time_from_system()
+			if do_plant_at(cell, crop_id, started):
+				planted.emit(cell, crop_id, started)
+	elif action == "harvest":
+		var crop = world.crop_at(cell)
+		if crop != null:
+			if crop.is_dead():
+				world.remove_crop(cell)
+				crop_cleared.emit(cell)
+			elif crop.is_ripe():
+				var cid := String(crop.crop_id)
+				world.remove_crop(cell)
+				crop_harvested.emit(cell, cid)
 	_play("idle")
+
+
+# --- Ackerbau (Hacke / Samen / Ernte) -----------------------------------
+
+const Crop := preload("res://scripts/crop.gd")
+var _plant_seed := ""              ## crop_id, das beim naechsten "plant" gesetzt wird
+
+## Hackt eine Zelle zu Acker (Hoe + Rechtsklick). Laeuft ggf. hin.
+func till(cell: Vector2i) -> bool:
+	if not world.can_till(cell):
+		return false
+	return _walk_then_dig(cell, "till")
+
+
+## Pflanzt einen Samen auf eine gehackte Zelle. `crop_id` kommt aus dem Samen.
+func plant(cell: Vector2i, crop_id: String) -> bool:
+	if not world.is_tilled(cell) or world.has_crop(cell) or crop_id == "":
+		return false
+	_plant_seed = crop_id
+	if not _walk_then_dig(cell, "plant"):
+		_plant_seed = ""
+		return false
+	return true
+
+
+## Erntet/entfernt die Pflanze auf einer Zelle (reif -> Ertrag, tot -> weg).
+## Waechst sie noch, passiert nichts.
+func harvest(cell: Vector2i) -> bool:
+	var crop = world.crop_at(cell)
+	if crop == null or not (crop.is_ripe() or crop.is_dead()):
+		return false
+	return _walk_then_dig(cell, "harvest")
+
+
+## Setzt einen Crop-Node in die Welt (lokal wie beim Sync-Replay). `started` ist
+## der Pflanzzeitpunkt (Unix-Zeit) - daraus ergibt sich die Wachstumsstufe.
+func do_plant_at(cell: Vector2i, crop_id: String, started: float) -> bool:
+	if world.has_crop(cell):
+		return false
+	var lvl := maxi(world.top_level_at(cell), 0)
+	var c = Crop.create(world, crop_id, cell, lvl, started)
+	world.props_root.add_child(c)
+	c.global_position = world.cell_to_world(cell, lvl)
+	world.add_crop(cell, c)
+	return true
 
 
 # --- Fels abbauen (Spitzhacke) ------------------------------------------

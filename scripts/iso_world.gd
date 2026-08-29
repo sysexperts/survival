@@ -513,6 +513,67 @@ func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 	return a > NO_FLOOR and b > NO_FLOOR and absi(b - a) <= max_step
 
 
+# --- Ackerbau (Hacken / Pflanzen) --------------------------------------
+#
+# Hacken (Hoe) tauscht die oberste Bodenkachel gegen die Acker-Optik und merkt
+# die Zelle als "gehackt" (nur dort laesst sich pflanzen). Die Optik-Kachel
+# (3,3) wird vom Generator auch als Dirt verwendet, deshalb entscheidet NICHT
+# die Kachel ueber die Pflanzbarkeit, sondern die gemerkte Menge `_tilled`.
+
+const FARMLAND_ATLAS := Vector2i(3, 3)
+## Boden, der sich hacken laesst: Gras und Erde (nicht Wasser/Stein/Sand-Sonder).
+const TILLABLE := [Vector2i(2, 0), Vector2i(2, 1), Vector2i(2, 2),
+	Vector2i(3, 1), Vector2i(3, 2), Vector2i(3, 3)]
+
+var _tilled: Dictionary = {}       ## Zelle -> true (gehackt)
+var _crops: Dictionary = {}        ## Zelle -> Crop-Node
+
+
+func is_tilled(cell: Vector2i) -> bool:
+	return _tilled.has(cell)
+
+
+## Laesst sich diese Zelle hacken? Begehbarer Gras-/Erdboden, frei, noch nicht
+## gehackt und ohne Pflanze.
+func can_till(cell: Vector2i) -> bool:
+	if _tilled.has(cell) or has_crop(cell):
+		return false
+	if top_level_at(cell) < 0 or has_prop(cell) or has_stump(cell) or blocker_at(cell) != null:
+		return false
+	return top_atlas_at(cell) in TILLABLE
+
+
+## Hackt die Zelle: oberste Kachel auf Acker-Optik, Zelle merken.
+func till_cell(cell: Vector2i) -> bool:
+	if not can_till(cell):
+		return false
+	var lvl := top_level_at(cell)
+	set_block(cell, lvl, FARMLAND_ATLAS)
+	_tilled[cell] = true
+	return true
+
+
+func has_crop(cell: Vector2i) -> bool:
+	var c = _crops.get(cell)
+	return is_instance_valid(c)
+
+
+func crop_at(cell: Vector2i):
+	var c = _crops.get(cell)
+	return c if is_instance_valid(c) else null
+
+
+func add_crop(cell: Vector2i, node) -> void:
+	_crops[cell] = node
+
+
+func remove_crop(cell: Vector2i) -> void:
+	var c = _crops.get(cell)
+	if is_instance_valid(c):
+		c.queue_free()
+	_crops.erase(cell)
+
+
 # --- Handbau-Bereich (für den Weltgenerator) ---------------------------
 #
 # Der gemalte Startbereich bleibt fester Bestandteil der Welt; der

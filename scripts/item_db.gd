@@ -11,6 +11,7 @@ const SHEET_TILES := "res://assets/RPG-isometric-free.png"
 const SHEET_CAMP := "res://assets/props/camp.png"
 const SHEET_ITEMS := "res://assets/props/prop1.png"
 const SHEET_FURNITURE := "res://assets/props/basic furniture.png"
+const SHEET_PLANTS := "res://assets/game_assets/items/plants_and_seeds.png"
 
 ## Raster des Item-Sheets: 32x32-Zellen, kein Rand, kein Abstand.
 ## `item_cell` sticht `cell` und `region` aus.
@@ -136,6 +137,18 @@ static var ITEMS := {
 	"islenmis_sopa": {
 		"name": "Islenmis Sopa", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/wooden_handle.png",
+	},
+
+	# --- Ackerbau (Ernte + Samen), Icons aus plants_and_seeds.png -----------
+	# Mais: Produkt (fertiger Kolben) und Samen (Korn). Der Samen wird auf einer
+	# gehackten Ackerzelle gepflanzt (siehe crop_db.gd / crop.gd).
+	"misir": {
+		"name": "Misir", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(5, 5), "cell_size": Vector2i(32, 32),
+	},
+	"misir_tohumu": {
+		"name": "Misir Tohumu", "max_stack": 64,
+		"sheet": SHEET_PLANTS, "item_cell": Vector2i(0, 1), "cell_size": Vector2i(32, 32),
 	},
 
 	# --- Steinwerkzeuge (Basit Üretim Masasi) -------------------------------
@@ -302,6 +315,20 @@ const BUILDINGS := {
 ## bauen sich vor Ort selbst (Phasen-Sprites, 10 Minuten).
 static func is_building(id: String) -> bool:
 	return BUILDINGS.has(id)
+
+
+## Hacken (Capa/Hoe): wandelt Boden zu Acker. Alle drei Stufen taugen dazu.
+const HOES := ["capa", "demir_capa", "altin_capa"]
+static func is_hoe(id: String) -> bool:
+	return id in HOES
+
+
+## Samen -> Pflanzen-Id (crop_db). {} bei Nicht-Samen.
+const SEED_CROP := {"misir_tohumu": "misir"}
+static func is_seed(id: String) -> bool:
+	return SEED_CROP.has(id)
+static func crop_of_seed(id: String) -> String:
+	return SEED_CROP.get(id, "")
 
 
 ## Richtungs-Sprites: Stationen, die als 8-Richtungs-Satz (68x68) unter

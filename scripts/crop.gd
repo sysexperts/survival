@@ -1,0 +1,135 @@
+extends Sprite2D
+
+## Eine gepflanzte Nutzpflanze auf einer gehackten Ackerzelle.
+##
+## Waechst zeitbasiert durch die Stufen (aus CropDB), zeigt beim Ueberfahren mit
+## der Maus die Restzeit bis reif und stirbt, wenn sie nach dem Reifwerden zu
+## lange (rot_after) nicht geerntet wird. Die Phase ergibt sich - wie beim
+## Gebaeude - allein aus `planted` (Unix-Zeit), damit alle Clients und ein neu
+## geladener Stand dasselbe sehen.
+##
+## KEIN `class_name` (Auto-Updater). Per preload einbinden.
+
+const CropDB := preload("res://scripts/crop_db.gd")
+
+## Anker: das 32er-Bild steht mit seinem Fuss auf der Zellmitte.
+const ART_OFFSET := Vector2(-16, -30)
+
+var crop_id := ""
+var cell: Vector2i
+var level: int
+var planted := 0.0
+var world = null
+
+var _atlas: Texture2D
+var _shown := ""            ## zuletzt gesetztes Bild (Stufe/tot), gegen Neubau
+var _info: Label
+var _hovered := false
+
+
+static func create(p_world, p_crop_id: String, p_cell: Vector2i, p_level: int, p_planted: float):
+	var c = new()
+	c.world = p_world
+	c.crop_id = p_crop_id
+	c.cell = p_cell
+	c.level = p_level
+	c.planted = p_planted
+	c.centered = false
+	c.offset = ART_OFFSET
+	return c
+
+
+func _ready() -> void:
+	add_to_group("crop")
+	_atlas = load(CropDB.SHEET)
+	z_index = 1                          # knapp ueber dem Boden
+	_info = Label.new()
+	_info.add_theme_font_size_override("font_size", 11)
+	_info.add_theme_color_override("font_color", Color(0.85, 1, 0.8))
+	_info.add_theme_constant_override("outline_size", 4)
+	_info.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_info.z_index = 100
+	_info.visible = false
+	add_child(_info)
+	_apply()
+
+
+func _data() -> Dictionary:
+	return CropDB.CROPS[crop_id]
+
+
+func _elapsed() -> float:
+	return Time.get_unix_time_from_system() - planted
+
+
+func ripe_seconds() -> float:
+	return CropDB.ripe_seconds(crop_id)
+
+
+func is_ripe() -> bool:
+	var e := _elapsed()
+	return e >= ripe_seconds() and not is_dead()
+
+
+func is_dead() -> bool:
+	return _elapsed() >= ripe_seconds() + float(_data()["rot_after"])
+
+
+## 0..N-1 (aktuelle Wachstumsstufe), unabhaengig von reif/tot.
+func _stage_index() -> int:
+	var secs: Array = _data()["stage_secs"]
+	var e := _elapsed()
+	var acc := 0.0
+	for i in secs.size():
+		acc += float(secs[i])
+		if e < acc:
+			return i
+	return _data()["stages"].size() - 1
+
+
+## Setzt das richtige Bild (Stufe oder tot) und die Info-Zeile.
+func _apply() -> void:
+	var d := _data()
+	var key: String
+	var atlas_cell: Vector2i
+	if is_dead():
+		key = "dead"
+		atlas_cell = d["dead"]
+	else:
+		var si := _stage_index()
+		key = "s%d" % si
+		atlas_cell = d["stages"][si]
+	if key != _shown:
+		_shown = key
+		var t := AtlasTexture.new()
+		t.atlas = _atlas
+		t.region = Rect2(atlas_cell.x * CropDB.CELL, atlas_cell.y * CropDB.CELL, CropDB.CELL, CropDB.CELL)
+		t.filter_clip = true
+		texture = t
+	if _hovered:
+		_update_info()
+
+
+func _update_info() -> void:
+	if is_dead():
+		_info.text = "Öldü"
+	elif is_ripe():
+		_info.text = "Hasada hazir"
+	else:
+		var rest := int(ceil(ripe_seconds() - _elapsed()))
+		_info.text = "%d:%02d" % [rest / 60, rest % 60]
+	_info.reset_size()
+	_info.position = Vector2(-_info.size.x * 0.5, ART_OFFSET.y - 14)
+
+
+## Von der Interaktion gesetzt: Restzeit/Status ueber der Pflanze zeigen.
+func set_hovered(on: bool) -> void:
+	_hovered = on
+	_info.visible = on
+	if on:
+		_update_info()
+
+
+func _process(_delta: float) -> void:
+	_apply()

@@ -16,6 +16,7 @@ var _ground_hl: Line2D             ## Diamant-Umriss fuer den Boden-Hover (Budde
 var _hovered: Array = []           ## [cell, level, atlas] oder leer
 var _furn_hover: Array = []        ## [cell, Furniture] oder leer
 var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Alpha-Test)
+var _hovered_crop = null           ## Crop-Node unter der Maus (oder null)
 var preview: PlacementPreview
 
 
@@ -60,6 +61,14 @@ func _process(_delta: float) -> void:
 	# Waehrend des Platzierens kein Hover - sonst leuchten beide.
 	if preview.active:
 		highlight.visible = false
+		_hovered = []
+		_furn_hover = []
+		_set_crop_hover(null)
+		return
+	# Pflanzen zuerst: zeigt Restzeit/Status ueber der Pflanze.
+	_set_crop_hover(_crop_under_mouse())
+	if _hovered_crop != null:
+		_highlight_crop(_hovered_crop)
 		_hovered = []
 		_furn_hover = []
 		return
@@ -131,6 +140,41 @@ func _highlight_furniture(node: Furniture) -> void:
 	highlight.visible = true
 
 
+## Vorderste Pflanze unter der Maus (pixelgenau), oder null.
+func _crop_under_mouse():
+	var mouse := get_global_mouse_position()
+	var best = null
+	var best_y := -INF
+	for node in get_tree().get_nodes_in_group("crop"):
+		var tex: Texture2D = node.texture
+		if tex == null:
+			continue
+		var rect := Rect2(node.global_position + node.offset, tex.get_size())
+		if rect.has_point(mouse) and node.global_position.y > best_y:
+			best_y = node.global_position.y
+			best = node
+	return best
+
+
+## Setzt/loescht die Restzeit-Anzeige ueber der zuletzt ueberfahrenen Pflanze.
+func _set_crop_hover(crop) -> void:
+	if crop == _hovered_crop:
+		return
+	if _hovered_crop != null and is_instance_valid(_hovered_crop):
+		_hovered_crop.set_hovered(false)
+	_hovered_crop = crop
+	if crop != null:
+		crop.set_hovered(true)
+
+
+func _highlight_crop(node) -> void:
+	highlight.texture = node.texture
+	highlight.scale = node.scale
+	highlight.flip_h = false
+	highlight.global_position = node.global_position + node.offset
+	highlight.visible = true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Offene Abriss-Rückfrage: Esc bricht ab, sonst schluckt sie ohnehin die Klicks.
 	if _confirm != null and _confirm.visible:
@@ -172,7 +216,22 @@ func _unhandled_input(event: InputEvent) -> void:
 				_ask_destroy(target)
 			get_viewport().set_input_as_handled()
 			return
+		# Ackerbau: reife/tote Pflanze ernten (Vorrang vor allem anderen).
+		if _hovered_crop != null:
+			player.harvest(_hovered_crop.cell)
+			get_viewport().set_input_as_handled()
+			return
 		if _hovered.is_empty():
+			# Hacke: Boden zu Acker. Samen: auf gehackten Acker pflanzen.
+			var g := world.pick_block(get_global_mouse_position())
+			if not g.is_empty():
+				var gc: Vector2i = g[0]
+				if ItemDB.is_hoe(player.held_item_id):
+					if player.till(gc):
+						return
+				elif ItemDB.is_seed(player.held_item_id) and world.is_tilled(gc) and not world.has_crop(gc):
+					if player.plant(gc, ItemDB.crop_of_seed(player.held_item_id)):
+						return
 			# Kein Prop, aber vielleicht ein Moebel: hinlaufen (und wenn es
 			# eine Station ist, oeffnet sie sich bei Ankunft von selbst).
 			var furn := _furniture_under_mouse()

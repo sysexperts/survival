@@ -28,6 +28,10 @@ const REMOVED_FILE := BUILD_DIR + "/removed.json"
 ## Terraforming (Buddeln/Aufschuetten): je Zelle die Netto-Hoehenaenderung
 ## (negativ = abgebaut, positiv = aufgeschuettet). Wird beim Beitritt vorgespielt.
 const TERRAFORM_FILE := BUILD_DIR + "/terraform.json"
+## Ackerbau: gehackte Zellen (Set) und gepflanzte Crops. Getrennt von _builds,
+## weil dort nur EINE Baute pro Zelle passt - Acker UND Pflanze teilen sich aber
+## dieselbe Zelle.
+const FARM_FILE := BUILD_DIR + "/farm.json"
 ## Nachwachs-Zeiten - muessen zu den Defaults in regrowth.gd passen. Der Server
 ## rechnet damit die Restzeit aus und laesst Abgelaufenes weg.
 const REGROW_SECONDS := 300.0
@@ -63,6 +67,10 @@ var _pending: Array = []
 var _tree_hp: Dictionary = {}
 ## Server: Terraform-Diffs "x,y" -> Netto-Hoehenaenderung (int).
 var _terraform: Dictionary = {}
+## Server: gehackte Ackerzellen "x,y" -> true.
+var _tilled: Dictionary = {}
+## Server: gepflanzte Crops "x,y" -> {x, y, id, planted}.
+var _crops: Dictionary = {}
 ## Client: Inventar, um dem toedlichen Schlaeger Holz gutzuschreiben.
 var _pinv: Node
 
@@ -76,6 +84,7 @@ func _ready() -> void:
 		_load_builds()               # Register vom letzten Lauf wiederherstellen
 		_load_removed()
 		_load_terraform()
+		_load_farm()
 		_drop_sync = get_node_or_null(^"../DropSync")   # Boden-Drops beim Faellen
 		multiplayer.peer_connected.connect(_on_peer_joined)
 		return                       # Server: nur weiterleiten + persistieren
@@ -108,6 +117,10 @@ func _ensure_player() -> bool:
 	_player.dug.connect(_on_local_dug)
 	_player.raised.connect(_on_local_raised)
 	_player.mined.connect(_on_local_mined)
+	_player.tilled.connect(_on_local_tilled)
+	_player.planted.connect(_on_local_planted)
+	_player.crop_harvested.connect(func(cell, _cid): _on_local_cropdel(cell))
+	_player.crop_cleared.connect(_on_local_cropdel)
 	return true
 
 
@@ -177,6 +190,25 @@ func _on_local_mined(cell: Vector2i, _drop_id: String) -> void:
 	_event.rpc(multiplayer.get_unique_id(), "rock", cell, 0, Vector2i.ZERO, "", 0)
 
 
+func _on_local_tilled(cell: Vector2i) -> void:
+	if _suppress:
+		return
+	_event.rpc(multiplayer.get_unique_id(), "till", cell, 0, Vector2i.ZERO, "", 0)
+
+
+func _on_local_planted(cell: Vector2i, crop_id: String, started: float) -> void:
+	if _suppress:
+		return
+	# level = Pflanzzeit (Unix-Sekunden), s = crop_id.
+	_event.rpc(multiplayer.get_unique_id(), "plant", cell, int(started), Vector2i.ZERO, crop_id, 0)
+
+
+func _on_local_cropdel(cell: Vector2i) -> void:
+	if _suppress:
+		return
+	_event.rpc(multiplayer.get_unique_id(), "cropdel", cell, 0, Vector2i.ZERO, "", 0)
+
+
 # --- Empfang -------------------------------------------------------------
 
 @rpc("any_peer", "reliable")
@@ -197,6 +229,15 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_record_removal(kind, cell, level, atlas, s)
 		elif kind == "dig" or kind == "raise":
 			_record_terraform(kind, cell)
+		elif kind == "till":
+			_tilled["%d,%d" % [cell.x, cell.y]] = true
+			_save_farm()
+		elif kind == "plant":
+			_crops["%d,%d" % [cell.x, cell.y]] = {"x": cell.x, "y": cell.y, "id": s, "planted": level}
+			_save_farm()
+		elif kind == "cropdel":
+			if _crops.erase("%d,%d" % [cell.x, cell.y]):
+				_save_farm()
 		for pid in multiplayer.get_peers():
 			if pid != owner_id:
 				_event.rpc_id(pid, owner_id, kind, cell, level, atlas, s, flag)
@@ -255,6 +296,14 @@ func _event(owner_id: int, kind: String, cell: Vector2i, level: int, atlas: Vect
 			_world.dig_cell(cell)
 		"raise":
 			_world.raise_cell(cell)
+		"till":
+			_world.till_cell(cell)
+		"plant":
+			# level = Pflanzzeit. Ohne Inventar-Abbuchung (nur beim Pflanzer).
+			if _player:
+				_player.do_plant_at(cell, s, float(level))
+		"cropdel":
+			_world.remove_crop(cell)
 
 
 # --- Bau-Persistenz (Server) + Replay (Client) ---------------------------
@@ -293,6 +342,14 @@ func _request_builds() -> void:
 		var parts: PackedStringArray = String(tkey).split(",")
 		if parts.size() == 2:
 			_spawn_terraform.rpc_id(id, Vector2i(int(parts[0]), int(parts[1])), int(_terraform[tkey]))
+	# Acker: erst hacken, dann Pflanzen (mit Pflanzzeit) setzen.
+	for fkey in _tilled:
+		var fp: PackedStringArray = String(fkey).split(",")
+		if fp.size() == 2:
+			_spawn_till.rpc_id(id, Vector2i(int(fp[0]), int(fp[1])))
+	for ckey in _crops:
+		var c: Dictionary = _crops[ckey]
+		_spawn_crop.rpc_id(id, Vector2i(int(c["x"]), int(c["y"])), String(c["id"]), int(c["planted"]))
 
 
 ## Server -> Client: eine gemerkte Baute setzen. Kommt der Chunk nicht sofort
@@ -451,6 +508,46 @@ func _spawn_terraform(cell: Vector2i, delta: int) -> void:
 	else:
 		for i in range(delta):
 			_world.raise_cell(cell)
+
+
+## Server -> beitretender Client: eine Ackerzelle nachhacken.
+@rpc("any_peer", "reliable")
+func _spawn_till(cell: Vector2i) -> void:
+	if _world != null:
+		_world.till_cell(cell)
+
+
+## Server -> beitretender Client: eine Pflanze mit ihrer Pflanzzeit setzen.
+@rpc("any_peer", "reliable")
+func _spawn_crop(cell: Vector2i, crop_id: String, planted: int) -> void:
+	if _ensure_player():
+		_player.do_plant_at(cell, crop_id, float(planted))
+
+
+func _save_farm() -> void:
+	DirAccess.make_dir_recursive_absolute(BUILD_DIR)
+	var f := FileAccess.open(FARM_FILE, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"tilled": _tilled.keys(), "crops": _crops.values()}))
+		f.close()
+
+
+func _load_farm() -> void:
+	if not FileAccess.file_exists(FARM_FILE):
+		return
+	var f := FileAccess.open(FARM_FILE, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	for k in data.get("tilled", []):
+		_tilled[String(k)] = true
+	for c in data.get("crops", []):
+		_crops["%d,%d" % [int(c["x"]), int(c["y"])]] = {
+			"x": int(c["x"]), "y": int(c["y"]), "id": String(c["id"]), "planted": int(c["planted"])}
+	print("WorldSync: %d Ackerzellen, %d Pflanzen geladen." % [_tilled.size(), _crops.size()])
 
 
 func _save_terraform() -> void:
