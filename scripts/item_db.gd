@@ -46,6 +46,23 @@ static var ITEMS := {
 		"max_stack": 64,
 		"texture": "res://assets/game_assets/items/stone.png",
 	},
+	# Angeln: Olta (Angel) craftbar, Balik (roh, NICHT essbar), Pismis Balik
+	# (gebraten, essbar). Icons per PixelLab generiert (pixflux).
+	"olta": {
+		"name": "Olta",
+		"max_stack": 1,
+		"texture": "res://assets/game_assets/items/olta.png",
+	},
+	"balik": {
+		"name": "Balik",
+		"max_stack": 16,
+		"texture": "res://assets/game_assets/items/balik.png",
+	},
+	"pismis_balik": {
+		"name": "Pismis Balik",
+		"max_stack": 16,
+		"texture": "res://assets/game_assets/items/pismis_balik.png",
+	},
 	# Cakmaktasi (Flint): selten (1%) beim Abbauen von normalem Stein. Icon
 	# vorerst eine Stein-Zelle aus prop1 (Platzhalter, leicht ersetzbar).
 	"cakmaktasi": {
@@ -367,6 +384,7 @@ static func crop_of_seed(id: String) -> String:
 const FOOD := {
 	"misir": 25, "kizarmis_et": 40,
 	"havuc": 20, "domates": 15, "kabak": 40, "bugday": 10,
+	"pismis_balik": 35,
 }
 static func is_food(id: String) -> bool:
 	return FOOD.has(id)

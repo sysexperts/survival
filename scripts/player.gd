@@ -167,6 +167,7 @@ var _metal_shown := ""
 var level := 0                   ## Ebene des Blocks, auf dem Jack steht
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
+var _fishing := false            ## angelt gerade (steht still am Wasser)
 var _day_night: Node = null      ## optional, zum Dimmen der Laterne
 
 var path: Array[Vector2i] = []   ## laufender Klick-Weg, leer = kein Auftrag
@@ -699,6 +700,8 @@ func _end_chop() -> void:
 
 ## Läuft zur angeklickten Zelle. Gibt false zurück, wenn es keinen Weg gibt.
 func walk_to(cell: Vector2i) -> bool:
+	if _fishing:
+		return false
 	_cancel_task()
 	var here := world.world_to_cell(global_position, level)
 	# Auf ein Prop kann man nicht treten - dann daneben stellen.
@@ -1483,6 +1486,30 @@ const INVALID_CELL := Vector2i(2147483647, 2147483647)
 ## gross), sonst reicht Jack in der Iso-Sicht nach oben und unten nur halb so
 ## weit wie zur Seite.
 @export var pickup_radius := 1.25
+
+## Angeln: eine direkt benachbarte Wasser-Zelle (oder INVALID_CELL). Man muss
+## unmittelbar am Wasser stehen.
+func water_in_reach() -> Vector2i:
+	var here := world.world_to_cell(global_position, level)
+	for n in world.neighbors(here):
+		if world.is_water(n):
+			return n
+	return INVALID_CELL
+
+
+## Angeln starten: laufenden Auftrag abbrechen, zum Wasser schauen, still stehen.
+func begin_fishing(water_cell: Vector2i) -> void:
+	_cancel_task()
+	_fishing = true
+	busy = true                     # blockiert Laufen waehrend des Auswerfens
+	_face_point(world.cell_to_world(water_cell, maxi(world.top_level_at(water_cell), 0)))
+	_play("idle")
+
+
+func end_fishing() -> void:
+	_fishing = false
+	busy = false
+
 
 func stone_in_reach() -> Vector2i:
 	var best := INVALID_CELL

@@ -335,6 +335,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F:
 		_use_selected()
 		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_SPACE:
+		# Leertaste = Angeln (Olta in der Hand + direkt am Wasser).
+		if not _any_window_open():
+			_try_fish()
+			get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_X or event.physical_keycode == KEY_X:
 		# Admin-Kreativinventar auf/zu. physical_keycode als Fallback fuer
 		# abweichende Tastatur-Layouts. Log, damit wir sehen ob die Taste
@@ -532,6 +537,31 @@ func _any_window_open() -> bool:
 
 ## F = ausgewaehltes Item benutzen (platzieren/essen) oder vor den Fuessen
 ## aufheben. OEffnet KEINE Truhen/Stationen mehr - das macht der Rechtsklick.
+var _fishing := false
+
+## Leertaste am Wasser: mit Olta in der Hand auswerfen, kurz warten, Fisch fangen.
+func _try_fish() -> void:
+	if player == null or _any_window_open() or _fishing:
+		return
+	if player.held_item_id != "olta":
+		return
+	var water := player.water_in_reach()
+	if water == Player.INVALID_CELL:
+		_notice("Su kenarinda olmalisin")
+		return
+	_fishing = true
+	player.begin_fishing(water)
+	_notice("Balik tutuluyor...")
+	await get_tree().create_timer(2.5).timeout
+	_fishing = false
+	if not is_instance_valid(player):
+		return
+	player.end_fishing()
+	if player.held_item_id == "olta" and player.water_in_reach() != Player.INVALID_CELL:
+		_grant("balik", 1)
+		_notice("Balik yakalandi!")
+
+
 func _use_selected() -> void:
 	if player == null or _any_window_open():
 		return
@@ -553,6 +583,17 @@ func _use_selected() -> void:
 	# haeufigste Kontextaktion.
 	var stone := player.stone_in_reach()
 	if stone != Player.INVALID_CELL and player.collect_stone(stone):
+		return
+	# Rohen Fisch am (brennenden/fertigen) Lagerfeuer braten - roh nicht essbar.
+	var sel: Dictionary = inventory.slots[hud.selected]
+	if not sel.is_empty() and String(sel["id"]) == "balik":
+		var cf := player.campfire_in_reach(false)
+		if cf != null and cf.state != Campfire.State.AUS:
+			inventory.remove("balik", 1)
+			_grant("pismis_balik", 1)
+			_notice("Balik pisti")
+		else:
+			_notice("Baligi bir atesde pisir")
 		return
 	var fire := player.campfire_in_reach(true)
 	if fire != null and fire.collect():

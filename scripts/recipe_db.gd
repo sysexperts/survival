@@ -55,7 +55,7 @@ const CAT_OF := {
 	"demir_cekic": "alet", "demir_capa": "alet", "demir_bicak": "alet",
 	"altin_balta": "alet", "altin_kazma": "alet", "altin_kurek": "alet",
 	"altin_capa": "alet", "altin_bicak": "alet",
-	"sulama_kabi": "alet",
+	"sulama_kabi": "alet", "olta": "alet",
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
 	"yatak": "mobilya", "portatif_yatak": "mobilya", "su_ficisi": "mobilya",
@@ -123,6 +123,11 @@ const RECIPES := [
 	{
 		"out": "balta", "count": 1, "station": WERKBANK, "seconds": 4.0,
 		"cost": {"odun": 2, "tas": 3},
+	},
+	# Olta (Angel): Holz + Schnur. Damit am Wasser angeln (Leertaste).
+	{
+		"out": "olta", "count": 1, "station": WERKBANK, "seconds": 5.0,
+		"cost": {"odun": 3, "ip": 2},
 	},
 	# Weberei: aus Pflanzenfaser wird Schnur, aus Schnur wird Stoff. Der
 	# Stoff ist die Grundlage fuer Betten und spaeter Kleidung.
