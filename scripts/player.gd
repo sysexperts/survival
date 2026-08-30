@@ -1,7 +1,7 @@
 extends Node2D
 class_name Player
 
-## Jack: 8-Richtungs-Bewegung auf der gestapelten Isometrie-Map.
+## der Charakter: 8-Richtungs-Bewegung auf der gestapelten Isometrie-Map.
 ##
 ## Bewegt sich frei im Bildschirmraum (die Y-Achse wird gestaucht, damit
 ## das Tempo in der Iso-Perspektive gleichmässig wirkt) und rastet nicht
@@ -34,7 +34,7 @@ signal axe_swung
 ## Es wurde versucht, sich in ein bereits belegtes Bett zu legen. Das Inventar
 ## zeigt daraufhin einen Hinweis.
 signal bed_busy
-## Jack hat sich hingelegt (Spawnpunkt gemerkt) - fuer Chat-Hinweis + Schlaf-Logik.
+## der Charakter hat sich hingelegt (Spawnpunkt gemerkt) - fuer Chat-Hinweis + Schlaf-Logik.
 signal lay_down
 
 ## Ein Stein wurde aufgehoben.
@@ -42,7 +42,7 @@ signal lay_down
 ## alten, in die Karte gemalten Steinen.
 signal stone_collected(cell: Vector2i, level: int, gather_id: String)
 
-## Jack ist bei einer Handwerks-Station angekommen (nach Rechtsklick). Das
+## der Charakter ist bei einer Handwerks-Station angekommen (nach Rechtsklick). Das
 ## Inventar oeffnet daraufhin ihr Fenster - der Player kennt kein HUD.
 signal reached_station(station: String)
 ## Bei einer Lagertruhe angekommen (Rechtsklick) - Inventar oeffnet ihr Fenster.
@@ -120,7 +120,7 @@ signal tool_worn(amount: int)
 ## Wie schnell der Stufen-Versatz ausgeglichen wird (grösser = schneller).
 const STEP_SMOOTH_SPEED := 14.0
 ## Visueller Rest-Versatz in px, der einen Höhensprung weich nachzieht,
-## damit Jack beim Stufenwechsel nicht ruckartig 8 px hoch/runter springt.
+## damit der Charakter beim Stufenwechsel nicht ruckartig 8 px hoch/runter springt.
 ## Der Node selbst sitzt logisch schon auf der neuen Höhe (Y-Sortierung und
 ## Kollision stimmen); nur die sichtbaren Kinder gleiten nach.
 var _step_lag := 0.0
@@ -130,10 +130,10 @@ var _lantern_base_y := 0.0
 var _nameplate_base_y := 0.0
 
 var world: IsoWorld
-## Haelt Jack gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
+## Haelt der Charakter gerade eine Axt? Wird vom Inventar gesetzt und richtet sich
 ## danach, was in der Hotbar ausgewaehlt ist. Ohne Axt kein Baum.
 var has_axe := false
-## Welches Werkzeug Jack gerade in der Hand zeigt (Pack-Layer-Name + Metall),
+## Welches Werkzeug der Charakter gerade in der Hand zeigt (Pack-Layer-Name + Metall),
 ## vom Inventar nach der Hotbar-Auswahl gesetzt. "" = leere Hand. has_axe bleibt
 ## als eigener Schalter fuer das Faellen (nur die Axt faellt Baeume).
 var held_tool := ""
@@ -164,7 +164,7 @@ var _look: Dictionary = {}
 ## Welches Werkzeug/Metall gerade in den Frames steckt (Vergleich fuer Neuaufbau).
 var _tool_shown := ""
 var _metal_shown := ""
-var level := 0                   ## Ebene des Blocks, auf dem Jack steht
+var level := 0                   ## Ebene des Blocks, auf dem der Charakter steht
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
 var _fishing := false            ## angelt gerade (steht still am Wasser)
@@ -197,7 +197,7 @@ var _camera: Camera2D = null
 ## inaktiv - dann zaehlt der Baum lokal herunter.
 var _ws: Node = null
 
-## Schlafen im Bett. `_sleeping` = Jack liegt gerade; `_reach_bed` = er laeuft
+## Schlafen im Bett. `_sleeping` = der Charakter liegt gerade; `_reach_bed` = er laeuft
 ## noch zum Bett und legt sich bei Ankunft hin. `_sleep_return_pos`/`_level`
 ## merken, wo er vorm Hinlegen stand, damit er beim Aufwachen dorthin zurueck-
 ## springt (das Bett selbst ist belegt, dort kann er nicht stehen).
@@ -206,7 +206,7 @@ var _reach_bed := false
 var _bed_cell := Vector2i.ZERO
 var _sleep_return_pos := Vector2.ZERO
 var _sleep_return_level := 0
-## Der aufsteigende Zzz-Effekt, solange Jack liegt (rein optisch, siehe
+## Der aufsteigende Zzz-Effekt, solange der Charakter liegt (rein optisch, siehe
 ## sleep_zzz.gd). Haengt an der Figur und wandert beim Ebenenwechsel mit.
 ## Per preload statt ueber den class_name SleepZzz - sonst kennt der
 ## Auto-Updater die neue Klasse nicht (die Basis-.exe registriert sie beim
@@ -221,7 +221,7 @@ const AudioHelper := preload("res://scripts/audio.gd")
 ## Eigene Schritte etwas leiser als die der Mitspieler (die man ohnehin nur aus
 ## der Naehe hoert). Separat von AudioHelper.FOOTSTEP_DB, das die Remote-Basis ist.
 const OWN_FOOTSTEP_DB := -22.0
-## Ab so viel Bewegung pro Frame (px) gilt Jack als laufend. Die Obergrenze
+## Ab so viel Bewegung pro Frame (px) gilt der Charakter als laufend. Die Obergrenze
 ## faengt Spruenge (Teleport, Aufwachen) ab, die kurz "Bewegung" vortaeuschen.
 const FOOTSTEP_MIN_MOVE := 0.1
 const FOOTSTEP_MAX_MOVE := 20.0
@@ -241,7 +241,7 @@ const UIState := preload("res://scripts/ui_state.gd")
 
 
 func _ready() -> void:
-	# Jack haengt sich zur Laufzeit in die TileMapLayer um, deshalb ist er
+	# der Charakter haengt sich zur Laufzeit in die TileMapLayer um, deshalb ist er
 	# ueber den festen Szenenpfad nicht mehr auffindbar -> Gruppe.
 	add_to_group("player")
 	z_index = 0        # den z_index bringt der Props-Container mit
@@ -300,14 +300,14 @@ func _sync_armed() -> void:
 		sprite.play(a)
 
 
-## Setzt Jack auf den obersten Block einer Zelle.
+## Setzt der Charakter auf den obersten Block einer Zelle.
 func _snap_to_cell(cell: Vector2i) -> void:
 	level = maxi(world.top_level_at(cell), 0)
 	global_position = world.cell_to_world(cell, level)
 	_reparent_to_level()
 
 
-## Versetzt Jack an eine Weltposition (Admin-Teleport). Bricht laufende Auftraege
+## Versetzt der Charakter an eine Weltposition (Admin-Teleport). Bricht laufende Auftraege
 ## ab und rastet sauber auf die Zielzelle (richtige Hoehe/Y-Sortierung) ein.
 func teleport_to(pos: Vector2) -> void:
 	_cancel_task()
@@ -317,7 +317,7 @@ func teleport_to(pos: Vector2) -> void:
 
 
 ## Merkt sich einen Wiederbelebungspunkt (beim Schlafen gesetzt). Bei Tod wird
-## Jack hierher zurueckgesetzt. Solange es noch kein Todes-System gibt, dient das
+## der Charakter hierher zurueckgesetzt. Solange es noch kein Todes-System gibt, dient das
 ## nur der Vorbereitung (respawn() ist bereits verdrahtet).
 var _spawn_cell := Vector2i.ZERO
 var _has_spawn := false
@@ -328,7 +328,7 @@ func set_spawn_here(cell: Vector2i) -> void:
 	_has_spawn = true
 
 
-## Belebt Jack am gemerkten Bett-Spawnpunkt wieder (oder am Startpunkt, falls er
+## Belebt der Charakter am gemerkten Bett-Spawnpunkt wieder (oder am Startpunkt, falls er
 ## noch nie geschlafen hat).
 func respawn() -> void:
 	if _sleeping:
@@ -348,7 +348,7 @@ func _process(delta: float) -> void:
 
 ## Laufgeraeusch an die tatsaechliche Bewegung koppeln - so deckt es Tastatur
 ## UND Klick-Laufen ab und schweigt bei Idle, Faellen und Schlafen (dort steht
-## Jack still). Ueber die Positions-Differenz, nicht ueber die Animation, damit
+## der Charakter still). Ueber die Positions-Differenz, nicht ueber die Animation, damit
 ## keine Sonderfaelle vergessen werden.
 func _update_footsteps(delta: float) -> void:
 	if _footsteps == null:
@@ -391,7 +391,7 @@ func _setup_footsteps() -> void:
 
 
 ## Zieht den Stufen-Versatz Frame für Frame gegen null und legt ihn auf die
-## sichtbaren Kinder. So gleitet Jack über ~0,1 s auf die neue Höhe, statt zu
+## sichtbaren Kinder. So gleitet der Charakter über ~0,1 s auf die neue Höhe, statt zu
 ## springen. Der geworfene Schatten (CastShadow) folgt automatisch, weil er
 ## sprite.offset jeden Frame kopiert.
 func _ease_step_lag(delta: float) -> void:
@@ -433,7 +433,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_S): input.y += 1.0
 	input = input.limit_length(1.0)
 
-	# Schlafen: Jack liegt still im Bett, bis eine Bewegungstaste kommt. Erst
+	# Schlafen: der Charakter liegt still im Bett, bis eine Bewegungstaste kommt. Erst
 	# aufstehen (zurueck auf die Standfläche), dann normal weiter - so laeuft er
 	# im selben Tastendruck los, statt einen Frame zu verschlucken.
 	if _sleeping:
@@ -524,7 +524,7 @@ func _dir_index(v: Vector2) -> int:
 	return wrapi(int(round((90.0 - a) / 45.0)), 0, 8)
 
 
-## Verschiebt Jack, wenn das Ziel begehbar ist, und passt die Höhe an.
+## Verschiebt der Charakter, wenn das Ziel begehbar ist, und passt die Höhe an.
 func _try_move(delta_pos: Vector2) -> void:
 	if delta_pos == Vector2.ZERO:
 		return
@@ -552,9 +552,9 @@ func _try_move(delta_pos: Vector2) -> void:
 	global_position = target
 
 
-## Jack gehoert in denselben y-sortierten Container wie die Props. Nur so
+## der Charakter gehoert in denselben y-sortierten Container wie die Props. Nur so
 ## entscheidet zwischen ihm und einem Baum die Bildschirmposition statt des
-## Ebenen-z_index. Der Container traegt den z_index, Jack selbst bleibt 0.
+## Ebenen-z_index. Der Container traegt den z_index, der Charakter selbst bleibt 0.
 func _reparent_to_level() -> void:
 	if not is_inside_tree() or world.props_root == null:
 		return
@@ -736,7 +736,7 @@ func walk_to_station(cell: Vector2i) -> bool:
 
 
 ## Läuft zu einem platzierten Objekt (Möbel/Lagerfeuer) und zerstört es bei
-## Ankunft (Shift+Rechtsklick). Steht Jack schon daneben, sofort. false, wenn
+## Ankunft (Shift+Rechtsklick). Steht der Charakter schon daneben, sofort. false, wenn
 ## dort nichts Zerstörbares steht oder kein Weg daneben führt.
 func walk_to_destroy(cell: Vector2i) -> bool:
 	var node := world.blocker_at(cell)
@@ -772,13 +772,13 @@ func _do_destroy(cell: Vector2i) -> void:
 	destroyed_placed.emit(anchor)
 
 
-## Betten, in die sich Jack legen kann.
+## Betten, in die sich der Charakter legen kann.
 const BED_IDS := ["yatak", "portatif_yatak"]
 ## Liege-Pose entlang der Bett-Diagonale (Kopf oben-links am Kissen, Füsse
 ## unten-rechts). Gespiegeltes Bett spiegelt die Richtung mit.
 const BED_FACING := "south_east"
 const BED_FACING_FLIPPED := "south_west"
-## Feinjustierung der Liegeposition. y leicht positiv, damit Jack in der
+## Feinjustierung der Liegeposition. y leicht positiv, damit der Charakter in der
 ## Y-Sortierung VOR dem Bettrahmen liegt (er wird also ganz auf dem Bett
 ## gezeichnet, nicht dahinter).
 const BED_POS_NUDGE := Vector2(0, 3)
@@ -834,7 +834,7 @@ func walk_to_bed(cell: Vector2i) -> bool:
 	return true
 
 
-## Legt Jack ins Bett: Position auf die Bett-Mitte, passende Liege-Pose. Die
+## Legt der Charakter ins Bett: Position auf die Bett-Mitte, passende Liege-Pose. Die
 ## Standfläche wird gemerkt, damit er beim Aufwachen wieder daneben steht.
 func _lie_down(cell: Vector2i) -> void:
 	var bed := _bed_at(cell)
@@ -872,18 +872,18 @@ func _lie_down(cell: Vector2i) -> void:
 	lay_down.emit()
 
 
-## Liegt Jack gerade im Bett?
+## Liegt der Charakter gerade im Bett?
 func is_sleeping() -> bool:
 	return _sleeping
 
 
-## Weckt Jack (falls er liegt) - von der Schlaf-Ueberblendung aufgerufen.
+## Weckt der Charakter (falls er liegt) - von der Schlaf-Ueberblendung aufgerufen.
 func wake() -> void:
 	if _sleeping:
 		_wake_up()
 
 
-## Weckt Jack: zurück auf die gemerkte Standfläche, normale Anzeige.
+## Weckt der Charakter: zurück auf die gemerkte Standfläche, normale Anzeige.
 func _wake_up() -> void:
 	_sleeping = false
 	sprite.offset = sprite_offset      # Liege-Bildversatz zuruecknehmen
@@ -914,7 +914,7 @@ func _net_game_call(method: String, arg) -> void:
 # --- Buddeln / Aufschuetten (Schaufel) ----------------------------------
 
 ## Läuft zur Zelle und baut sie mit der Schaufel eine Ebene ab (Rechtsklick).
-## Steht Jack schon daneben, buddelt er sofort. false, wenn dort nicht abbaubar
+## Steht der Charakter schon daneben, buddelt er sofort. false, wenn dort nicht abbaubar
 ## ist oder kein Weg daneben führt.
 func dig(cell: Vector2i) -> bool:
 	if not world.can_dig(cell):
@@ -1243,11 +1243,11 @@ func clear_stump(cell: Vector2i, stump_level: int) -> bool:
 	return true
 
 
-## Läuft zum Baum und fällt ihn. Steht Jack schon daneben, schlägt er sofort.
+## Läuft zum Baum und fällt ihn. Steht der Charakter schon daneben, schlägt er sofort.
 func chop(cell: Vector2i, prop_level: int) -> bool:
 	# Ohne Axt in der Hand faellt hier gar nichts. Bewusst vor dem
 	# Wegwerfen des laufenden Auftrags: ein Klick ins Leere soll nicht den
-	# Weg abbrechen, auf dem Jack gerade ist.
+	# Weg abbrechen, auf dem der Charakter gerade ist.
 	if not has_axe:
 		chop_refused.emit()
 		return false
@@ -1267,7 +1267,7 @@ func chop(cell: Vector2i, prop_level: int) -> bool:
 
 
 func _cancel_task() -> void:
-	# Ein neuer Auftrag (Klick) weckt Jack zuerst - er steht auf und geht dann
+	# Ein neuer Auftrag (Klick) weckt der Charakter zuerst - er steht auf und geht dann
 	# von der Standfläche neben dem Bett aus weiter.
 	if _sleeping:
 		_wake_up()
@@ -1294,7 +1294,7 @@ func _cancel_task() -> void:
 	_tree = null
 
 
-## Bewegt Jack zum nächsten Wegpunkt. Ein Punkt gilt als erreicht, sobald
+## Bewegt der Charakter zum nächsten Wegpunkt. Ein Punkt gilt als erreicht, sobald
 ## er näher als ARRIVE_PX dran ist - sonst zappelt er auf der Stelle.
 const ARRIVE_PX := 2.0
 ## Abstand der Prüfpunkte auf der Sichtlinie beim Glätten.
@@ -1329,7 +1329,7 @@ func _follow_path(delta: float) -> void:
 
 ## Zellweise A*-Wege sehen aus wie Treppen. Deshalb wird vor jedem Schritt
 ## der am weitesten entfernte Wegpunkt gesucht, zu dem die direkte Linie frei
-## ist - dazwischenliegende Punkte fallen weg. Ergebnis: Jack läuft schnurgerade
+## ist - dazwischenliegende Punkte fallen weg. Ergebnis: der Charakter läuft schnurgerade
 ## und schneidet Kurven, statt am Raster entlangzuknicken.
 func _smooth_path() -> void:
 	var last := mini(path.size() - 1, SMOOTH_LOOKAHEAD)
@@ -1357,7 +1357,7 @@ func _line_is_walkable(from: Vector2, to: Vector2) -> bool:
 
 
 ## Prüft die Zelle unter einem Weltpunkt - und die beiden seitlich versetzten
-## Punkte dazu, damit Jack nicht mit der Schulter durch eine Ecke rutscht.
+## Punkte dazu, damit der Charakter nicht mit der Schulter durch eine Ecke rutscht.
 func _point_is_walkable(p: Vector2) -> bool:
 	for offset in [Vector2.ZERO, Vector2(3.0, 0.0), Vector2(-3.0, 0.0)]:
 		var cell := world.world_to_cell(p + offset, level)
@@ -1483,7 +1483,7 @@ func place_building_at(id: String, top: Vector2i, orient := 0, started := 0.0) -
 ## optisch direkt am Stein und waere trotzdem "nicht in Reichweite".
 const INVALID_CELL := Vector2i(2147483647, 2147483647)
 ## Greifweite in Zellen. Gemessen wird im Zellmass (ein Diamant ist 32x16 px
-## gross), sonst reicht Jack in der Iso-Sicht nach oben und unten nur halb so
+## gross), sonst reicht der Charakter in der Iso-Sicht nach oben und unten nur halb so
 ## weit wie zur Seite.
 @export var pickup_radius := 1.25
 
@@ -1549,7 +1549,7 @@ func collect_stone(cell: Vector2i) -> bool:
 	if lvl < 0:
 		return false
 	# Kurz hinschauen, das reicht als Geste - eine Aufheb-Animation hat
-	# Jack nicht.
+	# der Charakter nicht.
 	var to_stone := world.cell_to_world(cell, lvl) - global_position
 	if to_stone.length() > 1.0:
 		facing = DIRS[_dir_index(Vector2(to_stone.x, to_stone.y / y_squash))]

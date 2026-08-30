@@ -11,7 +11,7 @@ class_name Furniture
 
 ## Die Moebel im Sheet sind 64x64 gezeichnet und fuellen die Zelle fast ganz
 ## aus - deutlich groesser als ein 32er-Block. Verkleinert auf ein Mass, das
-## neben Jack und den Baeumen stimmt. An EINER Stelle, damit die Vorschau
+## neben der Charakter und den Baeumen stimmt. An EINER Stelle, damit die Vorschau
 ## dieselbe Groesse zeigt wie das gesetzte Moebel.
 const ART_SCALE := 0.62
 ## Anker im 64er-Bild. x = 32 ist die waagerechte Mitte des Sheets, y = 56

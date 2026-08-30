@@ -5,7 +5,7 @@ class_name TerrainOcclusion
 ## Silhouette - so verdeckt eine Stufe vor einem Bett dieses korrekt, ohne die
 ## globale Sortierung (Props über Terrain) anzutasten.
 ##
-## Warum überhaupt: Alle Props (Bäume, Möbel, Jack) hängen bewusst in einem
+## Warum überhaupt: Alle Props (Bäume, Möbel, der Charakter) hängen bewusst in einem
 ## y-sortierten Container über dem Terrain (z_index 16), damit nichts hinter
 ## Terrain verschwindet. Der Preis war: eine höhere Kachel VOR einem Prop
 ## verdeckte ihn nicht. Statt die globale Sortierung umzuwerfen, ziehen wir

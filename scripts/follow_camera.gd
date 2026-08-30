@@ -1,6 +1,6 @@
 extends Camera2D
 
-## Folgt Jack weich. Der Zoom ist fest (in der Szene gesetzt) - das Mausrad
+## Folgt der Charakter weich. Der Zoom ist fest (in der Szene gesetzt) - das Mausrad
 ## blaettert stattdessen durch die Hotbar (siehe player_inventory.gd).
 
 @export var target_path: NodePath = ^"../Player"

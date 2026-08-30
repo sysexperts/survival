@@ -72,7 +72,7 @@ static func build() -> SpriteFrames:
 	return sf
 
 
-## Player.gd spricht Jacks Namensschema: idle_/walk_/run_/axe_ mal acht
+## Player.gd spricht Charakters Namensschema: idle_/walk_/run_/axe_ mal acht
 ## Richtungen. Damit Po ohne Umbau derselben Logik folgt, werden diese Namen
 ## zusaetzlich angelegt und zeigen auf dieselben Frames. Die Westrichtungen
 ## teilen sich die Frames mit Westen - gespiegelt wird beim Abspielen.

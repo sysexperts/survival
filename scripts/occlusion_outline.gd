@@ -5,7 +5,7 @@ class_name OcclusionOutline
 ##
 ## Spiegelt Bild für Bild die Animation des Spieler-Sprites und zeichnet sie
 ## mit `fill_alpha = 0` - also nur den Rand - über allem anderen. Dadurch
-## sieht man durch einen Baum hindurch, wo Jack steht.
+## sieht man durch einen Baum hindurch, wo der Charakter steht.
 ##
 ## Wird von `player.gd` zur Laufzeit erzeugt, damit die Spielerszene dafür
 ## nicht angefasst werden muss.
@@ -22,7 +22,7 @@ const OVER_PROPS_Z := 50
 @export var check_radius := 90.0
 ## Wie viel vom Körper mindestens verdeckt sein muss, damit der Umriss
 ## erscheint. Ohne diese Schwelle genügte schon eine Ecke einer weit
-## entfernten Baumkrone, die Jacks Füsse streift.
+## entfernten Baumkrone, die Charakters Füsse streift.
 @export_range(0.0, 1.0) var min_cover := 0.28
 
 var player: Node2D
@@ -90,7 +90,7 @@ func _is_occluded() -> bool:
 		if node.source_id != IsoWorld.PROP_SOURCE_ID:
 			continue
 		if node.global_position.y <= player.global_position.y:
-			continue                                  # steht hinter Jack
+			continue                                  # steht hinter der Charakter
 		if node.global_position.distance_to(player.global_position) > check_radius:
 			continue
 		# Gegen den tatsaechlich sichtbaren Teil pruefen, nicht gegen das

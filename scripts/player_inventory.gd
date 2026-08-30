@@ -282,7 +282,7 @@ func _station_hud(station: String) -> CraftingHUD:
 	return station_huds[station]
 
 
-## Jack ist per Rechtsklick bei einer Station angekommen - ihr Fenster auf.
+## der Charakter ist per Rechtsklick bei einer Station angekommen - ihr Fenster auf.
 func _on_reached_station(station: String) -> void:
 	if hud.bag_open():
 		hud.toggle_bag()

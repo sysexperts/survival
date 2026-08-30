@@ -1,9 +1,9 @@
 extends Player
 class_name PoPlayer
 
-## Testfigur "Po" - dieselbe Steuerung wie Jack, nur andere Grafik.
+## Testfigur "Po" - dieselbe Steuerung wie der Charakter, nur andere Grafik.
 ##
-## Jack bleibt unangetastet: Po erbt die komplette Spieler-Logik und tauscht
+## der Charakter bleibt unangetastet: Po erbt die komplette Spieler-Logik und tauscht
 ## nur die SpriteFrames aus (zur Laufzeit von PoFrames gebaut) und spiegelt
 ## den Sprite für die Ost-Richtungen - die Sheets zeigen nur die Westseite.
 
