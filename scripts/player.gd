@@ -531,6 +531,8 @@ func _try_move(delta_pos: Vector2) -> void:
 	var cell := world.world_to_cell(target, level)
 	if world.has_prop(cell):
 		return                                  # Baum o. ae. im Weg
+	if world.is_water(cell):
+		return                                  # Wasser nicht betretbar
 	var top := world.top_level_at(cell)
 	# Kein Boden (echtes Loch/Leere) oder zu hohe Stufe -> blockiert. Ein
 	# gebuddeltes Loch hat negativen, aber gueltigen Boden (bis NO_FLOOR), da
@@ -1357,6 +1359,8 @@ func _point_is_walkable(p: Vector2) -> bool:
 	for offset in [Vector2.ZERO, Vector2(3.0, 0.0), Vector2(-3.0, 0.0)]:
 		var cell := world.world_to_cell(p + offset, level)
 		if world.has_prop(cell):
+			return false
+		if world.is_water(cell):
 			return false
 		if world.top_level_at(cell) != level:
 			return false

@@ -154,7 +154,8 @@ func _move(delta: float) -> void:
 func _step(v: Vector2) -> void:
 	var np := global_position + v
 	var cell: Vector2i = world.world_to_cell(np, 0)
-	if world.top_level_at(cell) > world.NO_FLOOR and world.blocker_at(cell) == null:
+	if world.top_level_at(cell) > world.NO_FLOOR and world.blocker_at(cell) == null \
+			and not world.is_water(cell):
 		global_position = np
 
 

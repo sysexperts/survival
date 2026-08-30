@@ -507,6 +507,8 @@ func can_place_4x4(top: Vector2i) -> bool:
 func can_step(from: Vector2i, to: Vector2i, max_step: int = 1) -> bool:
 	if has_prop(to):
 		return false
+	if is_water(to):
+		return false                        # Wasser ist nicht begehbar
 	var a := top_level_at(from)
 	var b := top_level_at(to)
 	# Boden vorhanden (auch Untergrund/Loch-Boden) und Stufe begehbar.
