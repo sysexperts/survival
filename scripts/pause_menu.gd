@@ -36,10 +36,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _editor.visible:
 		_editor.visible = false
 		_root.visible = true
-	elif visible:
+		return
+	if visible:
 		_close()
-	else:
-		_open()
+		return
+	# Erst ein offenes Spiel-Fenster schliessen (Truhe/Station/Tasche/...); nur
+	# wenn keines offen war, das Menue oeffnen. So schliesst Escape verlaesslich.
+	if UIState.close_top_window():
+		return
+	_open()
 
 
 func _open() -> void:

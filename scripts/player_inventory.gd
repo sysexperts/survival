@@ -46,6 +46,7 @@ var creative: Node
 const AdminsScript := preload("res://scripts/admins.gd")
 const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 const ChestHUDScript := preload("res://scripts/chest_hud.gd")
+const UIStateScript := preload("res://scripts/ui_state.gd")
 var chest_hud                             ## Lagertruhen-Fenster (online)
 var _chest_sync                           ## ChestSync-Node
 var _is_admin := false
@@ -86,6 +87,8 @@ func _ready() -> void:
 	chest_hud = ChestHUDScript.new()
 	add_child(chest_hud)
 	chest_hud.setup(inventory, _chest_sync)
+	# Escape schliesst das oberste Fenster (zentral im Pause-Menue, siehe UIState).
+	UIStateScript.close_top = _close_windows
 
 	for id in starting_items:
 		inventory.add(id, int(starting_items[id]))
@@ -313,12 +316,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# bleibt als zweite Taste fuer die Tasche - wer es aus anderen Spielen
 	# so kennt, findet es trotzdem.
 	#
-	# Escape schliesst, was offen ist. Ohne das muesste man sich merken,
-	# womit man das Fenster aufgemacht hat.
-	if event.keycode == KEY_ESCAPE:
-		if _close_windows():
-			get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_E or event.keycode == KEY_I:
+	# Escape wird zentral im Pause-Menue behandelt (schliesst zuerst ein offenes
+	# Fenster ueber UIState.close_top, sonst Menue) - hier NICHT mehr abfangen.
+	if event.keycode == KEY_E or event.keycode == KEY_I:
 		_close_all_crafting()
 		hud.toggle_bag()
 		get_viewport().set_input_as_handled()
@@ -523,16 +523,17 @@ func _grant(id: String, amount: int) -> void:
 ## "E" ist eine Kontextaktion: liegt ein Stein in Reichweite, wird er
 ## aufgehoben; steht ein fertiges Lagerfeuer da, wird abgeholt - sonst wird
 ## der ausgewaehlte Gegenstand benutzt.
+## Ist irgendein Spiel-Fenster offen? (Dann macht F nichts - Escape schliesst.)
+func _any_window_open() -> bool:
+	return (chest_hud != null and chest_hud.is_open()) \
+		or _open_station() != null or crafting.is_open() or hud.bag_open() \
+		or (creative != null and creative.is_open())
+
+
+## F = ausgewaehltes Item benutzen (platzieren/essen) oder vor den Fuessen
+## aufheben. OEffnet KEINE Truhen/Stationen mehr - das macht der Rechtsklick.
 func _use_selected() -> void:
-	if player == null:
-		return
-	# Offenes Stationsfenster: F schliesst es wieder - so ist dieselbe Taste
-	# auf und zu, ohne dass man zur Maus greifen muss.
-	var open_station := _open_station()
-	if open_station != null:
-		open_station.set_open(false)
-		return
-	if hud.bag_open() or crafting.is_open():
+	if player == null or _any_window_open():
 		return
 	# Eine laufende Vorschau bricht IMMER ab, egal was gerade ausgewaehlt
 	# ist. Stand diese Pruefung weiter unten, blieb die Vorschau haengen,
@@ -556,24 +557,6 @@ func _use_selected() -> void:
 	var fire := player.campfire_in_reach(true)
 	if fire != null and fire.collect():
 		_grant("kizarmis_et", meat_per_fire)
-		return
-	# Lagertruhe in Reichweite? Ihr Online-Fenster oeffnen.
-	var chest := player.chest_in_reach()
-	if chest != Player.INVALID_CELL and chest_hud != null:
-		if hud.bag_open():
-			hud.toggle_bag()
-		_close_all_crafting()
-		chest_hud.open(chest)
-		return
-	# Steht eine Handwerks-Station in Reichweite, ihr Fenster oeffnen. Vor
-	# dem Platzieren, damit man an der Bank ihr Menue bekommt statt eine
-	# zweite danebenzustellen.
-	var station := player.station_in_reach()
-	if station != "":
-		if hud.bag_open():
-			hud.toggle_bag()
-		_close_all_crafting()
-		_station_hud(station).set_open(true)
 		return
 	var slot: Dictionary = inventory.slots[hud.selected]
 	if slot.is_empty():

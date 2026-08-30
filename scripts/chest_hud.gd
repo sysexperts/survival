@@ -105,6 +105,10 @@ func _build() -> void:
 	_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_dim.visible = false
+	# Klick auf den abgedunkelten Hintergrund schliesst die Truhe.
+	_dim.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed:
+			set_open(false))
 	add_child(_dim)
 
 	var center := CenterContainer.new()
@@ -174,7 +178,3 @@ func _refresh() -> void:
 		s.refresh()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if _open and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		set_open(false)
-		get_viewport().set_input_as_handled()

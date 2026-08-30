@@ -279,23 +279,27 @@ zeichnender `Node2D` und kein `Control`: ein Control lässt sich nicht
 sauber über die Props heben, und die Figur wechselt je nach Höhenebene den
 Eltern-Node.
 
-### Steuerung (aktueller Stand)
+### Steuerung (Konzept ab v161 — klare Trennung Maus/Item)
+
+**Grundidee:** Die **Maus interagiert mit der Welt** (Rechtsklick = alles am Ziel
+unter dem Cursor), die **Taste F benutzt das Item in der Hand**, **Esc schliesst**.
+So ist "womit interagiere/öffne ich was" eindeutig statt vermischt.
 
 | Taste | Aktion |
 |---|---|
-| Linksklick | hinlaufen |
-| Rechtsklick | Baum fällen, Stumpf roden, Rohstoff holen |
-| WASD / Pfeile | laufen, Shift rennen |
-| 1–9 | Hotbar-Feld |
-| **E** oder I | Tasche |
-| **C** | Handwerk |
-| **F** | Kontextaktion (aufheben, benutzen, platzieren) |
-| Esc | oberstes Fenster schliessen |
-| L | Laterne |
-| **M** | Vollbildkarte an/aus (Links-/Rechtsklick = Wegpunkt setzen/löschen); der Zielpfeil oben rechts zeigt zum aktiven Wegpunkt (kleine Pfeile schalten um) |
+| Linksklick | hinlaufen (im Bau-Modus: platzieren) |
+| **Rechtsklick** | INTERAGIEREN mit dem Ziel unter dem Cursor: fällen/roden, Stein/Fels holen, ernten, Gegner angreifen (mit Waffe), hacken (Hoe), pflanzen (Samen), giessen (Kanne) — **und Truhe/Werkbank/Bett öffnen** (draufklicken, läuft hin) |
+| Shift+Rechtsklick | platziertes Objekt abreissen |
+| **F** | ausgewähltes Item benutzen: Möbel/Gebäude/Samen platzieren, Essen essen; **und vor den Füssen aufheben** (Item/Stein). Öffnet KEINE Truhen/Stationen. |
+| **E** / I | Inventar-Buch auf/zu |
+| **C** | Handwerk (Basic-Crafts-Seite im Buch) |
+| **Esc** | offenes Fenster schliessen; wenn keins offen: Menü. Zentral im pause_menu über `UIState.close_top` (Vorrang vor Menü, unabhängig von Knoten-Reihenfolge). |
+| Q | ausgewähltes Item fallen lassen |
+| 1–9 | Hotbar-Feld · WASD/Pfeile laufen (Shift rennen) · L Laterne · T Chat · X Kreativ (Admin) |
+| **M** | Vollbildkarte (Links/Rechts = Wegpunkt setzen/löschen) |
 
-`F` war früher `E`. Die Hinweistexte in `GatherDB` nennen die Taste im
-Klartext — beim Umbelegen mit ändern.
+Fenster schliessen zusätzlich: Truhe per Klick auf den abgedunkelten Hintergrund.
+Die Hinweistexte in `GatherDB` nennen Tasten im Klartext — beim Umbelegen mitziehen.
 
 ---
 

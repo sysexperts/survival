@@ -16,8 +16,9 @@ const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 ## dunkle "Leer"-Flaeche, die mit sinkendem Wert nach links waechst.
 ## Rot = Leben (oben), Gruen = Hunger (unten; das dritte Balken-Feld nutzen wir
 ## fuer den Hunger, da Mana/Stamina im Spiel keine Rolle spielen).
-const HEALTH_FILL := Rect2i(20, 4, 24, 4)
-const HUNGER_FILL := Rect2i(20, 14, 24, 4)
+## Exakt ausgemessen (UI_Bars-Block): roter Balken y=4..6, gruener y=12..14.
+const HEALTH_FILL := Rect2i(20, 4, 24, 3)
+const HUNGER_FILL := Rect2i(20, 12, 24, 3)
 var _hp_empty: ColorRect
 var _hunger_empty: ColorRect
 
