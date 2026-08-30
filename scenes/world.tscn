@@ -4,14 +4,7 @@
 [ext_resource type="TileSet" uid="uid://cy352qlfqk00j" path="res://tilesets/iso_tileset.tres" id="2_tileset"]
 [ext_resource type="Script" uid="uid://bth8gfj0pgvsi" path="res://scripts/grid_overlay.gd" id="3_grid"]
 [ext_resource type="Texture2D" uid="uid://c1fdcfis37mca" path="res://assets/game_assets/enemies/mage_house_south-east.png" id="4_k0juu"]
-[ext_resource type="Script" path="res://scripts/path_npc.gd" id="5_npc"]
 [ext_resource type="SpriteFrames" path="res://resources/mage_enemie_frames.tres" id="6_frames"]
-
-[sub_resource type="Curve2D" id="Curve2D_npc"]
-_data = {
-"points": PackedVector2Array(0, 0, 0, 0, -480, 45, 0, 0, 0, 0, -360, 45, 0, 0, 0, 0, -360, 75, 0, 0, 0, 0, -480, 75, 0, 0, 0, 0, -480, 45)
-}
-point_count = 5
 
 [node name="World" type="Node2D" unique_id=1553512115]
 script = ExtResource("1_world")
@@ -32,22 +25,15 @@ z_index = 2
 position = Vector2(-420, -53)
 texture = ExtResource("4_k0juu")
 
-[node name="MagierinPfad" type="Path2D" parent="Level00"]
-y_sort_enabled = true
-z_index = 16
-curve = SubResource("Curve2D_npc")
-
-[node name="Follow" type="PathFollow2D" parent="Level00/MagierinPfad"]
-y_sort_enabled = true
-script = ExtResource("5_npc")
-
-[node name="Body" type="AnimatedSprite2D" parent="Level00/MagierinPfad/Follow"]
+[node name="Magierin" type="AnimatedSprite2D" parent="Level00"]
 texture_filter = 1
+z_index = 16
+position = Vector2(-390, 20)
 centered = false
 offset = Vector2(-24, -42)
 sprite_frames = ExtResource("6_frames")
-animation = &"walk_south"
-autoplay = "walk_south"
+animation = &"idle_south"
+autoplay = "idle_south"
 
 [node name="Level01" type="TileMapLayer" parent="." unique_id=1583931421]
 z_index = 1
