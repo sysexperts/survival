@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://btvebtsm0h80j"
-path="res://.godot/imported/balik.png-b85b02e89b27f40ff27ee1eb3920dce9.ctex"
+uid="uid://c2wsbmlu8lmex"
+path="res://.godot/imported/fish.png-8eefcd9a046d54dfd49137232ab5e334.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/game_assets/items/balik.png"
-dest_files=["res://.godot/imported/balik.png-b85b02e89b27f40ff27ee1eb3920dce9.ctex"]
+source_file="res://assets/game_assets/items/fish.png"
+dest_files=["res://.godot/imported/fish.png-8eefcd9a046d54dfd49137232ab5e334.ctex"]
 
 [params]
 

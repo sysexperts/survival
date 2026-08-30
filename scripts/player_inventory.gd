@@ -558,7 +558,7 @@ func _try_fish() -> void:
 		return
 	player.end_fishing()
 	if player.held_item_id == "olta" and player.water_in_reach() != Player.INVALID_CELL:
-		_grant("balik", 1)
+		_grant(ItemDB.random_raw_fish(), 1)
 		_notice("Balik yakalandi!")
 
 
@@ -586,11 +586,12 @@ func _use_selected() -> void:
 		return
 	# Rohen Fisch am (brennenden/fertigen) Lagerfeuer braten - roh nicht essbar.
 	var sel: Dictionary = inventory.slots[hud.selected]
-	if not sel.is_empty() and String(sel["id"]) == "balik":
+	if not sel.is_empty() and ItemDB.is_raw_fish(String(sel["id"])):
+		var raw := String(sel["id"])
 		var cf := player.campfire_in_reach(false)
 		if cf != null and cf.state != Campfire.State.AUS:
-			inventory.remove("balik", 1)
-			_grant("pismis_balik", 1)
+			inventory.remove(raw, 1)
+			_grant(ItemDB.cooked_of(raw), 1)
 			_notice("Balik pisti")
 		else:
 			_notice("Baligi bir atesde pisir")

@@ -10,6 +10,8 @@ class_name ItemDB
 const SHEET_TILES := "res://assets/RPG-isometric-free.png"
 const SHEET_CAMP := "res://assets/props/camp.png"
 const SHEET_ITEMS := "res://assets/props/prop1.png"
+## Fisch-Sheet (96x64): 3 Spalten x 2 Zeilen, je 32x32. Oben roh, unten gebraten.
+const SHEET_FISH := "res://assets/game_assets/items/fish.png"
 const SHEET_FURNITURE := "res://assets/props/basic furniture.png"
 const SHEET_PLANTS := "res://assets/game_assets/items/plants_and_seeds.png"
 
@@ -53,16 +55,19 @@ static var ITEMS := {
 		"max_stack": 1,
 		"texture": "res://assets/game_assets/items/olta.png",
 	},
-	"balik": {
-		"name": "Balik",
-		"max_stack": 16,
-		"texture": "res://assets/game_assets/items/balik.png",
-	},
-	"pismis_balik": {
-		"name": "Pismis Balik",
-		"max_stack": 16,
-		"texture": "res://assets/game_assets/items/pismis_balik.png",
-	},
+	# Drei Fischarten aus fish.png (roh oben, gebraten unten). Region je 32x32.
+	"balik_1": {"name": "Sazan", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(0, 0, 32, 32)},
+	"balik_2": {"name": "Levrek", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(32, 0, 32, 32)},
+	"balik_3": {"name": "Turna", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(64, 0, 32, 32)},
+	"pismis_balik_1": {"name": "Pismis Sazan", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(0, 32, 32, 32)},
+	"pismis_balik_2": {"name": "Pismis Levrek", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(32, 32, 32, 32)},
+	"pismis_balik_3": {"name": "Pismis Turna", "max_stack": 16,
+		"sheet": SHEET_FISH, "region": Rect2i(64, 32, 32, 32)},
 	# Cakmaktasi (Flint): selten (1%) beim Abbauen von normalem Stein. Icon
 	# vorerst eine Stein-Zelle aus prop1 (Platzhalter, leicht ersetzbar).
 	"cakmaktasi": {
@@ -384,8 +389,23 @@ static func crop_of_seed(id: String) -> String:
 const FOOD := {
 	"misir": 25, "kizarmis_et": 40,
 	"havuc": 20, "domates": 15, "kabak": 40, "bugday": 10,
-	"pismis_balik": 35,
+	"pismis_balik_1": 30, "pismis_balik_2": 35, "pismis_balik_3": 40,
 }
+
+## Fisch-Arten (roh) und ihre gebratene Version. Angeln liefert eine zufaellige
+## rohe Art; Kochen macht daraus die passende gebratene.
+const RAW_FISH := ["balik_1", "balik_2", "balik_3"]
+const COOKED_OF := {
+	"balik_1": "pismis_balik_1",
+	"balik_2": "pismis_balik_2",
+	"balik_3": "pismis_balik_3",
+}
+static func is_raw_fish(id: String) -> bool:
+	return COOKED_OF.has(id)
+static func cooked_of(id: String) -> String:
+	return String(COOKED_OF.get(id, ""))
+static func random_raw_fish() -> String:
+	return RAW_FISH[randi() % RAW_FISH.size()]
 static func is_food(id: String) -> bool:
 	return FOOD.has(id)
 static func food_value(id: String) -> int:
