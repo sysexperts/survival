@@ -19,6 +19,9 @@ var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Al
 var _hovered_crop = null           ## Crop-Node unter der Maus (oder null)
 var _inv: Node = null              ## player_inventory (fuer Giesskannen-Ladungen)
 var preview: PlacementPreview
+var _struct_imgs: Dictionary = {}  ## Bauwerk-Bilder je Textur (Alpha-Test)
+var _sel_outline: Sprite2D         ## Dauerhafter weisser Rand am ausgewaehlten Bauwerk
+var _sel_structure: Node2D = null  ## Aktuell ausgewaehltes Bauwerk (Gruppe "structure")
 
 
 func _ready() -> void:
@@ -43,6 +46,18 @@ func _build_highlight() -> void:
 	highlight.visible = false
 	highlight.z_index = IsoWorld.TALL_Z_INDEX + 1
 	add_child(highlight)
+	# Dauerhafter Auswahl-Rand (Rechtsklick auf ein Bauwerk). Eigener Sprite,
+	# damit er bleibt, waehrend der Hover-Rand woanders hinwandert.
+	var mat2 := ShaderMaterial.new()
+	mat2.shader = preload("res://scripts/outline.gdshader")
+	mat2.set_shader_parameter("outline_color", Color(1, 1, 1, 1))
+	mat2.set_shader_parameter("thickness", 1.0)
+	_sel_outline = Sprite2D.new()
+	_sel_outline.material = mat2
+	_sel_outline.centered = false
+	_sel_outline.visible = false
+	_sel_outline.z_index = IsoWorld.TALL_Z_INDEX + 1
+	add_child(_sel_outline)
 	# Boden-Hover (Buddeln): flacher Diamant-Umriss der Top-Flaeche, exakt am
 	# Standpunkt (cell_to_world). Eigener Node, weil die Wuerfel-Textur des Blocks
 	# keinen sauberen texture_origin hat und sonst um eine Ebene versetzt liegt.
@@ -83,6 +98,11 @@ func _process(_delta: float) -> void:
 	_furn_hover = _furniture_under_mouse()
 	if not _furn_hover.is_empty():
 		_highlight_furniture(_furn_hover[1])
+		return
+	# Bauwerk (mage_house etc., Gruppe "structure"): weisser Rand beim Ueberfahren.
+	var st := _structure_under_mouse()
+	if st != null:
+		_highlight_structure(st)
 		return
 	# Sonst: mit Schaufel/Dirt die Bodenzelle unter der Maus hervorheben,
 	# damit man sieht, was man abbaut/aufschuettet.
@@ -266,6 +286,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				_ask_destroy(target)
 			get_viewport().set_input_as_handled()
 			return
+		# Bauwerk (mage_house etc.) auswaehlen: weisser Rand bleibt stehen.
+		# Ins Leere/auf etwas anderes geklickt -> Auswahl aufheben.
+		var struct := _structure_under_mouse()
+		if struct != null:
+			_select_structure(struct)
+			get_viewport().set_input_as_handled()
+			return
+		_select_structure(null)
 		# Gegner (Magier) mit Messer/Schwert angreifen - hat Vorrang.
 		if ItemDB.is_knife(player.held_item_id):
 			var mage = _mage_under_mouse()
@@ -478,6 +506,74 @@ func _furn_alpha(tex: AtlasTexture, local: Vector2) -> float:
 	if px.x < 0 or px.y < 0 or px.x >= img.get_width() or px.y >= img.get_height():
 		return 0.0
 	return img.get_pixelv(px).a
+
+
+## --- Bauwerke (Gruppe "structure", z. B. mage_house) ---------------------
+
+## Bildschirm-Rechteck eines Bauwerk-Sprites (beachtet centered/offset/scale).
+func _structure_rect(n: Node2D) -> Rect2:
+	var sp := n as Sprite2D
+	var size: Vector2 = sp.texture.get_size()
+	var tl: Vector2 = sp.global_position + sp.offset * sp.scale
+	if sp.centered:
+		tl -= size * sp.scale * 0.5
+	return Rect2(tl, size * sp.scale)
+
+
+## Deckkraft eines Bauwerk-Bildes an lokaler (unskalierter) Pixelstelle.
+func _structure_alpha(tex: Texture2D, local: Vector2) -> float:
+	if not _struct_imgs.has(tex):
+		_struct_imgs[tex] = tex.get_image()
+	var img: Image = _struct_imgs[tex]
+	var px := Vector2i(local.floor())
+	if px.x < 0 or px.y < 0 or px.x >= img.get_width() or px.y >= img.get_height():
+		return 0.0
+	return img.get_pixelv(px).a
+
+
+## Bauwerk unter der Maus (pixelgenau, vorderstes zuerst).
+func _structure_under_mouse() -> Node2D:
+	var mouse := get_global_mouse_position()
+	var best: Node2D = null
+	var best_y := -INF
+	for n in get_tree().get_nodes_in_group("structure"):
+		var sp := n as Sprite2D
+		if sp == null or sp.texture == null:
+			continue
+		var rect := _structure_rect(sp)
+		if not rect.has_point(mouse):
+			continue
+		var local := (mouse - rect.position) / sp.scale
+		if sp.flip_h:
+			local.x = sp.texture.get_size().x - 1.0 - local.x
+		if _structure_alpha(sp.texture, local) > 0.1 and sp.global_position.y > best_y:
+			best_y = sp.global_position.y
+			best = sp
+	return best
+
+
+func _highlight_structure(n: Node2D) -> void:
+	var sp := n as Sprite2D
+	highlight.region_enabled = false
+	highlight.texture = sp.texture
+	highlight.flip_h = sp.flip_h
+	highlight.scale = sp.scale
+	highlight.global_position = _structure_rect(sp).position
+	highlight.visible = true
+
+
+func _select_structure(n: Node2D) -> void:
+	_sel_structure = n
+	if n == null:
+		_sel_outline.visible = false
+		return
+	var sp := n as Sprite2D
+	_sel_outline.region_enabled = false
+	_sel_outline.texture = sp.texture
+	_sel_outline.flip_h = sp.flip_h
+	_sel_outline.scale = sp.scale
+	_sel_outline.global_position = _structure_rect(sp).position
+	_sel_outline.visible = true
 
 
 ## Vorderstes Prop unter dem Mauszeiger, pixelgenau.

@@ -1,22 +1,24 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://4qpsgc0o7rrm"]
 
-[ext_resource type="Script" path="res://scripts/grid_overlay.gd" id="1_oa8lx"]
-[ext_resource type="TileSet" path="res://tilesets/iso_tileset.tres" id="2_olnke"]
-[ext_resource type="Texture2D" path="res://assets/props/basic furniture.png" id="3_fscb2"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage_house.png" id="4_qv5rv"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/buildings/shelter_done_south.png" id="5_d6rcs"]
-[ext_resource type="Texture2D" path="res://assets/props/camp.png" id="6_cmw60"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage/idle_south.png" id="7_e7nxq"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/items/plants_and_seeds.png" id="8_3itrb"]
+[ext_resource type="Script" uid="uid://bth8gfj0pgvsi" path="res://scripts/grid_overlay.gd" id="1_oa8lx"]
+[ext_resource type="TileSet" uid="uid://cy352qlfqk00j" path="res://tilesets/iso_tileset.tres" id="2_olnke"]
+[ext_resource type="Texture2D" uid="uid://btf74dg8f138p" path="res://assets/props/basic furniture.png" id="3_fscb2"]
+[ext_resource type="Texture2D" uid="uid://dgw84ihaw7vl1" path="res://assets/game_assets/enemies/mage_house.png" id="4_qv5rv"]
+[ext_resource type="Texture2D" uid="uid://csfpv35bunihf" path="res://assets/game_assets/buildings/shelter_done_south.png" id="5_d6rcs"]
+[ext_resource type="Texture2D" uid="uid://cis8ts8l525wr" path="res://assets/props/camp.png" id="6_cmw60"]
+[ext_resource type="Texture2D" uid="uid://bldrq042wkg4d" path="res://assets/game_assets/enemies/mage/idle_south.png" id="7_e7nxq"]
+[ext_resource type="Texture2D" uid="uid://d2uk35hp4jttx" path="res://assets/game_assets/items/plants_and_seeds.png" id="8_3itrb"]
 
 [node name="MageMap" type="Node2D" unique_id=1576170876]
 
 [node name="GridOverlay" type="Node2D" parent="." unique_id=1487096787]
+z_index = -1
 position = Vector2(1, 0)
 script = ExtResource("1_oa8lx")
 
 [node name="Level00" type="TileMapLayer" parent="." unique_id=903080495]
 y_sort_enabled = true
+tile_map_data = PackedByteArray(0, 0, 5, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0)
 tile_set = ExtResource("2_olnke")
 
 [node name="Deko" type="Node2D" parent="Level00" unique_id=1657266419]

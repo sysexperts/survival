@@ -1346,15 +1346,15 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Input0"]
+[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Input0" unique_id=1107428870]
 layout_mode = 1
+anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
 offset_top = -2.0
 offset_right = 42.0
 offset_bottom = 22.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.23, 0.16, 0.1, 1)
 theme_override_font_sizes/font_size = 13
 
@@ -1368,15 +1368,15 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Input1"]
+[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Input1" unique_id=1762367432]
 layout_mode = 1
+anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
 offset_top = -2.0
 offset_right = 42.0
 offset_bottom = 22.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.23, 0.16, 0.1, 1)
 theme_override_font_sizes/font_size = 13
 
@@ -1390,15 +1390,15 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Output"]
+[node name="Count" type="Label" parent="Root/Center/Book/CraftPage/Output" unique_id=538061061]
 layout_mode = 1
+anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
 offset_top = -2.0
 offset_right = 46.0
 offset_bottom = 22.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.23, 0.16, 0.1, 1)
 theme_override_font_sizes/font_size = 13
 
@@ -1769,12 +1769,11 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CraftProgress" type="ProgressBar" parent="Root/Center/Book/CraftPage"]
+[node name="CraftProgress" type="ProgressBar" parent="Root/Center/Book/CraftPage" unique_id=2058352214]
 layout_mode = 0
-offset_left = 400.0
-offset_top = 262.0
-offset_right = 620.0
-offset_bottom = 284.0
+offset_left = 401.0
+offset_top = 175.0
+offset_right = 621.0
+offset_bottom = 197.0
 mouse_filter = 2
-value = 0.0
 show_percentage = false
