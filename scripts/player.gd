@@ -45,6 +45,8 @@ signal stone_collected(cell: Vector2i, level: int, gather_id: String)
 ## Jack ist bei einer Handwerks-Station angekommen (nach Rechtsklick). Das
 ## Inventar oeffnet daraufhin ihr Fenster - der Player kennt kein HUD.
 signal reached_station(station: String)
+## Bei einer Lagertruhe angekommen (Rechtsklick) - Inventar oeffnet ihr Fenster.
+signal reached_chest(cell: Vector2i)
 
 ## Ein Objekt wurde gesetzt - fuer den Multiplayer-Sync (world_sync.gd), damit
 ## Lagerfeuer und Moebel bei allen erscheinen.
@@ -475,6 +477,12 @@ func _physics_process(delta: float) -> void:
 			var s := _reach_station
 			_reach_station = ""
 			reached_station.emit(s)
+			_play("idle")
+			return
+		if _reach_chest != INVALID_CELL:
+			var cc := _reach_chest
+			_reach_chest = INVALID_CELL
+			reached_chest.emit(cc)
 			_play("idle")
 			return
 		if _reach_bed:
@@ -1261,6 +1269,7 @@ func _cancel_task() -> void:
 	path.clear()
 	_pickup_cell = INVALID_CELL
 	_reach_station = ""
+	_reach_chest = INVALID_CELL
 	_reach_bed = false
 	_reach_destroy = INVALID_CELL
 	_dig_target = INVALID_CELL
@@ -1545,6 +1554,28 @@ func station_in_reach() -> String:
 		if node is Furniture and RecipeDB.is_station(node.id):
 			return node.id
 	return ""
+
+
+var _reach_chest := Vector2i(2147483647, 2147483647)
+
+## Laeuft zu einer Lagertruhe (sandik) und oeffnet sie bei Ankunft (Rechtsklick).
+func walk_to_chest(cell: Vector2i) -> bool:
+	var node := world.blocker_at(cell)
+	if not (node is Furniture and node.id == "sandik"):
+		return false
+	_cancel_task()
+	var here := world.world_to_cell(global_position, level)
+	var stand := GridPath.adjacent_to(world, cell, here, max_step)
+	if stand.x == 2147483647:
+		return false
+	if stand == here:
+		reached_chest.emit(cell)         # steht schon daneben
+		return true
+	path = GridPath.find(world, here, stand, max_step)
+	if path.is_empty():
+		return false
+	_reach_chest = cell
+	return true
 
 
 ## Zelle einer Lagertruhe (sandik) in Reichweite, oder INVALID_CELL.

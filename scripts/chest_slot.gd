@@ -61,14 +61,19 @@ func _get_drag_data(_pos: Vector2) -> Variant:
 	var slot: Dictionary = _inv().slots[index]
 	if slot.is_empty():
 		return null
-	var prev := TextureRect.new()
-	prev.texture = ItemDB.icon(String(slot["id"]))
-	prev.custom_minimum_size = Vector2(40, 40)
-	prev.size = Vector2(40, 40)
-	prev.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	prev.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	prev.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	set_drag_preview(prev)
+	# Vorschau in einem Wrap zentrieren, sonst haengt sie versetzt an der Maus.
+	var wrap := Control.new()
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon := TextureRect.new()
+	icon.texture = ItemDB.icon(String(slot["id"]))
+	icon.size = Vector2(40, 40)
+	icon.position = -icon.size * 0.5
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.modulate = Color(1, 1, 1, 0.85)
+	wrap.add_child(icon)
+	set_drag_preview(wrap)
 	return {"src": src, "i": index}
 
 

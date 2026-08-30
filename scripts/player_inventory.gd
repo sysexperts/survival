@@ -122,6 +122,11 @@ func _ready() -> void:
 		player.chop_refused.connect(_on_chop_refused)
 		player.axe_swung.connect(_on_axe_swung)
 		player.reached_station.connect(_on_reached_station)
+		player.reached_chest.connect(func(cell):
+			if chest_hud != null:
+				if hud.bag_open(): hud.toggle_bag()
+				_close_all_crafting()
+				chest_hud.open(cell))
 		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
 		# Hinlegen: Spawnpunkt gemerkt -> Hinweis im Chat.
 		player.lay_down.connect(func():

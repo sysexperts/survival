@@ -27,10 +27,8 @@ var _player: Node = null
 
 func _process(delta: float) -> void:
 	if not Features.on("survival_needs"):
-		if _debug_label:
-			_debug_label.visible = false
 		return
-	_ensure_debug()
+	# Anzeige laeuft ueber die Balken oben links (stats_hud), keine Debug-Zeile mehr.
 
 	PlayerStats.hunger = maxf(0.0, PlayerStats.hunger - HUNGER_RATE * delta)
 	# Durst nur, wenn eigens aktiviert (sonst gaebe es ohne Trinkquelle keinen
@@ -50,8 +48,6 @@ func _process(delta: float) -> void:
 
 	if Features.on("death_respawn") and PlayerStats.health <= 0.0:
 		_respawn()
-
-	_update_debug()
 
 
 func eat(amount: float) -> void:
