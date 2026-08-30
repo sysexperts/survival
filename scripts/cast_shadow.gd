@@ -64,7 +64,47 @@ func _update(force: bool) -> void:
 	offset = source.get("offset")
 	flip_h = bool(source.get("flip_h"))     # dem Moebel folgen, falls es gedreht ist
 	modulate = Color(0, 0, 0, strength)
-	transform = Transform2D(Vector2(1, 0), -dir * length, Vector2.ZERO)
+	# Um den FUSS scheren (opake Unterkante), nicht um den Node-Ursprung. Sonst
+	# "schweben" Objekte, deren Fuss nicht zufaellig auf y=0 liegt.
+	var foot_y := _foot_y_local()
+	transform = Transform2D(Vector2(1, 0), -dir * length,
+		Vector2(dir.x * length * foot_y, foot_y * (1.0 + dir.y * length)))
+
+
+## Lokale y-Koordinate des Fusses (opake Unterkante, mittig) im Sprite-Raum -
+## inklusive offset/centered. Nur y noetig, weil die Scherung nur von y abhaengt.
+func _foot_y_local() -> float:
+	if texture == null:
+		return 0.0
+	var maxy := _foot_tex_y(texture)
+	var fy := float(offset.y) + float(maxy)
+	if centered:
+		fy -= texture.get_size().y * 0.5
+	return fy
+
+
+## Unterste opake Bildzeile einer Textur (Cache je Textur - Frames aendern sich,
+## aber jede Textur wird nur einmal gescannt).
+static var _foot_cache: Dictionary = {}
+static func _foot_tex_y(tex: Texture2D) -> int:
+	if _foot_cache.has(tex):
+		return _foot_cache[tex]
+	var img := tex.get_image()
+	var maxy := int(tex.get_size().y)
+	if img != null:
+		if img.get_format() != Image.FORMAT_RGBA8:
+			img.convert(Image.FORMAT_RGBA8)
+		for y in range(img.get_height() - 1, -1, -1):
+			var found := false
+			for x in range(img.get_width()):
+				if img.get_pixel(x, y).a > 0.3:
+					found = true
+					break
+			if found:
+				maxy = y
+				break
+	_foot_cache[tex] = maxy
+	return maxy
 
 
 ## Bei AnimatedSprite2D das aktuelle Einzelbild holen, sonst die Textur.
