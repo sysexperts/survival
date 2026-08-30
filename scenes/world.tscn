@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://bth8gfj0pgvsi" path="res://scripts/grid_overlay.gd" id="3_grid"]
 [ext_resource type="Texture2D" uid="uid://c1fdcfis37mca" path="res://assets/game_assets/enemies/mage_house_south-east.png" id="4_k0juu"]
 [ext_resource type="Script" path="res://scripts/path_npc.gd" id="5_npc"]
-[ext_resource type="Texture2D" uid="uid://bldrq042wkg4d" path="res://assets/game_assets/enemies/mage/idle_south.png" id="6_magd"]
+[ext_resource type="SpriteFrames" path="res://resources/mage_enemie_frames.tres" id="6_frames"]
 
 [sub_resource type="Curve2D" id="Curve2D_npc"]
 _data = {
@@ -41,11 +41,13 @@ curve = SubResource("Curve2D_npc")
 y_sort_enabled = true
 script = ExtResource("5_npc")
 
-[node name="Body" type="Sprite2D" parent="Level00/MagierinPfad/Follow"]
+[node name="Body" type="AnimatedSprite2D" parent="Level00/MagierinPfad/Follow"]
 texture_filter = 1
 centered = false
 offset = Vector2(-24, -42)
-texture = ExtResource("6_magd")
+sprite_frames = ExtResource("6_frames")
+animation = &"walk_south"
+autoplay = "walk_south"
 
 [node name="Level01" type="TileMapLayer" parent="." unique_id=1583931421]
 z_index = 1
