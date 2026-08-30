@@ -39,6 +39,16 @@ func _ready() -> void:
 	if _pinv and _pinv.inventory:
 		_pinv.inventory.changed.connect(_on_changed)
 
+	# Regelmaessig speichern - so bleibt die POSITION erhalten (Bewegung loest
+	# kein inventory.changed aus). Beim naechsten Login startet man am Logout-Ort.
+	var auto := Timer.new()
+	auto.wait_time = 15.0
+	auto.timeout.connect(func():
+		if _loaded:
+			_flush_save())
+	add_child(auto)
+	auto.start()
+
 	# Ein Frame warten, damit Inventar + Startsachen stehen, dann laden.
 	await get_tree().process_frame
 	_request_load.rpc_id(1, Net.player_name)

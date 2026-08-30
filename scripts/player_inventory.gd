@@ -172,7 +172,12 @@ func _ready() -> void:
 ## Das Inventar als speicherbare Daten. Inklusive Skill-XP, damit der
 ## Fortschritt (EXP-Leiste/Level) pro Spielername einen Neustart ueberlebt.
 func to_save() -> Dictionary:
-	return {"slots": inventory.slots, "xp": SkillsXPScript.xp.duplicate()}
+	var d := {"slots": inventory.slots, "xp": SkillsXPScript.xp.duplicate()}
+	# Position merken -> beim naechsten Login startet man wieder hier (Logout-Ort).
+	if player != null and is_instance_valid(player) and player.world != null:
+		var c: Vector2i = player.world.world_to_cell(player.global_position, player.level)
+		d["pos"] = {"x": c.x, "y": c.y}
+	return d
 
 
 ## Setzt das Inventar aus gespeicherten Daten. Ungueltige/unbekannte Eintraege
@@ -199,6 +204,12 @@ func from_save(data: Dictionary) -> void:
 		for skill in SkillsXPScript.xp.keys():
 			if data["xp"].has(skill):
 				SkillsXPScript.xp[skill] = float(data["xp"][skill])
+	# Gespeicherte Position wiederherstellen (Logout-Ort). Neue Namen haben keine
+	# -> sie bleiben am globalen Spawn (player.start_cell).
+	if data.has("pos") and typeof(data["pos"]) == TYPE_DICTIONARY \
+			and player != null and is_instance_valid(player):
+		var p: Dictionary = data["pos"]
+		player._snap_to_cell(Vector2i(int(p.get("x", 0)), int(p.get("y", 0))))
 	inventory.changed.emit()
 
 

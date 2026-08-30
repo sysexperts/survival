@@ -1511,12 +1511,13 @@ func begin_fishing(water_cell: Vector2i) -> void:
 	_fishing = true
 	busy = true                     # blockiert Laufen waehrend des Auswerfens
 	_face_point(world.cell_to_world(water_cell, maxi(world.top_level_at(water_cell), 0)))
-	_play("idle")
+	_play("fish")
 
 
 func end_fishing() -> void:
 	_fishing = false
 	busy = false
+	_play("idle")
 
 
 func stone_in_reach() -> Vector2i:

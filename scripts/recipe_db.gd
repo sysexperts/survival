@@ -172,9 +172,9 @@ const RECIPES := [
 	# nachzujustieren. Icons kommen aus assets/game_assets (siehe ItemDB).
 	# ------------------------------------------------------------------ #
 
-	# Kamp Atesi: per Hand, aus Stein und Aesten.
+	# Cooking Campfire (Ocak/Kamp Atesi): der Koch-Ofen. Am Ileri Üretim Masasi.
 	{
-		"out": "kamp_atesi", "count": 1, "station": HAND, "seconds": 4.0,
+		"out": "kamp_atesi", "count": 1, "station": ILERI_WERKBANK, "seconds": 6.0,
 		"cost": {"tas": 8, "odun": 8},
 	},
 

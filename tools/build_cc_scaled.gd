@@ -38,6 +38,7 @@ const ACTIONS := {
 	"sleep": ["Die(HoldingToolOrNot)", 1, 5],
 	"idle_hold": ["IdleHoldingTool", 8],
 	"walk_hold": ["WalkHoldingTool", 6],
+	"fish": ["Fish", 6],
 }
 
 

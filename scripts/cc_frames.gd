@@ -19,15 +19,17 @@ const ROW_OF := {
 	"south-east": 1, "east": 2, "north-east": 3,
 }
 
-const LOOPING := ["idle", "walk", "run", "sleep"]
-const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0}
+const LOOPING := ["idle", "walk", "run", "sleep", "fish"]
+const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0, "fish": 8.0}
+## Angel-Layer (aus dem "Fish"-Zustand) - immer gezeigt, wenn geangelt wird.
+const FISH_POLE := "Wood"
 const DEFAULT_FPS := 10.0
 
 ## Mit Werkzeug in der Hand: eigene Körperposen für idle/walk (Hand greift das
 ## Werkzeug); run/axe nutzen dieselbe Pose, nur mit Werkzeug-Layern. sleep nie.
 const STATE_DIR_ARMED := {
 	"idle": "idle_hold", "walk": "walk_hold",
-	"run": "run", "axe": "axe", "sleep": "sleep", "dig": "dig",
+	"run": "run", "axe": "axe", "sleep": "sleep", "dig": "dig", "fish": "fish",
 }
 ## Zustände, die im bewaffneten Modus die Werkzeug-Layer bekommen.
 const TOOL_STATES := ["idle", "walk", "run", "axe", "dig"]
@@ -116,6 +118,10 @@ static func _composite(dir_name: String, cols: int, look: Dictionary, with_tool:
 		order.append(String(look.get(slot, "")))
 	if with_tool:
 		order.append("Layer13_%s_%s" % [tool, metal])
+	# Angel-Zustand: Angel hinter (NegativeLayer1) und vor (Layer13) dem Koerper.
+	if dir_name == "fish":
+		order.push_front("NegativeLayer1_Fishingpole_%s" % FISH_POLE)
+		order.append("Layer13_Fishingpole_%s" % FISH_POLE)
 	for token_v in order:
 		var token := String(token_v)
 		if token == "":
