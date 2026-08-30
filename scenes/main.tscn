@@ -25,6 +25,7 @@
 [ext_resource type="Script" uid="uid://bgtjtoi3wpy5h" path="res://scripts/weather.gd" id="25_weather"]
 [ext_resource type="Script" uid="uid://3neb7r3fuwti" path="res://scripts/chest_sync.gd" id="27_chest"]
 [ext_resource type="Script" path="res://scripts/furnace_sync.gd" id="28_furnace"]
+[ext_resource type="Shader" path="res://scripts/vignette.gdshader" id="29_vignette"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -43,7 +44,13 @@ adjustment_saturation = 1.13
 
 [sub_resource type="Gradient" id="Gradient_tbgi4"]
 offsets = PackedFloat32Array(0, 0.22, 0.3, 0.4, 0.6, 0.72, 0.84, 1)
-colors = PackedColorArray(0.1, 0.13, 0.3, 1, 0.12, 0.15, 0.34, 1, 0.72, 0.52, 0.55, 1, 1, 0.99, 0.96, 1, 1, 0.96, 0.9, 1, 1, 0.82, 0.6, 1, 0.42, 0.36, 0.58, 1, 0.1, 0.13, 0.3, 1)
+colors = PackedColorArray(0.06, 0.09, 0.26, 1, 0.08, 0.11, 0.3, 1, 0.78, 0.5, 0.5, 1, 1, 0.98, 0.93, 1, 1, 0.95, 0.87, 1, 1, 0.78, 0.52, 1, 0.36, 0.3, 0.56, 1, 0.06, 0.09, 0.26, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vig"]
+shader = ExtResource("29_vignette")
+shader_parameter/strength = 0.42
+shader_parameter/start = 0.58
+shader_parameter/tint = Color(0.02, 0.02, 0.06, 1)
 
 [node name="Main" type="Node2D" unique_id=1453782777]
 
@@ -54,6 +61,15 @@ environment = SubResource("Environment_look")
 color = Color(1, 0.92, 0.83000004, 1)
 script = ExtResource("4_daynight")
 sky_gradient = SubResource("Gradient_tbgi4")
+
+[node name="Vignette" type="CanvasLayer" parent="."]
+layer = 50
+
+[node name="Rect" type="ColorRect" parent="Vignette"]
+material = SubResource("ShaderMaterial_vig")
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
 
 [node name="World" parent="." unique_id=464865076 instance=ExtResource("1_world")]
 position = Vector2(-21, -26)
