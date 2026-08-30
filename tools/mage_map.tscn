@@ -1,264 +1,338 @@
 [gd_scene format=3]
 
-[ext_resource type="TileSet" path="res://tilesets/iso_tileset.tres" id="1_thbt7"]
-[ext_resource type="Texture2D" path="res://assets/props/basic furniture.png" id="2_oa8lx"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage_house.png" id="3_olnke"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/buildings/shelter_done_south.png" id="4_fscb2"]
-[ext_resource type="Texture2D" path="res://assets/props/camp.png" id="5_qv5rv"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage/idle_south.png" id="6_d6rcs"]
-[ext_resource type="Texture2D" path="res://assets/game_assets/items/plants_and_seeds.png" id="7_cmw60"]
+[ext_resource type="Script" path="res://scripts/grid_overlay.gd" id="1_oa8lx"]
+[ext_resource type="TileSet" path="res://tilesets/iso_tileset.tres" id="2_olnke"]
+[ext_resource type="Texture2D" path="res://assets/props/basic furniture.png" id="3_fscb2"]
+[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage_house.png" id="4_qv5rv"]
+[ext_resource type="Texture2D" path="res://assets/game_assets/buildings/shelter_done_south.png" id="5_d6rcs"]
+[ext_resource type="Texture2D" path="res://assets/props/camp.png" id="6_cmw60"]
+[ext_resource type="Texture2D" path="res://assets/game_assets/enemies/mage/idle_south.png" id="7_e7nxq"]
+[ext_resource type="Texture2D" path="res://assets/game_assets/items/plants_and_seeds.png" id="8_3itrb"]
 
-[node name="MageMap" type="Node2D" unique_id=1517368974]
+[node name="MageMap" type="Node2D" unique_id=1382734376]
 
-[node name="Boden" type="TileMapLayer" parent="." unique_id=16316442]
-tile_set = ExtResource("1_thbt7")
+[node name="GridOverlay" type="Node2D" parent="." unique_id=2059427668]
+position = Vector2(1, 0)
+script = ExtResource("1_oa8lx")
 
-[node name="Deko" type="Node2D" parent="." unique_id=1606208094]
+[node name="Level00" type="TileMapLayer" parent="." unique_id=1367898739]
+y_sort_enabled = true
+tile_set = ExtResource("2_olnke")
+
+[node name="Level01" type="TileMapLayer" parent="." unique_id=1378287862]
+z_index = 1
+y_sort_enabled = true
+position = Vector2(0, -8)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level02" type="TileMapLayer" parent="." unique_id=1232994437]
+z_index = 2
+y_sort_enabled = true
+position = Vector2(0, -16)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level03" type="TileMapLayer" parent="." unique_id=1704173067]
+z_index = 3
+y_sort_enabled = true
+position = Vector2(0, -24)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level04" type="TileMapLayer" parent="." unique_id=1130822269]
+z_index = 4
+y_sort_enabled = true
+position = Vector2(0, -32)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level05" type="TileMapLayer" parent="." unique_id=1281135001]
+z_index = 5
+y_sort_enabled = true
+position = Vector2(0, -40)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level06" type="TileMapLayer" parent="." unique_id=275219648]
+z_index = 6
+y_sort_enabled = true
+position = Vector2(0, -48)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level07" type="TileMapLayer" parent="." unique_id=1857742790]
+z_index = 7
+y_sort_enabled = true
+position = Vector2(0, -56)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level08" type="TileMapLayer" parent="." unique_id=1736288300]
+z_index = 8
+y_sort_enabled = true
+position = Vector2(0, -64)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level09" type="TileMapLayer" parent="." unique_id=775206762]
+z_index = 9
+y_sort_enabled = true
+position = Vector2(0, -72)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level10" type="TileMapLayer" parent="." unique_id=1734337056]
+z_index = 10
+y_sort_enabled = true
+position = Vector2(0, -80)
+tile_set = ExtResource("2_olnke")
+
+[node name="Level11" type="TileMapLayer" parent="." unique_id=379308129]
+z_index = 11
+y_sort_enabled = true
+position = Vector2(0, -88)
+tile_set = ExtResource("2_olnke")
+
+[node name="Deko" type="Node2D" parent="." unique_id=1644497016]
+z_index = 20
 y_sort_enabled = true
 
-[node name="Stempel" type="Node2D" parent="." unique_id=350512079]
-position = Vector2(-560, -40)
+[node name="Stempel" type="Node2D" parent="." unique_id=1114647429]
+z_index = 25
+position = Vector2(-620, -40)
 
-[node name="planya_tezgahi" type="Sprite2D" parent="Stempel" unique_id=1574215090]
+[node name="planya_tezgahi" type="Sprite2D" parent="Stempel" unique_id=877856215]
 texture_filter = 1
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(0, 0, 64, 64)
 
-[node name="sandik" type="Sprite2D" parent="Stempel" unique_id=227610593]
+[node name="sandik" type="Sprite2D" parent="Stempel" unique_id=486958453]
 texture_filter = 1
 position = Vector2(120, 0)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(64, 0, 64, 64)
 
-[node name="jenerator" type="Sprite2D" parent="Stempel" unique_id=1994067708]
+[node name="jenerator" type="Sprite2D" parent="Stempel" unique_id=1810604317]
 texture_filter = 1
 position = Vector2(240, 0)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(128, 0, 64, 64)
 
-[node name="alet_standi" type="Sprite2D" parent="Stempel" unique_id=575859745]
+[node name="alet_standi" type="Sprite2D" parent="Stempel" unique_id=1769943961]
 texture_filter = 1
 position = Vector2(360, 0)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(192, 0, 64, 64)
 
-[node name="tabaklama_sehpasi" type="Sprite2D" parent="Stempel" unique_id=1550458349]
+[node name="tabaklama_sehpasi" type="Sprite2D" parent="Stempel" unique_id=887904138]
 texture_filter = 1
 position = Vector2(480, 0)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(256, 0, 64, 64)
 
-[node name="dolap" type="Sprite2D" parent="Stempel" unique_id=1417806210]
+[node name="dolap" type="Sprite2D" parent="Stempel" unique_id=2037165080]
 texture_filter = 1
 position = Vector2(0, 150)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(320, 0, 64, 64)
 
-[node name="calisma_tezgahi" type="Sprite2D" parent="Stempel" unique_id=1364504484]
+[node name="calisma_tezgahi" type="Sprite2D" parent="Stempel" unique_id=610157962]
 texture_filter = 1
 position = Vector2(120, 150)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(0, 64, 64, 64)
 
-[node name="ocak" type="Sprite2D" parent="Stempel" unique_id=480198222]
+[node name="ocak" type="Sprite2D" parent="Stempel" unique_id=1001762443]
 texture_filter = 1
 position = Vector2(240, 150)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(64, 64, 64, 64)
 
-[node name="ors" type="Sprite2D" parent="Stempel" unique_id=188180867]
+[node name="ors" type="Sprite2D" parent="Stempel" unique_id=321368828]
 texture_filter = 1
 position = Vector2(360, 150)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(128, 64, 64, 64)
 
-[node name="dokuma_tezgahi" type="Sprite2D" parent="Stempel" unique_id=38738538]
+[node name="dokuma_tezgahi" type="Sprite2D" parent="Stempel" unique_id=1024162904]
 texture_filter = 1
 position = Vector2(480, 150)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(192, 64, 64, 64)
 
-[node name="eritme_firini" type="Sprite2D" parent="Stempel" unique_id=567304976]
+[node name="eritme_firini" type="Sprite2D" parent="Stempel" unique_id=1453013288]
 texture_filter = 1
 position = Vector2(0, 300)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(256, 64, 64, 64)
 
-[node name="yatak" type="Sprite2D" parent="Stempel" unique_id=1424648039]
+[node name="yatak" type="Sprite2D" parent="Stempel" unique_id=839763272]
 texture_filter = 1
 position = Vector2(120, 300)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(320, 64, 64, 64)
 
-[node name="portatif_yatak" type="Sprite2D" parent="Stempel" unique_id=1028006924]
+[node name="portatif_yatak" type="Sprite2D" parent="Stempel" unique_id=1733256201]
 texture_filter = 1
 position = Vector2(240, 300)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(0, 128, 64, 64)
 
-[node name="simya_masasi" type="Sprite2D" parent="Stempel" unique_id=970429987]
+[node name="simya_masasi" type="Sprite2D" parent="Stempel" unique_id=1730764471]
 texture_filter = 1
 position = Vector2(360, 300)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(64, 128, 64, 64)
 
-[node name="su_ficisi" type="Sprite2D" parent="Stempel" unique_id=628060105]
+[node name="su_ficisi" type="Sprite2D" parent="Stempel" unique_id=385735352]
 texture_filter = 1
 position = Vector2(480, 300)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(128, 128, 64, 64)
 
-[node name="tabure" type="Sprite2D" parent="Stempel" unique_id=941317008]
+[node name="tabure" type="Sprite2D" parent="Stempel" unique_id=1021446899]
 texture_filter = 1
 position = Vector2(0, 450)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(192, 128, 64, 64)
 
-[node name="yukseltilmis_tarha" type="Sprite2D" parent="Stempel" unique_id=1282744238]
+[node name="yukseltilmis_tarha" type="Sprite2D" parent="Stempel" unique_id=833795975]
 texture_filter = 1
 position = Vector2(120, 450)
 scale = Vector2(0.7, 0.7)
-texture = ExtResource("2_oa8lx")
+texture = ExtResource("3_fscb2")
 centered = false
 offset = Vector2(-32, -50)
 region_enabled = true
 region_rect = Rect2(256, 128, 64, 64)
 
-[node name="mage_house" type="Sprite2D" parent="Stempel" unique_id=1672716719]
+[node name="mage_house" type="Sprite2D" parent="Stempel" unique_id=1478674488]
 texture_filter = 1
 position = Vector2(240, 450)
-texture = ExtResource("3_olnke")
+texture = ExtResource("4_qv5rv")
 centered = false
 offset = Vector2(-68, -104)
 
-[node name="baraka" type="Sprite2D" parent="Stempel" unique_id=227258697]
+[node name="baraka" type="Sprite2D" parent="Stempel" unique_id=484574946]
 texture_filter = 1
 position = Vector2(360, 450)
-texture = ExtResource("4_fscb2")
+texture = ExtResource("5_d6rcs")
 centered = false
 offset = Vector2(-68, -104)
 
-[node name="kamp_atesi" type="Sprite2D" parent="Stempel" unique_id=1376662152]
+[node name="kamp_atesi" type="Sprite2D" parent="Stempel" unique_id=342848157]
 texture_filter = 1
 position = Vector2(480, 450)
 scale = Vector2(0.55, 0.55)
-texture = ExtResource("5_qv5rv")
+texture = ExtResource("6_cmw60")
 centered = false
 offset = Vector2(-40, -70)
 region_enabled = true
 region_rect = Rect2(128, 0, 128, 128)
 
-[node name="mage" type="Sprite2D" parent="Stempel" unique_id=1165937983]
+[node name="mage" type="Sprite2D" parent="Stempel" unique_id=554979017]
 texture_filter = 1
 position = Vector2(0, 600)
-texture = ExtResource("6_d6rcs")
+texture = ExtResource("7_e7nxq")
 centered = false
 offset = Vector2(-24, -42)
 
-[node name="misir" type="Sprite2D" parent="Stempel" unique_id=1069907131]
+[node name="misir" type="Sprite2D" parent="Stempel" unique_id=1921428305]
 texture_filter = 1
 position = Vector2(120, 600)
-texture = ExtResource("7_cmw60")
+texture = ExtResource("8_3itrb")
 centered = false
 offset = Vector2(-16, -30)
 region_enabled = true
 region_rect = Rect2(160, 96, 32, 32)
 
-[node name="havuc" type="Sprite2D" parent="Stempel" unique_id=723948641]
+[node name="havuc" type="Sprite2D" parent="Stempel" unique_id=761886641]
 texture_filter = 1
 position = Vector2(240, 600)
-texture = ExtResource("7_cmw60")
+texture = ExtResource("8_3itrb")
 centered = false
 offset = Vector2(-16, -30)
 region_enabled = true
 region_rect = Rect2(192, 96, 32, 32)
 
-[node name="domates" type="Sprite2D" parent="Stempel" unique_id=129729584]
+[node name="domates" type="Sprite2D" parent="Stempel" unique_id=1198234922]
 texture_filter = 1
 position = Vector2(360, 600)
-texture = ExtResource("7_cmw60")
+texture = ExtResource("8_3itrb")
 centered = false
 offset = Vector2(-16, -30)
 region_enabled = true
 region_rect = Rect2(256, 64, 32, 32)
 
-[node name="kabak" type="Sprite2D" parent="Stempel" unique_id=88252269]
+[node name="kabak" type="Sprite2D" parent="Stempel" unique_id=2042140900]
 texture_filter = 1
 position = Vector2(480, 600)
-texture = ExtResource("7_cmw60")
+texture = ExtResource("8_3itrb")
 centered = false
 offset = Vector2(-16, -30)
 region_enabled = true
 region_rect = Rect2(288, 96, 32, 32)
 
-[node name="bugday" type="Sprite2D" parent="Stempel" unique_id=1090142132]
+[node name="bugday" type="Sprite2D" parent="Stempel" unique_id=1494636624]
 texture_filter = 1
 position = Vector2(0, 750)
-texture = ExtResource("7_cmw60")
+texture = ExtResource("8_3itrb")
 centered = false
 offset = Vector2(-16, -30)
 region_enabled = true
