@@ -23,7 +23,6 @@
 [ext_resource type="Script" uid="uid://dkmafs4iso1ir" path="res://scripts/survival_needs.gd" id="23_needs"]
 [ext_resource type="Script" uid="uid://duv26hymmjc7l" path="res://scripts/skills_xp.gd" id="24_skills"]
 [ext_resource type="Script" uid="uid://bgtjtoi3wpy5h" path="res://scripts/weather.gd" id="25_weather"]
-[ext_resource type="Script" uid="uid://b36q1ofy5lybr" path="res://scripts/enemy_spawner.gd" id="26_enemy"]
 [ext_resource type="Script" uid="uid://3neb7r3fuwti" path="res://scripts/chest_sync.gd" id="27_chest"]
 
 [sub_resource type="Environment" id="Environment_look"]
@@ -86,9 +85,6 @@ script = ExtResource("19_drop")
 
 [node name="DeerSpawner" type="Node" parent="." unique_id=1564797178]
 script = ExtResource("20_deer")
-
-[node name="EnemySpawner" type="Node" parent="." unique_id=1562186432]
-script = ExtResource("26_enemy")
 
 [node name="ChestSync" type="Node" parent="." unique_id=1562186433]
 script = ExtResource("27_chest")
