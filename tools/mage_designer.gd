@@ -61,7 +61,22 @@ func _ready() -> void:
 	add_child(_cam)
 	_cam.make_current()
 	_build_ui()
-	_ground.set_cell(Vector2i.ZERO, 0, Vector2i(2, 0))  # eine Startkachel als Anker
+	queue_redraw()   # Iso-Gitter zeichnen (siehe _draw)
+
+
+## Sichtbares Iso-Gitter (Rauten) ueber einen Bereich, damit man die Zellen auf
+## leerem Grund sieht. Als _draw des Designer-Nodes (liegt HINTER Boden/Objekten,
+## scheint also nur auf freien Zellen durch).
+const GRID_RANGE := 26
+func _draw() -> void:
+	var line := Color(0.4, 0.55, 0.7, 0.5)
+	for x in range(-GRID_RANGE, GRID_RANGE + 1):
+		for y in range(-GRID_RANGE, GRID_RANGE + 1):
+			var c: Vector2 = _ground.map_to_local(Vector2i(x, y))
+			draw_polyline(PackedVector2Array([
+				c + Vector2(0, -8), c + Vector2(16, 0),
+				c + Vector2(0, 8), c + Vector2(-16, 0), c + Vector2(0, -8)]),
+				line, 1.0)
 
 
 # --- Katalog ------------------------------------------------------------
