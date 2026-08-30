@@ -104,6 +104,11 @@ func _process(_delta: float) -> void:
 	if st != null:
 		_highlight_structure(st)
 		return
+	# Ofen (Campfire) unter der Maus: weisser Rand wie bei Moebeln.
+	var cfhit := world.pick_block(get_global_mouse_position())
+	if not cfhit.is_empty() and world.blocker_at(cfhit[0]) is Campfire:
+		_highlight_campfire(world.blocker_at(cfhit[0]))
+		return
 	# Sonst: mit Schaufel/Dirt die Bodenzelle unter der Maus hervorheben,
 	# damit man sieht, was man abbaut/aufschuettet.
 	if player != null and (player.held_tool == "Showel" or player.held_is_dirt):
@@ -564,6 +569,22 @@ func _highlight_structure(n: Node2D) -> void:
 	highlight.flip_h = sp.flip_h
 	highlight.scale = sp.scale
 	highlight.global_position = _structure_rect(sp).position
+	highlight.visible = true
+
+
+## Weisser Rand am Ofen (Campfire, AnimatedSprite2D) beim Ueberfahren.
+func _highlight_campfire(n) -> void:
+	var tex: Texture2D = null
+	if n.sprite_frames != null and n.sprite_frames.has_animation(n.animation):
+		tex = n.sprite_frames.get_frame_texture(n.animation, n.frame)
+	if tex == null:
+		highlight.visible = false
+		return
+	highlight.region_enabled = false
+	highlight.texture = tex
+	highlight.flip_h = false
+	highlight.scale = n.scale
+	highlight.global_position = n.global_position + n.offset * n.scale
 	highlight.visible = true
 
 

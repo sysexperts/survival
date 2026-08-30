@@ -85,6 +85,32 @@ func transfer(from_src: String, from_i: int, to_src: String, to_i: int) -> void:
 		chest_sync.push(cell, chest_inv.slots)
 
 
+## Shift-Klick: Stapel sofort ins andere Inventar (Truhe<->Spieler).
+func quick_move(src: String, i: int) -> void:
+	var from_inv := inv_of(src)
+	var to_inv := player_inv if src == "chest" else chest_inv
+	var s: Dictionary = from_inv.slots[i]
+	if s.is_empty():
+		return
+	if s.has("dur"):
+		# Haltbarkeits-Item (stapelt nicht): ganzer Eintrag in ersten freien Slot.
+		for j in to_inv.slots.size():
+			if to_inv.slots[j].is_empty():
+				to_inv.slots[j] = s.duplicate()
+				from_inv.slots[i] = {}
+				break
+	else:
+		var left := to_inv.add(String(s["id"]), int(s["count"]))
+		if left <= 0:
+			from_inv.slots[i] = {}
+		else:
+			s["count"] = left
+	from_inv.changed.emit()
+	to_inv.changed.emit()
+	if chest_sync != null:
+		chest_sync.push(cell, chest_inv.slots)
+
+
 # --- Online-Aktualisierung ---------------------------------------------
 
 func _on_chest_updated(p_cell: Vector2i, slots: Array) -> void:

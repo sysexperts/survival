@@ -39,9 +39,7 @@ static var ITEMS := {
 	"kamp_atesi": {
 		"name": "Kamp Atesi",
 		"max_stack": 16,
-		"sheet": SHEET_CAMP,
-		"cell": Vector2i(0, 0),
-		"region": Rect2i(128, 0, 128, 128),   # brennendes Feuer ohne Fleisch
+		"texture": "res://assets/props/cooking_campfire_off.png",
 	},
 	"tas": {
 		"name": "Tas",
@@ -53,6 +51,7 @@ static var ITEMS := {
 	"olta": {
 		"name": "Olta",
 		"max_stack": 1,
+		"durability": 40,               # ~40 Faenge, dann zerbricht sie
 		"texture": "res://assets/game_assets/items/olta.png",
 	},
 	# Drei Fischarten aus fish.png (roh oben, gebraten unten). Region je 32x32.

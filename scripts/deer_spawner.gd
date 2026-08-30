@@ -169,7 +169,7 @@ func nearest_player(pos: Vector2) -> Dictionary:
 
 func _free(cell: Vector2i) -> bool:
 	return world.top_level_at(cell) >= 0 and not world.has_prop(cell) \
-		and world.blocker_at(cell) == null
+		and world.blocker_at(cell) == null and not world.is_water(cell)
 
 
 # --- Netzwerk (Relay ueber den Server) ----------------------------------

@@ -1511,7 +1511,27 @@ func begin_fishing(water_cell: Vector2i) -> void:
 	_fishing = true
 	busy = true                     # blockiert Laufen waehrend des Auswerfens
 	_face_point(world.cell_to_world(water_cell, maxi(world.top_level_at(water_cell), 0)))
-	_play("fish")
+	_play_from_start("fish")        # Auswurf EINMAL, haelt danach am letzten Frame (Pause)
+
+
+## Einholen: die Angel-Animation nochmal von vorn abspielen.
+func reel_fishing() -> void:
+	if not _fishing:
+		return
+	_play_from_start("fish")
+
+
+## Spielt einen Zustand IMMER von Frame 0 (kein Weiterlaufen/Fortsetzen wie in
+## _play). Fuer die Angel-Auswurf/Einhol-Bewegung noetig - sonst haengt sie am
+## letzten Frame des vorigen Wurfs und "spielt scheinbar nicht".
+func _play_from_start(state: String) -> void:
+	_sync_armed()
+	sprite.flip_h = CCFrames.flipped(facing)
+	var anim := "%s_%s" % [state, facing.replace("-", "_")]
+	if sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(anim):
+		return
+	sprite.play(anim)
+	sprite.set_frame_and_progress(0, 0.0)
 
 
 func end_fishing() -> void:

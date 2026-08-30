@@ -10,7 +10,9 @@ class_name Campfire
 
 ## 68px-Grafik, ca. 2x2 Kacheln gross. Fuss auf die Feldmitte, waagerecht zentriert.
 const ART_SCALE := 1.0
-const ART_OFFSET := Vector2(-34, -52)
+## Fuss (opake Unterkante y=56) auf den Node-Ursprung, damit der geworfene
+## Schatten am Fuss ansetzt (sonst "schwebt" der Ofen). Mitte x=34.
+const ART_OFFSET := Vector2(-34, -56)
 
 @export var art_scale := ART_SCALE
 

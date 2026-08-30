@@ -575,16 +575,32 @@ func _try_fish() -> void:
 		_notice("Su kenarinda olmalisin")
 		return
 	_fishing = true
-	player.begin_fishing(water)
-	_notice("Balik tutuluyor...")
+	player.begin_fishing(water)             # Auswurf-Animation, danach Pause
+	_notice("Balik bekleniyor...")
 	await get_tree().create_timer(randf_range(3.0, 10.0)).timeout
+	if not is_instance_valid(player):
+		_fishing = false
+		return
+	# Zwischendurch weggegangen/Angel gewechselt -> abbrechen.
+	if player.held_item_id != "olta" or player.water_in_reach() == Player.INVALID_CELL:
+		_fishing = false
+		player.end_fishing()
+		return
+	player.reel_fishing()                   # Einhol-Animation nochmal
+	await get_tree().create_timer(0.6).timeout
 	_fishing = false
 	if not is_instance_valid(player):
 		return
 	player.end_fishing()
-	if player.held_item_id == "olta" and player.water_in_reach() != Player.INVALID_CELL:
+	# Verschleiss pro Wurf (auch bei Fehlversuch).
+	if player.held_item_id == "olta":
+		_wear_selected(1)
+	# Einfache Angel: 50% Fangchance.
+	if randf() < 0.5:
 		_grant(ItemDB.random_raw_fish(), 1)
 		_notice("Balik yakalandi!")
+	else:
+		_notice("Balik kacti")
 
 
 func _use_selected() -> void:

@@ -121,6 +121,53 @@ func transfer(from_src: String, from_i: int, to_src: String, to_i: int) -> void:
 		furnace_sync.push(cell, furnace_inv.slots)
 
 
+## Shift-Klick: Ofen<->Inventar schnell umlegen. Aus dem Ofen -> ins Inventar
+## (frei/merge); aus dem Inventar -> ins passende Ofen-Slot (Fisch=Input,
+## Kohle=Brennstoff). Aus dem Output gibt es Koch-EXP.
+func quick_move(src: String, i: int) -> void:
+	if src == "furnace":
+		var before := 0
+		if i == S_OUT and not furnace_inv.slots[S_OUT].is_empty():
+			before = int(furnace_inv.slots[S_OUT].get("count", 0))
+		var moved := _to_inventory(furnace_inv, i)
+		if i == S_OUT and moved > 0:
+			_award_cook_xp(moved)
+	else:
+		var s: Dictionary = player_inv.slots[i]
+		if s.is_empty():
+			return
+		var mid := String(s.get("id", ""))
+		var target := -1
+		if ItemDB.is_raw_fish(mid):
+			target = S_IN
+		elif mid == "komur":
+			target = S_FUEL
+		if target < 0:
+			return
+		var back: Dictionary = furnace_inv.put(target, player_inv.take(i))
+		if not back.is_empty():
+			player_inv.put(i, back)
+	if furnace_sync != null:
+		furnace_sync.push(cell, furnace_inv.slots)
+
+
+## Ganzen Stapel aus from_inv[i] ins Spieler-Inventar (merge + freier Slot).
+func _to_inventory(from_inv: Inventory, i: int) -> int:
+	var s: Dictionary = from_inv.slots[i]
+	if s.is_empty():
+		return 0
+	var id := String(s["id"])
+	var cnt := int(s["count"])
+	var left := player_inv.add(id, cnt)
+	var moved := cnt - left
+	if left <= 0:
+		from_inv.slots[i] = {}
+	else:
+		s["count"] = left
+	from_inv.changed.emit()
+	return moved
+
+
 func _award_cook_xp(n: int) -> void:
 	SkillsXP.xp["cooking"] = float(SkillsXP.xp.get("cooking", 0.0)) + XP_PER_COOK * n
 	if player != null and is_instance_valid(player) and player.world != null:

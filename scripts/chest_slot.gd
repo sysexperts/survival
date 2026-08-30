@@ -77,6 +77,16 @@ func _get_drag_data(_pos: Vector2) -> Variant:
 	return {"src": src, "i": index}
 
 
+## Shift+Linksklick: den Stapel sofort ins andere Inventar schieben (Minecraft-
+## Stil). owner_hud.quick_move entscheidet Ziel + freien/mergebaren Slot.
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT and event.shift_pressed:
+		if owner_hud.has_method("quick_move"):
+			owner_hud.quick_move(src, index)
+		accept_event()
+
+
 func _can_drop_data(_pos: Vector2, data: Variant) -> bool:
 	return data is Dictionary and data.has("src")
 

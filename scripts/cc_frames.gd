@@ -19,7 +19,7 @@ const ROW_OF := {
 	"south-east": 1, "east": 2, "north-east": 3,
 }
 
-const LOOPING := ["idle", "walk", "run", "sleep", "fish"]
+const LOOPING := ["idle", "walk", "run", "sleep"]
 const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0, "fish": 8.0}
 ## Angel-Layer (aus dem "Fish"-Zustand) - immer gezeigt, wenn geangelt wird.
 const FISH_POLE := "Wood"

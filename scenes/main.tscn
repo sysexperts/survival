@@ -30,17 +30,20 @@
 background_mode = 3
 glow_enabled = true
 glow_normalized = true
-glow_intensity = 0.72
-glow_bloom = 0.06
+glow_intensity = 0.85
+glow_strength = 1.1
+glow_bloom = 0.14
 glow_blend_mode = 2
-glow_hdr_threshold = 0.95
-glow_hdr_scale = 1.2
+glow_hdr_threshold = 0.86
+glow_hdr_scale = 1.35
 adjustment_enabled = true
-adjustment_saturation = 1.05
+adjustment_brightness = 1.02
+adjustment_contrast = 1.06
+adjustment_saturation = 1.13
 
 [sub_resource type="Gradient" id="Gradient_tbgi4"]
 offsets = PackedFloat32Array(0, 0.22, 0.3, 0.4, 0.6, 0.72, 0.84, 1)
-colors = PackedColorArray(0.13, 0.16, 0.3, 1, 0.15, 0.18, 0.33, 1, 0.62, 0.55, 0.6, 1, 1, 0.99, 0.96, 1, 1, 0.97, 0.92, 1, 1, 0.87, 0.74, 1, 0.48, 0.45, 0.6, 1, 0.13, 0.16, 0.3, 1)
+colors = PackedColorArray(0.1, 0.13, 0.3, 1, 0.12, 0.15, 0.34, 1, 0.72, 0.52, 0.55, 1, 1, 0.99, 0.96, 1, 1, 0.96, 0.9, 1, 1, 0.82, 0.6, 1, 0.42, 0.36, 0.58, 1, 0.1, 0.13, 0.3, 1)
 
 [node name="Main" type="Node2D" unique_id=1453782777]
 
