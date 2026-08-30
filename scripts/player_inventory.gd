@@ -552,7 +552,7 @@ func _try_fish() -> void:
 	_fishing = true
 	player.begin_fishing(water)
 	_notice("Balik tutuluyor...")
-	await get_tree().create_timer(2.5).timeout
+	await get_tree().create_timer(randf_range(3.0, 10.0)).timeout
 	_fishing = false
 	if not is_instance_valid(player):
 		return
