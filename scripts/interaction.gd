@@ -320,6 +320,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if _hovered.is_empty():
+			# Ofen (Campfire) anklicken -> hinlaufen und Ofen-Fenster oeffnen.
+			var cf := world.pick_block(get_global_mouse_position())
+			if not cf.is_empty() and world.blocker_at(cf[0]) is Campfire:
+				player.walk_to_furnace(cf[0])
+				return
 			# Hacke: Boden zu Acker. Samen: auf gehackten Acker pflanzen.
 			var g := world.pick_block(get_global_mouse_position())
 			if not g.is_empty():

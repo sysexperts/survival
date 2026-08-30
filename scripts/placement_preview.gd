@@ -62,8 +62,8 @@ func begin_campfire() -> void:
 	kind = Kind.CAMPFIRE
 	item_id = "kamp_atesi"
 	_anim.sprite_frames = preload("res://resources/campfire_frames.tres")
-	_anim.animation = "brennt"
-	_anim.play("brennt")
+	_anim.animation = "aus"
+	_anim.play("aus")
 	_anim.offset = Campfire.ART_OFFSET
 	_anim.scale = Vector2(Campfire.ART_SCALE, Campfire.ART_SCALE)
 	_anim.visible = true

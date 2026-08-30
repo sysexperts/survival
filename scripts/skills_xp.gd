@@ -11,7 +11,7 @@ const Features := preload("res://scripts/features.gd")
 const XpParticles := preload("res://scripts/xp_particles.gd")
 
 ## Skill-Schlüssel -> XP (roh). Level = floor(sqrt(xp / 10)).
-static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0, "mining": 0.0}
+static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0, "mining": 0.0, "cooking": 0.0}
 
 const XP_PER_CHOP := 5.0
 const XP_PER_CRAFT := 8.0

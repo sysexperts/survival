@@ -24,6 +24,7 @@
 [ext_resource type="Script" uid="uid://duv26hymmjc7l" path="res://scripts/skills_xp.gd" id="24_skills"]
 [ext_resource type="Script" uid="uid://bgtjtoi3wpy5h" path="res://scripts/weather.gd" id="25_weather"]
 [ext_resource type="Script" uid="uid://3neb7r3fuwti" path="res://scripts/chest_sync.gd" id="27_chest"]
+[ext_resource type="Script" path="res://scripts/furnace_sync.gd" id="28_furnace"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -85,6 +86,9 @@ script = ExtResource("19_drop")
 
 [node name="DeerSpawner" type="Node" parent="." unique_id=1564797178]
 script = ExtResource("20_deer")
+
+[node name="FurnaceSync" type="Node" parent="."]
+script = ExtResource("28_furnace")
 
 [node name="ChestSync" type="Node" parent="." unique_id=1562186433]
 script = ExtResource("27_chest")

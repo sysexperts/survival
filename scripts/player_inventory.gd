@@ -46,9 +46,12 @@ var creative: Node
 const AdminsScript := preload("res://scripts/admins.gd")
 const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 const ChestHUDScript := preload("res://scripts/chest_hud.gd")
+const FurnaceHUDScript := preload("res://scripts/furnace_hud.gd")
 const UIStateScript := preload("res://scripts/ui_state.gd")
 var chest_hud                             ## Lagertruhen-Fenster (online)
 var _chest_sync                           ## ChestSync-Node
+var furnace_hud                           ## Ofen-Fenster (online)
+var _furnace_sync                         ## FurnaceSync-Node
 var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
@@ -130,6 +133,16 @@ func _ready() -> void:
 				if hud.bag_open(): hud.toggle_bag()
 				_close_all_crafting()
 				chest_hud.open(cell))
+		# Ofen (online) - eine Instanz, oeffnet je nach angeklicktem Ofen.
+		_furnace_sync = get_node_or_null(^"../FurnaceSync")
+		furnace_hud = FurnaceHUDScript.new()
+		add_child(furnace_hud)
+		furnace_hud.setup(inventory, _furnace_sync, player)
+		player.reached_furnace.connect(func(cell):
+			if furnace_hud != null:
+				if hud.bag_open(): hud.toggle_bag()
+				_close_all_crafting()
+				furnace_hud.open(cell))
 		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
 		# Hinlegen: Spawnpunkt gemerkt -> Hinweis im Chat.
 		player.lay_down.connect(func():
@@ -531,6 +544,7 @@ func _grant(id: String, amount: int) -> void:
 ## Ist irgendein Spiel-Fenster offen? (Dann macht F nichts - Escape schliesst.)
 func _any_window_open() -> bool:
 	return (chest_hud != null and chest_hud.is_open()) \
+		or (furnace_hud != null and furnace_hud.is_open()) \
 		or _open_station() != null or crafting.is_open() or hud.bag_open() \
 		or (creative != null and creative.is_open())
 
@@ -584,22 +598,7 @@ func _use_selected() -> void:
 	var stone := player.stone_in_reach()
 	if stone != Player.INVALID_CELL and player.collect_stone(stone):
 		return
-	# Rohen Fisch am (brennenden/fertigen) Lagerfeuer braten - roh nicht essbar.
-	var sel: Dictionary = inventory.slots[hud.selected]
-	if not sel.is_empty() and ItemDB.is_raw_fish(String(sel["id"])):
-		var raw := String(sel["id"])
-		var cf := player.campfire_in_reach(false)
-		if cf != null and cf.state != Campfire.State.AUS:
-			inventory.remove(raw, 1)
-			_grant(ItemDB.cooked_of(raw), 1)
-			_notice("Balik pisti")
-		else:
-			_notice("Baligi bir atesde pisir")
-		return
-	var fire := player.campfire_in_reach(true)
-	if fire != null and fire.collect():
-		_grant("kizarmis_et", meat_per_fire)
-		return
+	# Kochen laeuft ueber den Ofen (Rechtsklick), nicht mehr per F am Feuer.
 	var slot: Dictionary = inventory.slots[hud.selected]
 	if slot.is_empty():
 		return
@@ -638,6 +637,9 @@ func _on_placement_confirmed(top_cell: Vector2i) -> void:
 func _close_windows() -> bool:
 	if chest_hud != null and chest_hud.is_open():
 		chest_hud.set_open(false)
+		return true
+	if furnace_hud != null and furnace_hud.is_open():
+		furnace_hud.set_open(false)
 		return true
 	if creative != null and creative.is_open():
 		creative.set_open(false)
