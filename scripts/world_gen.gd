@@ -168,9 +168,9 @@ const BIOME_GRASS := "grass"
 const BIOME_DESERT := "desert"
 const BIOME_STEPPE := "steppe"
 ## _biome-Noise ueber diesem Wert -> Wueste. Hoeher = seltener/kleiner.
-const DESERT_THRESHOLD := 0.30
+const DESERT_THRESHOLD := 0.12
 ## _biome-Noise UNTER diesem Wert -> Steppe/Oedland (gegenueberliegendes Ende).
-const STEPPE_THRESHOLD := -0.30
+const STEPPE_THRESHOLD := -0.15
 ## Sehr wenige Baeume in der Steppe.
 const STEPPE_TREE_P := 0.004
 ## Wuestenboden + Straende: nur die zwei mittleren Sand-Toene (Sheet-Reihe 6,
