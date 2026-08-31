@@ -214,6 +214,11 @@ func from_save(data: Dictionary) -> void:
 			and player != null and is_instance_valid(player):
 		var p: Dictionary = data["pos"]
 		player._snap_to_cell(Vector2i(int(p.get("x", 0)), int(p.get("y", 0))))
+		# Steckt die gespeicherte Position in einem Baum? Sofort + verzoegert
+		# rausruecken (Props laden nach dem Snap evtl. erst nach).
+		player.ensure_unstuck()
+		get_tree().create_timer(2.0).timeout.connect(player.ensure_unstuck)
+		get_tree().create_timer(4.0).timeout.connect(player.ensure_unstuck)
 	inventory.changed.emit()
 
 

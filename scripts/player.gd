@@ -1555,7 +1555,16 @@ func ensure_unstuck() -> void:
 	if world == null or _sleeping:
 		return
 	var here := world.world_to_cell(global_position, level)
-	if _cell_ok(here):
+	var stuck := not _cell_ok(here)
+	if not stuck:
+		# Auf gueltiger Zelle, aber rundum blockiert (zwischen Baeumen eingekeilt)?
+		var any_free := false
+		for nb in world.neighbors(here):
+			if _cell_ok(nb):
+				any_free = true
+				break
+		stuck = not any_free
+	if not stuck:
 		return
 	for r in range(1, 16):
 		for dx in range(-r, r + 1):
