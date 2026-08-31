@@ -150,7 +150,11 @@ func _ready() -> void:
 			if ch != null and ch.has_method("local_system"):
 				ch.local_system("Dogum noktan kaydedildi. Uyandiginda burada dogacaksin."))
 		# Buddeln gibt einen Dirt-Block, Aufschuetten verbraucht einen.
-		player.dug.connect(func(_c): _grant("toprak", 1))
+		player.dug.connect(func(_c):
+			if player.last_dug_atlas == IsoWorld.CLAY_ATLAS:
+				_grant("kil", randi_range(3, 10))
+			else:
+				_grant("toprak", 1))
 		player.raised.connect(func(_c): inventory.remove("toprak", 1))
 		# Fels-Abbau: pro Schlag faellt ein Stueck auf den BODEN (wie Holz beim
 		# Baum) - im Einzelspieler direkt ins Inventar. Zu schwache Hacke -> Hinweis.

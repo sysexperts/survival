@@ -540,6 +540,13 @@ func is_tilled(cell: Vector2i) -> bool:
 const WATER_ATLAS := [Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3),
 	Vector2i(1, 1), Vector2i(1, 2), Vector2i(1, 3)]
 
+## Kil-Block (Ton): grauer Boden-Wuerfel. Mit der Schaufel abgebaut liefert er
+## 3-10 Kil (statt Toprak). Wird vom Generator in Flecken gestreut.
+const CLAY_ATLAS := Vector2i(4, 1)
+
+func is_clay(cell: Vector2i) -> bool:
+	return top_atlas_at(cell) == CLAY_ATLAS
+
 func is_water(cell: Vector2i) -> bool:
 	return top_atlas_at(cell) in WATER_ATLAS
 

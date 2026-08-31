@@ -169,6 +169,7 @@ var level := 0                   ## Ebene des Blocks, auf dem der Charakter steh
 var facing := "south"
 var busy := false                ## blockierende Animation (Axt) laeuft
 var _fishing := false            ## angelt gerade (steht still am Wasser)
+var last_dug_atlas := Vector2i(-999, -999)  ## Atlas des zuletzt abgebauten Blocks
 var _day_night: Node = null      ## optional, zum Dimmen der Laterne
 
 var path: Array[Vector2i] = []   ## laufender Klick-Weg, leer = kein Auftrag
@@ -984,6 +985,9 @@ func _finish_dig() -> void:
 		_play("idle")
 		return
 	if action == "dig":
+		# Atlas VOR dem Abtragen merken - so weiss das Inventar, ob es Kil
+		# (grauer Kil-Block) oder Toprak gibt.
+		last_dug_atlas = world.top_atlas_at(cell)
 		if world.dig_cell(cell):
 			dug.emit(cell)
 	elif action == "raise":

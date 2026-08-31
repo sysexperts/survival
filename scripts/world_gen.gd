@@ -57,6 +57,7 @@ var _seed: int
 var _height := FastNoiseLite.new()
 var _dirt := FastNoiseLite.new()
 var _forest := FastNoiseLite.new()
+var _clay := FastNoiseLite.new()
 
 
 func _init(world_seed: int = 1337) -> void:
@@ -71,6 +72,9 @@ func _init(world_seed: int = 1337) -> void:
 	_forest.seed = world_seed + 2000
 	_forest.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_forest.frequency = 0.02            # große, zusammenhängende Waldzonen
+	_clay.seed = world_seed + 3000
+	_clay.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_clay.frequency = 0.06             # kleine, seltene Kil-Flecken
 
 
 # --- Höhe ---------------------------------------------------------------
@@ -104,7 +108,16 @@ func is_dirt(cell: Vector2i) -> bool:
 
 
 ## Bodenkachel (Quelle-0-Atlas) für die oberste Ebene dieser Zelle.
+## Ab diesem Kil-Noise-Wert wird eine Zelle zum Kil-Block. Hoeher = seltener.
+const CLAY_THRESHOLD := 0.6
+
+func is_clay(cell: Vector2i) -> bool:
+	return _clay.get_noise_2d(cell.x, cell.y) > CLAY_THRESHOLD
+
+
 func ground_atlas(cell: Vector2i) -> Vector2i:
+	if is_clay(cell):
+		return IsoWorld.CLAY_ATLAS
 	if is_dirt(cell):
 		return DIRT[_hash(cell, 7) % DIRT.size()]
 	return GRASS[_hash(cell, 11) % GRASS.size()]
