@@ -58,6 +58,7 @@ var _height := FastNoiseLite.new()
 var _dirt := FastNoiseLite.new()
 var _forest := FastNoiseLite.new()
 var _clay := FastNoiseLite.new()
+var _water := FastNoiseLite.new()
 
 
 func _init(world_seed: int = 1337) -> void:
@@ -75,6 +76,9 @@ func _init(world_seed: int = 1337) -> void:
 	_clay.seed = world_seed + 3000
 	_clay.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_clay.frequency = 0.06             # kleine, seltene Kil-Flecken
+	_water.seed = world_seed + 4000
+	_water.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_water.frequency = 0.028           # groessere, zusammenhaengende Seen/Teiche
 
 
 # --- Höhe ---------------------------------------------------------------
@@ -93,6 +97,10 @@ func noise_height(cell: Vector2i) -> int:
 ## Zellen in die Noise-Höhe geblendet - direkt am Rand (edge_dist 0) exakt
 ## bündig, damit dort weder eine Stufe noch eine Lücke entsteht.
 func height_at(cell: Vector2i, edge_dist: int, edge_height: int) -> int:
+	# Seen + direktes Ufer flach auf Hoehe 0 (nur fern der gemalten Karte, damit
+	# der Rand-Uebergang dort nicht bricht). So sind Wasserflaechen eben.
+	if edge_dist < 0 and near_water(cell):
+		return 0
 	var h := noise_height(cell)
 	if edge_dist < 0 or edge_dist >= EDGE_RING:
 		return h
@@ -115,7 +123,44 @@ func is_clay(cell: Vector2i) -> bool:
 	return _clay.get_noise_2d(cell.x, cell.y) > CLAY_THRESHOLD
 
 
+## Wasser: ab diesem Noise-Wert wird eine Zelle zu (flachem) Wasser. Seen liegen
+## flach auf Hoehe 0 (siehe height_at), am Ufer sammelt sich Kil.
+const WATER_THRESHOLD := 0.22
+const WATER_FILL: Array[Vector2i] = [Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3)]
+## Wahrscheinlichkeit, dass eine Ufer-Landzelle Kil wird (Prozent).
+const SHORE_CLAY_PCT := 55
+const NB4 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+func is_water(cell: Vector2i) -> bool:
+	return _water.get_noise_2d(cell.x, cell.y) > WATER_THRESHOLD
+
+
+## Zelle ODER ein 4er-Nachbar ist Wasser (fuer flaches Ufer).
+func near_water(cell: Vector2i) -> bool:
+	if is_water(cell):
+		return true
+	for d in NB4:
+		if is_water(cell + d):
+			return true
+	return false
+
+
+## Landzelle direkt an Wasser (fuer Ufer-Kil).
+func is_shore(cell: Vector2i) -> bool:
+	if is_water(cell):
+		return false
+	for d in NB4:
+		if is_water(cell + d):
+			return true
+	return false
+
+
 func ground_atlas(cell: Vector2i) -> Vector2i:
+	if is_water(cell):
+		return WATER_FILL[_hash(cell, 23) % WATER_FILL.size()]
+	# Kil bevorzugt am Ufer, seltener auch als Inland-Fleck.
+	if is_shore(cell) and _hash(cell, 17) % 100 < SHORE_CLAY_PCT:
+		return IsoWorld.CLAY_ATLAS
 	if is_clay(cell):
 		return IsoWorld.CLAY_ATLAS
 	if is_dirt(cell):
@@ -132,6 +177,8 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 ## Bäume nur auf Gras (auf einer Erdfläche wirkt ein Wald deplatziert),
 ## Rohstoffe überall. Pro Zelle höchstens eine Sache.
 func prop_at(cell: Vector2i) -> Dictionary:
+	if is_water(cell):
+		return {}                      # nichts waechst/liegt auf Wasser
 	var dirt := is_dirt(cell)
 
 	if not dirt:
