@@ -77,10 +77,19 @@ func _build_root() -> void:
 	box.add_child(_spacer(6))
 
 	box.add_child(_menu_button("Devam", _close))
+	box.add_child(_menu_button("Bugdan Kurtar", _unstuck))
 	box.add_child(_menu_button("Görünüm", func():
 		_root.visible = false
 		_editor.visible = true))
 	box.add_child(_menu_button("Ana Menüye Dön", _to_main_menu))
+
+
+## Bugdan Kurtar: Spieler zum naechsten freien Feld ruecken (steckt im Baum o.ae.).
+func _unstuck() -> void:
+	var p = get_tree().get_first_node_in_group("player")
+	if p != null and p.has_method("ensure_unstuck"):
+		p.ensure_unstuck()
+	_close()
 
 
 func _to_main_menu() -> void:
