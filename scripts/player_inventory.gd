@@ -138,11 +138,11 @@ func _ready() -> void:
 		furnace_hud = FurnaceHUDScript.new()
 		add_child(furnace_hud)
 		furnace_hud.setup(inventory, _furnace_sync, player)
-		player.reached_furnace.connect(func(cell):
+		player.reached_furnace.connect(func(cell, kind):
 			if furnace_hud != null:
 				if hud.bag_open(): hud.toggle_bag()
 				_close_all_crafting()
-				furnace_hud.open(cell))
+				furnace_hud.open(cell, kind))
 		player.bed_busy.connect(func(): _notice("Bu yatak dolu"))
 		# Hinlegen: Spawnpunkt gemerkt -> Hinweis im Chat.
 		player.lay_down.connect(func():

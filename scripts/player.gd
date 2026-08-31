@@ -47,7 +47,7 @@ signal stone_collected(cell: Vector2i, level: int, gather_id: String)
 signal reached_station(station: String)
 ## Bei einer Lagertruhe angekommen (Rechtsklick) - Inventar oeffnet ihr Fenster.
 signal reached_chest(cell: Vector2i)
-signal reached_furnace(cell: Vector2i)
+signal reached_furnace(cell: Vector2i, kind: String)
 
 ## Ein Objekt wurde gesetzt - fuer den Multiplayer-Sync (world_sync.gd), damit
 ## Lagerfeuer und Moebel bei allen erscheinen.
@@ -495,7 +495,7 @@ func _physics_process(delta: float) -> void:
 		if _reach_furnace != INVALID_CELL:
 			var fc := _reach_furnace
 			_reach_furnace = INVALID_CELL
-			reached_furnace.emit(fc)
+			reached_furnace.emit(fc, _reach_furnace_kind)
 			_play("idle")
 			return
 		if _reach_bed:
@@ -1651,21 +1651,30 @@ func station_in_reach() -> String:
 
 var _reach_chest := Vector2i(2147483647, 2147483647)
 var _reach_furnace := Vector2i(2147483647, 2147483647)
+var _reach_furnace_kind := "cook"
 
 ## Laeuft zu einem Ofen (Campfire) und oeffnet ihn bei Ankunft (Rechtsklick).
 ## Der Schluessel ist die oberste Zelle des Ofens (node.cell).
 func walk_to_furnace(clicked: Vector2i) -> bool:
 	var node := world.blocker_at(clicked)
-	if not (node is Campfire):
+	var fkind := ""
+	var key := clicked
+	if node is Campfire:
+		fkind = "cook"
+		key = node.cell
+	elif node is Furniture and String(node.id) == "eritme_firini":
+		fkind = "smelt"
+		key = clicked
+	else:
 		return false
-	var key: Vector2i = node.cell
 	_cancel_task()
 	var here := world.world_to_cell(global_position, level)
 	var stand := GridPath.adjacent_to(world, clicked, here, max_step)
 	if stand.x == 2147483647:
 		return false
+	_reach_furnace_kind = fkind
 	if stand == here:
-		reached_furnace.emit(key)
+		reached_furnace.emit(key, fkind)
 		return true
 	path = GridPath.find(world, here, stand, max_step)
 	if path.is_empty():

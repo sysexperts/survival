@@ -15,6 +15,7 @@ const SkillsXP := preload("res://scripts/skills_xp.gd")
 const XpParticles := preload("res://scripts/xp_particles.gd")
 const COOK_TIME := 30.0
 const XP_PER_COOK := 6.0
+const XP_PER_SMELT := 10.0
 const PCOLS := 10
 
 ## Slot-Indizes im Ofen-Inventar.
@@ -27,6 +28,7 @@ var furnace_inv: Inventory
 var furnace_sync
 var player
 var cell := Vector2i.ZERO
+var kind := "cook"                 ## "cook" (Fisch braten) oder "smelt" (Erz -> Barren)
 var _open := false
 
 var _dim: ColorRect
@@ -35,6 +37,8 @@ var _fslots: Array = []
 var _pslots: Array = []
 var _bar: ColorRect
 var _bar_bg: Panel
+var _head: Label
+var _in_label: Label
 var _fire: Label
 
 
@@ -59,8 +63,13 @@ func inv_of(src: String) -> Inventory:
 	return furnace_inv if src == "furnace" else player_inv
 
 
-func open(p_cell: Vector2i) -> void:
+func open(p_cell: Vector2i, p_kind: String = "cook") -> void:
 	cell = p_cell
+	kind = p_kind
+	if _head != null:
+		_head.text = "Eritme Firini" if kind == "smelt" else "Ocak"
+	if _in_label != null:
+		_in_label.text = "Cevher" if kind == "smelt" else "Malzeme"
 	_open = true
 	visible = true
 	_dim.visible = true
@@ -90,8 +99,8 @@ func transfer(from_src: String, from_i: int, to_src: String, to_i: int) -> void:
 		if moving.is_empty():
 			return
 		var mid := String(moving.get("id", ""))
-		if to_i == S_IN and not ItemDB.is_raw_fish(mid):
-			return                              # Input nur kochbares
+		if to_i == S_IN and not _input_ok(mid):
+			return                              # Input passt nicht zum Ofen-Modus
 		if to_i == S_FUEL and mid != "komur":
 			return                              # Brennstoff nur Kohle
 		if to_i == S_OUT:
@@ -115,10 +124,10 @@ func transfer(from_src: String, from_i: int, to_src: String, to_i: int) -> void:
 		var out_after := int(furnace_inv.slots[S_OUT].get("count", 0)) if not furnace_inv.slots[S_OUT].is_empty() else 0
 		var took := out_before - out_after
 		if took > 0:
-			_award_cook_xp(took)
+			_award_xp(took)
 	# Ofen-Aenderung an den Server (der verteilt + kocht weiter).
 	if (from_src == "furnace" or to_src == "furnace") and furnace_sync != null:
-		furnace_sync.push(cell, furnace_inv.slots)
+		furnace_sync.push(cell, furnace_inv.slots, kind)
 
 
 ## Shift-Klick: Ofen<->Inventar schnell umlegen. Aus dem Ofen -> ins Inventar
@@ -131,14 +140,14 @@ func quick_move(src: String, i: int) -> void:
 			before = int(furnace_inv.slots[S_OUT].get("count", 0))
 		var moved := _to_inventory(furnace_inv, i)
 		if i == S_OUT and moved > 0:
-			_award_cook_xp(moved)
+			_award_xp(moved)
 	else:
 		var s: Dictionary = player_inv.slots[i]
 		if s.is_empty():
 			return
 		var mid := String(s.get("id", ""))
 		var target := -1
-		if ItemDB.is_raw_fish(mid):
+		if _input_ok(mid):
 			target = S_IN
 		elif mid == "komur":
 			target = S_FUEL
@@ -148,7 +157,7 @@ func quick_move(src: String, i: int) -> void:
 		if not back.is_empty():
 			player_inv.put(i, back)
 	if furnace_sync != null:
-		furnace_sync.push(cell, furnace_inv.slots)
+		furnace_sync.push(cell, furnace_inv.slots, kind)
 
 
 ## Ganzen Stapel aus from_inv[i] ins Spieler-Inventar (merge + freier Slot).
@@ -168,8 +177,15 @@ func _to_inventory(from_inv: Inventory, i: int) -> int:
 	return moved
 
 
-func _award_cook_xp(n: int) -> void:
-	SkillsXP.xp["cooking"] = float(SkillsXP.xp.get("cooking", 0.0)) + XP_PER_COOK * n
+## Passt das Item in den Input-Slot dieses Ofen-Modus?
+func _input_ok(id: String) -> bool:
+	return ItemDB.is_ore(id) if kind == "smelt" else ItemDB.is_raw_fish(id)
+
+
+func _award_xp(n: int) -> void:
+	var skill := "smithing" if kind == "smelt" else "cooking"
+	var amount := (XP_PER_SMELT if kind == "smelt" else XP_PER_COOK) * float(n)
+	SkillsXP.xp[skill] = float(SkillsXP.xp.get(skill, 0.0)) + amount
 	if player != null and is_instance_valid(player) and player.world != null:
 		var lvl: int = maxi(player.world.top_level_at(cell), 0)
 		var from: Vector2 = player.world.cell_to_world(cell, lvl)
@@ -236,6 +252,7 @@ func _build() -> void:
 	head.text = "Ocak"
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(head)
+	_head = head
 
 	# Kochbereich: [Input/Fuel] --Fortschritt--> [Output]
 	var row := HBoxContainer.new()
@@ -248,6 +265,7 @@ func _build() -> void:
 	row.add_child(left)
 	_fslots.resize(3)
 	_fslots[S_IN] = _make_fslot(S_IN, "Malzeme")
+	_in_label = _fslots[S_IN].get_parent().get_child(0) as Label
 	left.add_child(_fslots[S_IN].get_parent())
 	_fslots[S_FUEL] = _make_fslot(S_FUEL, "Komur")
 	left.add_child(_fslots[S_FUEL].get_parent())

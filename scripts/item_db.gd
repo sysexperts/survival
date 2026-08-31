@@ -405,6 +405,17 @@ static func cooked_of(id: String) -> String:
 	return String(COOKED_OF.get(id, ""))
 static func random_raw_fish() -> String:
 	return RAW_FISH[randi() % RAW_FISH.size()]
+
+
+## Schmelzen im Schmelzofen (Eritme Firini): Erz -> Barren. Analog zu COOKED_OF.
+const SMELT_OF := {
+	"demir_cevheri": "demir",
+	"altin_cevheri": "altin",
+}
+static func is_ore(id: String) -> bool:
+	return SMELT_OF.has(id)
+static func bar_of(id: String) -> String:
+	return String(SMELT_OF.get(id, ""))
 static func is_food(id: String) -> bool:
 	return FOOD.has(id)
 static func food_value(id: String) -> int:

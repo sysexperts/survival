@@ -35,7 +35,17 @@ static func _key(cell: Vector2i) -> String:
 
 
 static func _new_state() -> Dictionary:
-	return {"slots": [{}, {}, {}], "progress": 0.0, "lit": false}
+	return {"slots": [{}, {}, {}], "progress": 0.0, "lit": false, "kind": "cook"}
+
+
+## Output eines Ofens je nach Modus. "cook" = Fisch braten, "smelt" = Erz -> Barren.
+## "" wenn das Input nicht in diesen Ofen passt.
+static func _recipe_out(kind: String, input_id: String) -> String:
+	if input_id == "":
+		return ""
+	if kind == "smelt":
+		return ItemDB.bar_of(input_id) if ItemDB.is_ore(input_id) else ""
+	return ItemDB.cooked_of(input_id) if ItemDB.is_raw_fish(input_id) else ""
 
 
 # --- Server: Kochen ----------------------------------------------------
@@ -66,12 +76,12 @@ func _cook_step(st: Dictionary, delta: float) -> bool:
 	var inp: Dictionary = slots[0]
 	var fue: Dictionary = slots[1]
 	var outp: Dictionary = slots[2]
-	var can := not inp.is_empty() and ItemDB.is_raw_fish(String(inp.get("id", ""))) \
+	var out_id := _recipe_out(String(st.get("kind", "cook")), String(inp.get("id", "")))
+	var can := not inp.is_empty() and out_id != "" \
 		and not fue.is_empty() and String(fue.get("id", "")) == "komur" \
 		and int(fue.get("count", 0)) >= 1
 	if can:
-		var cid := ItemDB.cooked_of(String(inp.get("id", "")))
-		if not outp.is_empty() and (String(outp.get("id", "")) != cid or int(outp.get("count", 0)) >= OUT_MAX):
+		if not outp.is_empty() and (String(outp.get("id", "")) != out_id or int(outp.get("count", 0)) >= OUT_MAX):
 			can = false
 	var was_lit := bool(st.get("lit", false))
 	if not can:
@@ -84,7 +94,6 @@ func _cook_step(st: Dictionary, delta: float) -> bool:
 		return was_lit != true
 	# Ein Stueck fertig: 1 Input + 1 Kohle weg, 1 Output dazu.
 	st["progress"] = 0.0
-	var cid := ItemDB.cooked_of(String(inp.get("id", "")))
 	inp["count"] = int(inp.get("count", 0)) - 1
 	if int(inp["count"]) <= 0:
 		slots[0] = {}
@@ -92,7 +101,7 @@ func _cook_step(st: Dictionary, delta: float) -> bool:
 	if int(fue["count"]) <= 0:
 		slots[1] = {}
 	if outp.is_empty():
-		slots[2] = {"id": cid, "count": 1}
+		slots[2] = {"id": out_id, "count": 1}
 	else:
 		outp["count"] = int(outp.get("count", 0)) + 1
 	return true
@@ -107,10 +116,10 @@ func request(cell: Vector2i) -> void:
 
 ## Geaenderte Slots (Input/Brennstoff/Output) an den Server. Er behaelt seinen
 ## Koch-Fortschritt und verteilt weiter.
-func push(cell: Vector2i, slots: Array) -> void:
+func push(cell: Vector2i, slots: Array, kind: String = "cook") -> void:
 	if Net.is_dedicated or not Net.active:
 		return
-	_srv_set.rpc_id(1, cell, slots)
+	_srv_set.rpc_id(1, cell, slots, kind)
 
 
 # --- Server-RPCs -------------------------------------------------------
@@ -125,12 +134,13 @@ func _srv_request(cell: Vector2i) -> void:
 
 
 @rpc("any_peer", "reliable")
-func _srv_set(cell: Vector2i, slots: Array) -> void:
+func _srv_set(cell: Vector2i, slots: Array, kind: String = "cook") -> void:
 	if not Net.is_dedicated:
 		return
 	var key := _key(cell)
 	var st: Dictionary = _furn.get(key, _new_state())
 	st["slots"] = slots
+	st["kind"] = kind
 	_furn[key] = st
 	_save()
 	# an alle verteilen (auch den Absender, damit alle denselben Stand haben).

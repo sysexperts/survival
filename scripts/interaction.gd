@@ -344,9 +344,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			# eine Station ist, oeffnet sie sich bei Ankunft von selbst).
 			var furn := _furniture_under_mouse()
 			if not furn.is_empty():
-				# Bett: hineinlegen. Truhe: hinlaufen + oeffnen. Sonst: Station.
+				# Bett: hineinlegen. Truhe/Schmelzofen: oeffnen. Sonst: Station.
 				if not player.walk_to_bed(furn[0]):
-					if not player.walk_to_chest(furn[0]):
+					if String((furn[1] as Furniture).id) == "eritme_firini":
+						player.walk_to_furnace(furn[0])
+					elif not player.walk_to_chest(furn[0]):
 						player.walk_to_station(furn[0])
 				return
 			# Blanker Boden: Schaufel buddelt eine Ebene ab, ein Dirt-Block
