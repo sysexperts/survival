@@ -149,10 +149,11 @@ func _gen_cell(cell: Vector2i, blocks: Array, props: Array) -> void:
 	var h: int = gen.height_at(cell, edge.x, edge.y)
 
 	var atlas: Vector2i = gen.ground_atlas(cell)
+	var fill: Vector2i = gen.fill_atlas(cell)
 	for lvl in range(0, h + 1):
-		# Oberste Ebene bekommt die (evtl. braune) Deckkachel, darunter immer
-		# Gras - man sieht die Seitenflächen der Blöcke ohnehin nur als Rand.
-		world.set_block(cell, lvl, atlas if lvl == h else WorldGenScript.GRASS[0])
+		# Oberste Ebene = Deckkachel, darunter die Biom-Fuellkachel (Gras bzw. in
+		# der Wueste Sand - sonst schaut Gras unter dem Sand hervor).
+		world.set_block(cell, lvl, atlas if lvl == h else fill)
 		blocks.append([cell, lvl])
 
 	# Untergrund (-1..-5) unter jede generierte Zelle legen (Dirt + Grundgestein),

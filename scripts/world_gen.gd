@@ -83,7 +83,7 @@ func _init(world_seed: int = 1337) -> void:
 	_water.frequency = 0.028           # groessere, zusammenhaengende Seen/Teiche
 	_biome.seed = world_seed + 5000
 	_biome.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_biome.frequency = 0.008           # GROSSE Biom-Regionen (nicht staendig wechselnd)
+	_biome.frequency = 0.004           # SEHR grosse Biom-Regionen (grossflaechig, blobbig)
 	_sea.seed = world_seed + 6000
 	_sea.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_sea.frequency = 0.006             # noch grossflaechiger -> gelegentliche Meere
@@ -163,6 +163,14 @@ const P_ROCK_DESERT := 0.02
 
 func biome_at(cell: Vector2i) -> String:
 	return BIOME_DESERT if _biome.get_noise_2d(cell.x, cell.y) > DESERT_THRESHOLD else BIOME_GRASS
+
+
+## Kachel fuer die UNTEREN Bloecke einer Saeule (die Seitenflaechen der Wuerfel).
+## In der Wueste Sand (sonst schaut gruenes Gras unter dem Sand hervor), sonst Gras.
+func fill_atlas(cell: Vector2i) -> Vector2i:
+	if biome_at(cell) == BIOME_DESERT:
+		return SAND[_hash(cell, 41) % SAND.size()]
+	return GRASS[0]
 
 
 func is_water(cell: Vector2i) -> bool:
