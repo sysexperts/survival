@@ -166,8 +166,13 @@ const NB4 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 ## Grosse, zusammenhaengende Regionen (nicht staendig wechselnd, siehe _biome-freq).
 const BIOME_GRASS := "grass"
 const BIOME_DESERT := "desert"
+const BIOME_STEPPE := "steppe"
 ## _biome-Noise ueber diesem Wert -> Wueste. Hoeher = seltener/kleiner.
 const DESERT_THRESHOLD := 0.30
+## _biome-Noise UNTER diesem Wert -> Steppe/Oedland (gegenueberliegendes Ende).
+const STEPPE_THRESHOLD := -0.30
+## Sehr wenige Baeume in der Steppe.
+const STEPPE_TREE_P := 0.004
 ## Wuestenboden + Straende: nur die zwei mittleren Sand-Toene (Sheet-Reihe 6,
 ## Zellen 1 beige + 2 gelblich). (0,6) ganz-gelb bleibt vorerst weg, (3,6) dunkel
 ## ist nur fuer Felsen.
@@ -182,7 +187,12 @@ const P_ROCK_DESERT := 0.02
 
 
 func biome_at(cell: Vector2i) -> String:
-	return BIOME_DESERT if _biome.get_noise_2d(cell.x, cell.y) > DESERT_THRESHOLD else BIOME_GRASS
+	var n := _biome.get_noise_2d(cell.x, cell.y)
+	if n > DESERT_THRESHOLD:
+		return BIOME_DESERT
+	if n < STEPPE_THRESHOLD:
+		return BIOME_STEPPE
+	return BIOME_GRASS
 
 
 ## Wuestenfelsen: kleine, aufgestapelte Formationen aus der dunklen Kachel (3,6).
@@ -204,10 +214,13 @@ func desert_rock(cell: Vector2i) -> int:
 ## Kachel fuer die UNTEREN Bloecke einer Saeule (die Seitenflaechen der Wuerfel).
 ## Wueste: Fels-Formation -> dunkle Kachel, sonst Sand. Grasland: Gras.
 func fill_atlas(cell: Vector2i) -> Vector2i:
-	if biome_at(cell) == BIOME_DESERT:
+	var b := biome_at(cell)
+	if b == BIOME_DESERT:
 		if desert_rock(cell) > 0:
 			return DARK_ROCK
 		return SAND[_hash(cell, 41) % SAND.size()]
+	if b == BIOME_STEPPE:
+		return DIRT[0]                 # trockene Erd-Seiten statt gruen
 	return GRASS[0]
 
 
@@ -254,6 +267,14 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 		if desert_rock(cell) > 0:
 			return DARK_ROCK
 		return SAND[_hash(cell, 31) % SAND.size()]
+	# Steppe/Oedland: ueberwiegend trockene Erde, etwas Kil/Lehm, vereinzelt Gras.
+	if b == BIOME_STEPPE:
+		var sr := _hash(cell, 51) % 100
+		if sr < 15:
+			return GRASS[_hash(cell, 11) % GRASS.size()]
+		if sr < 32:
+			return IsoWorld.CLAY_ATLAS
+		return DIRT[_hash(cell, 7) % DIRT.size()]
 	# Grasland: Kil-Fleck, Erde, sonst Gras.
 	if is_clay(cell):
 		return IsoWorld.CLAY_ATLAS
@@ -275,11 +296,14 @@ func prop_at(cell: Vector2i) -> Dictionary:
 		return {}                      # nichts waechst/liegt auf Wasser
 	# Wueste: KEINE Baeume/Props. Die "Felsen" sind aufgestapelte Dark-Tile-
 	# Formationen im Terrain (siehe desert_rock / height_at / ground_atlas).
-	if biome_at(cell) == BIOME_DESERT:
+	var bm := biome_at(cell)
+	if bm == BIOME_DESERT:
 		return {}
-	var dirt := is_dirt(cell)
-
-	if not dirt:
+	# Baeume: Steppe nur ganz vereinzelt, Grasland ueber die Wald-Noise (Klumpen).
+	if bm == BIOME_STEPPE:
+		if _rand(cell, 1) < STEPPE_TREE_P:
+			return {"kind": "tree", "atlas": TREES[_hash(cell, 2) % TREES.size()]}
+	elif not is_dirt(cell):
 		var forest := (_forest.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5   # 0..1
 		var tree_p := lerpf(TREE_P_MEADOW, TREE_P_FOREST, forest)
 		if _rand(cell, 1) < tree_p:
