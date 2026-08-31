@@ -26,6 +26,10 @@ const RADIUS := 2
 ## Der erzwungene erste Load ignoriert den Deckel bewusst.
 const LOAD_BUDGET := 1
 
+## So viele ZELLEN werden pro Frame generiert (statt einen ganzen Chunk = 256
+## Zellen auf einmal). Verteilt die Last -> kein Ruckeln beim Chunk-Laden.
+const CELL_BUDGET := 32
+
 ## Per preload eingebunden statt über den class_name `WorldGen`: so läuft der
 ## Generator auch dann, wenn das Spiel direkt mit F5 gestartet wird, ohne dass
 ## der Editor die neue Klasse vorher registriert hat.
@@ -48,6 +52,10 @@ var regrowth: Node
 ## Beim Entladen wird genau das wieder weggeräumt - sonst wüchse der Node-Baum.
 var _loaded: Dictionary = {}
 var _accum := 0.0
+## Wartende Zellen (durchgehende Koords), die noch generiert werden muessen.
+## Wird jeden Frame haeppchenweise (CELL_BUDGET) abgearbeitet.
+var _queue: Array[Vector2i] = []
+var _qhead := 0                  ## Index der naechsten zu generierenden Zelle
 
 
 func _ready() -> void:
@@ -70,6 +78,7 @@ func _first_load() -> void:
 	if player == null:
 		return
 	_update_chunks(true)
+	_process_queue(_queue.size())   # initialer Load auf einmal (Spawn nicht ins Leere)
 	# Kurzer Beleg im Output, dass generiert wurde - hilft beim Prüfen, ob der
 	# neue Boden wirklich entsteht (er liegt außen um den Handbau-Bereich).
 	var blocks := 0
@@ -83,6 +92,9 @@ func _first_load() -> void:
 func _physics_process(delta: float) -> void:
 	if world == null:
 		return
+	# Jeden Frame ein Haeppchen der Warteschlange abarbeiten (verteilt die Last).
+	if _qhead < _queue.size():
+		_process_queue(CELL_BUDGET)
 	_accum += delta
 	if _accum < update_interval:
 		return
@@ -111,9 +123,10 @@ func _update_chunks(force: bool) -> void:
 	wanted.sort_custom(func(a, b):
 		return (a - pchunk).length_squared() < (b - pchunk).length_squared())
 
-	var budget := wanted.size() if force else LOAD_BUDGET
-	for i in mini(budget, wanted.size()):
-		_load_chunk(wanted[i])
+	# Fehlende Chunks (nearest-first) in die Warteschlange legen; _process_queue
+	# generiert sie ueber mehrere Frames verteilt -> kein Ruckeln.
+	for c in wanted:
+		_enqueue_chunk(c)
 
 	# Alles außerhalb RADIUS+1 wieder entladen.
 	for c in _loaded.keys():
@@ -121,9 +134,11 @@ func _update_chunks(force: bool) -> void:
 			_unload_chunk(c)
 
 
-func _load_chunk(chunk: Vector2i) -> void:
-	var blocks: Array = []      # [cell, level] - generierte Bodenblöcke
-	var props: Array = []       # cell - generierte Bäume/Rohstoffe (Nodes)
+func _enqueue_chunk(chunk: Vector2i) -> void:
+	if _loaded.has(chunk):
+		return
+	# Leerer Eintrag; die Bloecke/Props fuellen sich beim Abarbeiten der Queue.
+	_loaded[chunk] = {"blocks": [], "props": []}
 	var base := chunk * CHUNK
 	for oy in CHUNK:
 		for ox in CHUNK:
@@ -132,8 +147,25 @@ func _load_chunk(chunk: Vector2i) -> void:
 			# sonst klafft am unregelmäßigen Rand eine Lücke.
 			if world.is_authored(cell):
 				continue
-			_gen_cell(cell, blocks, props)
-	_loaded[chunk] = {"blocks": blocks, "props": props}
+			_queue.append(cell)
+
+
+## Generiert bis zu `budget` wartende Zellen in ihre (evtl. teilfertigen) Chunks.
+func _process_queue(budget: int) -> void:
+	var done := 0
+	while done < budget and _qhead < _queue.size():
+		var cell := _queue[_qhead]
+		_qhead += 1
+		var chunk := _chunk_of(cell)
+		var data: Variant = _loaded.get(chunk)
+		if data == null:
+			continue                       # Chunk zwischenzeitlich entladen
+		_gen_cell(cell, data["blocks"], data["props"])
+		done += 1
+	# Verbrauchten Kopf gelegentlich abschneiden, damit das Array nicht waechst.
+	if _qhead > 2048:
+		_queue = _queue.slice(_qhead)
+		_qhead = 0
 
 
 ## Erzeugt eine einzelne Zelle: Bodensäule (mit Varianz + bündigem Rand) und
@@ -210,6 +242,15 @@ func _unload_chunk(chunk: Vector2i) -> void:
 	for entry in data["blocks"]:
 		world.erase_block(entry[0], entry[1])
 	_loaded.erase(chunk)
+	# Noch wartende Zellen dieses Chunks aus der Queue nehmen - sonst wuerden sie
+	# bei erneutem Eintritt ein zweites Mal generiert (Doppel-Bloecke).
+	if _qhead < _queue.size():
+		var kept: Array[Vector2i] = []
+		for i in range(_qhead, _queue.size()):
+			if _chunk_of(_queue[i]) != chunk:
+				kept.append(_queue[i])
+		_queue = kept
+		_qhead = 0
 
 
 ## Zelle -> Chunk-Koordinate. floori, damit es links/oben von 0 nicht kippt
