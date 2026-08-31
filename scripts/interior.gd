@@ -24,7 +24,11 @@ const INTERIOR_SCENE := preload("res://scenes/hut_interior.tscn")
 ## den Raum nicht.
 const BASE := Vector2i(30000, 30000)
 const SLOT_SPAN := 64         ## Felder Abstand zwischen zwei Spieler-Slots
-const WALL_HEIGHT := 3        ## Wandhoehe in Ebenen (>=2 = nicht uebersteigbar)
+## Standard-Wandhoehe in Ebenen (>=2 = nicht uebersteigbar). Pro Innenraum-Szene
+## ueberschreibbar: an der Wurzel (HutInterior) im Inspector die Metadaten
+## "wall_height" (int) setzen -> so hoch werden die Waende gestapelt.
+const WALL_HEIGHT_DEFAULT := 3
+const WALL_HEIGHT_MAX := 8
 const FADE := 0.35
 
 var world: Node = null
@@ -38,6 +42,7 @@ var _spawn_cell := Vector2i.ZERO
 var _exit_cell := Vector2i.ZERO
 var _floor: Dictionary = {}           ## lokale Zelle -> Boden-Atlas
 var _walls: Dictionary = {}           ## lokale Zelle -> Wand-Atlas
+var _wall_height := WALL_HEIGHT_DEFAULT
 var _loaded := false
 var _fade: ColorRect = null
 var _exit_btn: Button = null
@@ -92,6 +97,9 @@ func _load_layout() -> void:
 		_walls[c] = wl.get_cell_atlas_coords(c)
 	_spawn_cell = fl.local_to_map((inst.get_node("Spawn") as Node2D).position)
 	_exit_cell = fl.local_to_map((inst.get_node("Exit") as Node2D).position)
+	# Wandhoehe pro Szene: Metadaten "wall_height" an der Wurzel (sonst Standard).
+	if inst.has_meta("wall_height"):
+		_wall_height = clampi(int(inst.get_meta("wall_height")), 1, WALL_HEIGHT_MAX)
 	inst.free()
 	_loaded = true
 
@@ -109,7 +117,7 @@ func enter() -> void:
 		_stamped.append([_origin + c, 0])
 	# ... und Waende hochziehen (mehrere Ebenen = nicht uebersteigbar).
 	for c in _walls:
-		for lvl in range(WALL_HEIGHT):
+		for lvl in range(_wall_height):
 			world.set_block(_origin + c, lvl, _walls[c])
 			_stamped.append([_origin + c, lvl])
 	_inside = true
