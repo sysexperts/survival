@@ -14,7 +14,10 @@ extends RefCounted
 ## Pflanzenfaser, Stein) auf der Zelle liegt. Das Setzen in der Welt macht der
 ## ChunkManager - diese Klasse fasst die Welt nie an.
 
-const MAX_LEVEL := 3          ## Höher stapeln wir nicht (niedrige Hügel).
+const MAX_LEVEL := 2          ## Höher stapeln wir nicht (niedrige Hügel).
+## Ab diesem Noise-Wert (nach 0..1) beginnt ueberhaupt ein Huegel. Darunter ist
+## alles FLACH (Hoehe 0). Hoch = mehr flaches Land, weniger stoerende Stufen.
+const HILL_START := 0.55
 const EDGE_RING := 3          ## Zellen, über die vom Handbau-Rand geblendet wird.
 
 ## Grüne Bodenkacheln (Quelle 0) für die Varianz. Ein einziges Grün wirkte
@@ -67,7 +70,7 @@ func _init(world_seed: int = 1337) -> void:
 	_seed = world_seed
 	_height.seed = world_seed
 	_height.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_height.frequency = 0.03            # ~Hügelkuppe alle 30 Zellen
+	_height.frequency = 0.02            # breitere, sanftere Hügel (weniger Stufen)
 	# Eigene Seeds (Offsets), damit Höhe, Erde und Wald nicht korrelieren.
 	_dirt.seed = world_seed + 1000
 	_dirt.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -93,8 +96,13 @@ func _init(world_seed: int = 1337) -> void:
 
 ## Rohe Noise-Höhe einer Zelle, 0..MAX_LEVEL, ohne Rand-Rücksicht.
 func noise_height(cell: Vector2i) -> int:
-	var t := (_height.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5
-	return clampi(int(floor(t * float(MAX_LEVEL + 1))), 0, MAX_LEVEL)
+	var t := (_height.get_noise_2d(cell.x, cell.y) + 1.0) * 0.5   # 0..1
+	# Der Grossteil der Karte bleibt FLACH (Hoehe 0); nur oberhalb HILL_START
+	# steigt sanft ein Huegel an. So gibt es kaum noch einzelne Stufen im Weg.
+	if t < HILL_START:
+		return 0
+	var h := (t - HILL_START) / (1.0 - HILL_START)               # 0..1 im Huegel
+	return clampi(int(round(h * float(MAX_LEVEL))), 0, MAX_LEVEL)
 
 
 ## Endgültige Höhe der Säule.
