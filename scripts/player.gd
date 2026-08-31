@@ -273,6 +273,10 @@ func _ready() -> void:
 	# Umhaengen ist waehrend _ready nicht erlaubt -> auf den naechsten Frame legen
 	_snap_to_cell.call_deferred(start_cell)
 	_play("idle")
+	# Nach dem Laden (Save-Position kommt spaeter, Chunks laden nach) sicherstellen,
+	# dass man nicht in einem Baum/Block/Wasser feststeckt.
+	for t in [1.0, 2.5, 5.0]:
+		get_tree().create_timer(t).timeout.connect(ensure_unstuck)
 
 
 ## Baut die Figur aus einem neuen Aussehen neu auf (Görünüm-Editor). Die
@@ -1542,6 +1546,31 @@ func end_fishing() -> void:
 	_fishing = false
 	busy = false
 	_play("idle")
+
+
+## Steckt der Charakter in einem Baum/Block/Wasser/Loch? Dann die naechste
+## begehbare Zelle suchen und dorthin einrasten. Verhindert "im Baum stuck",
+## auch nach Login (gespeicherte Position lag im Baum).
+func ensure_unstuck() -> void:
+	if world == null or _sleeping:
+		return
+	var here := world.world_to_cell(global_position, level)
+	if _cell_ok(here):
+		return
+	for r in range(1, 16):
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				var c := here + Vector2i(dx, dy)
+				if _cell_ok(c):
+					_cancel_task()
+					_snap_to_cell(c)
+					return
+
+
+func _cell_ok(cell: Vector2i) -> bool:
+	return world.top_level_at(cell) > world.NO_FLOOR \
+		and not world.has_prop(cell) and not world.has_stump(cell) \
+		and world.blocker_at(cell) == null and not world.is_water(cell)
 
 
 func stone_in_reach() -> Vector2i:
