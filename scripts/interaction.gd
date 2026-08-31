@@ -18,6 +18,7 @@ var _furn_hover: Array = []        ## [cell, Furniture] oder leer
 var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Alpha-Test)
 var _hovered_crop = null           ## Crop-Node unter der Maus (oder null)
 var _inv: Node = null              ## player_inventory (fuer Giesskannen-Ladungen)
+var _interior: Node = null         ## Huetten-Innenraum (betreten/verlassen)
 var preview: PlacementPreview
 var _struct_imgs: Dictionary = {}  ## Bauwerk-Bilder je Textur (Alpha-Test)
 var _sel_outline: Sprite2D         ## Dauerhafter weisser Rand am ausgewaehlten Bauwerk
@@ -33,6 +34,7 @@ func _ready() -> void:
 	preview.world = world
 	add_child(preview)
 	_inv = get_node_or_null(^"../Inventory")
+	_interior = get_node_or_null(^"../Interior")
 
 
 func _build_highlight() -> void:
@@ -283,6 +285,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not hit.is_empty():
 			player.walk_to(hit[0])
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		# Huetten: im Innenraum aufs Tuerfeld -> raus; draussen auf eine FERTIGE
+		# Baraka -> rein. Hat Vorrang (Schwarzblende + Teleport in interior.gd).
+		if _interior != null:
+			var here := world.pick_block(get_global_mouse_position())
+			if _interior.is_inside():
+				if not here.is_empty() and here[0] == _interior.exit_world_cell():
+					_interior.leave()
+					get_viewport().set_input_as_handled()
+					return
+			elif not here.is_empty():
+				var bn = world.blocker_at(here[0])
+				if bn != null and bn.has_method("is_done") and bn.is_done():
+					_interior.enter()
+					get_viewport().set_input_as_handled()
+					return
 		# Shift+Rechtsklick auf ein platziertes Objekt (Möbel/Lagerfeuer) reißt
 		# es ab. Es kommt NICHT ins Inventar zurück.
 		if event.shift_pressed:

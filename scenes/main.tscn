@@ -26,6 +26,7 @@
 [ext_resource type="Script" uid="uid://3neb7r3fuwti" path="res://scripts/chest_sync.gd" id="27_chest"]
 [ext_resource type="Script" path="res://scripts/furnace_sync.gd" id="28_furnace"]
 [ext_resource type="Shader" path="res://scripts/vignette.gdshader" id="29_vignette"]
+[ext_resource type="Script" path="res://scripts/interior.gd" id="30_interior"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -87,6 +88,9 @@ script = ExtResource("7_regrowth")
 
 [node name="ChunkManager" type="Node" parent="." unique_id=436195296]
 script = ExtResource("10_chunks")
+
+[node name="Interior" type="Node" parent="."]
+script = ExtResource("30_interior")
 
 [node name="Inventory" type="Node" parent="." unique_id=1106685324]
 script = ExtResource("8_inventory")
