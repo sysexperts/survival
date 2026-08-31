@@ -148,8 +148,10 @@ const BIOME_GRASS := "grass"
 const BIOME_DESERT := "desert"
 ## _biome-Noise ueber diesem Wert -> Wueste. Hoeher = seltener/kleiner.
 const DESERT_THRESHOLD := 0.30
-## Sand-Kacheln (Sheet-Reihe 6): Wuestenboden + Straende, zufaellig gemischt.
-const SAND: Array[Vector2i] = [Vector2i(0, 6), Vector2i(1, 6), Vector2i(2, 6), Vector2i(3, 6)]
+## Wuestenboden + Straende: nur die zwei mittleren Sand-Toene (Sheet-Reihe 6,
+## Zellen 1 beige + 2 gelblich). (0,6) ganz-gelb bleibt vorerst weg, (3,6) dunkel
+## ist nur fuer Felsen.
+const SAND: Array[Vector2i] = [Vector2i(1, 6), Vector2i(2, 6)]
 ## Wie oft ein Ufer AUSSERHALB der Wueste Sand statt Gras/Kil wird (Prozent).
 const BEACH_SAND_PCT := 60
 ## Meer: ab diesem _sea-Wert wird die Wasser-Schwelle stark gesenkt -> grosse Flaeche.
