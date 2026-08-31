@@ -59,6 +59,8 @@ var _dirt := FastNoiseLite.new()
 var _forest := FastNoiseLite.new()
 var _clay := FastNoiseLite.new()
 var _water := FastNoiseLite.new()
+var _biome := FastNoiseLite.new()   ## grosse Regionen: Gras vs. Wueste
+var _sea := FastNoiseLite.new()     ## sehr grossflaechig: hier entstehen Meere
 
 
 func _init(world_seed: int = 1337) -> void:
@@ -79,6 +81,12 @@ func _init(world_seed: int = 1337) -> void:
 	_water.seed = world_seed + 4000
 	_water.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_water.frequency = 0.028           # groessere, zusammenhaengende Seen/Teiche
+	_biome.seed = world_seed + 5000
+	_biome.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_biome.frequency = 0.008           # GROSSE Biom-Regionen (nicht staendig wechselnd)
+	_sea.seed = world_seed + 6000
+	_sea.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_sea.frequency = 0.006             # noch grossflaechiger -> gelegentliche Meere
 
 
 # --- Höhe ---------------------------------------------------------------
@@ -134,8 +142,32 @@ const WATER_FILL: Array[Vector2i] = [Vector2i(0, 1), Vector2i(0, 2), Vector2i(0,
 const SHORE_CLAY_PCT := 55
 const NB4 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 
+## --- Biome ---------------------------------------------------------------
+## Grosse, zusammenhaengende Regionen (nicht staendig wechselnd, siehe _biome-freq).
+const BIOME_GRASS := "grass"
+const BIOME_DESERT := "desert"
+## _biome-Noise ueber diesem Wert -> Wueste. Hoeher = seltener/kleiner.
+const DESERT_THRESHOLD := 0.30
+## Sand-Kacheln (Sheet-Reihe 6): Wuestenboden + Straende, zufaellig gemischt.
+const SAND: Array[Vector2i] = [Vector2i(0, 6), Vector2i(1, 6), Vector2i(2, 6), Vector2i(3, 6)]
+## Wie oft ein Ufer AUSSERHALB der Wueste Sand statt Gras/Kil wird (Prozent).
+const BEACH_SAND_PCT := 60
+## Meer: ab diesem _sea-Wert wird die Wasser-Schwelle stark gesenkt -> grosse Flaeche.
+const SEA_THRESHOLD := 0.35
+const WATER_THRESHOLD_SEA := -0.15
+## Fels-Wahrscheinlichkeit in der Wueste ("ab und zu kleine Felsen").
+const P_ROCK_DESERT := 0.02
+
+
+func biome_at(cell: Vector2i) -> String:
+	return BIOME_DESERT if _biome.get_noise_2d(cell.x, cell.y) > DESERT_THRESHOLD else BIOME_GRASS
+
+
 func is_water(cell: Vector2i) -> bool:
-	return _water.get_noise_2d(cell.x, cell.y) > WATER_THRESHOLD
+	var thr := WATER_THRESHOLD
+	if _sea.get_noise_2d(cell.x, cell.y) > SEA_THRESHOLD:
+		thr = WATER_THRESHOLD_SEA        # Meer-Region: viel mehr Wasser
+	return _water.get_noise_2d(cell.x, cell.y) > thr
 
 
 ## Zelle ODER ein 4er-Nachbar ist Wasser (fuer flaches Ufer).
@@ -161,9 +193,18 @@ func is_shore(cell: Vector2i) -> bool:
 func ground_atlas(cell: Vector2i) -> Vector2i:
 	if is_water(cell):
 		return WATER_FILL[_hash(cell, 23) % WATER_FILL.size()]
-	# Kil bevorzugt am Ufer, seltener auch als Inland-Fleck.
-	if is_shore(cell) and _hash(cell, 17) % 100 < SHORE_CLAY_PCT:
-		return IsoWorld.CLAY_ATLAS
+	var b := biome_at(cell)
+	# Ufer: in der Wueste immer Sand; sonst OFT (BEACH_SAND_PCT) Sandstrand,
+	# ansonsten wie bisher etwas Kil.
+	if is_shore(cell):
+		if b == BIOME_DESERT or _hash(cell, 29) % 100 < BEACH_SAND_PCT:
+			return SAND[_hash(cell, 31) % SAND.size()]
+		if _hash(cell, 17) % 100 < SHORE_CLAY_PCT:
+			return IsoWorld.CLAY_ATLAS
+	# Wueste: Sandboden (4 Toene gemischt).
+	if b == BIOME_DESERT:
+		return SAND[_hash(cell, 31) % SAND.size()]
+	# Grasland: Kil-Fleck, Erde, sonst Gras.
 	if is_clay(cell):
 		return IsoWorld.CLAY_ATLAS
 	if is_dirt(cell):
@@ -182,6 +223,13 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 func prop_at(cell: Vector2i) -> Dictionary:
 	if is_water(cell):
 		return {}                      # nichts waechst/liegt auf Wasser
+	# Wueste: KEINE Baeume, aber ab und zu ein (abbaubarer) kleiner Fels.
+	if biome_at(cell) == BIOME_DESERT:
+		if _rand(cell, 3) < P_ROCK_DESERT:
+			var dstate := RockDB.pick_state(_rand(cell, 5))
+			var dvariant := _hash(cell, 6) % RockDB.VARIANTS
+			return {"kind": "rock", "state": dstate, "variant": dvariant}
+		return {}
 	var dirt := is_dirt(cell)
 
 	if not dirt:
