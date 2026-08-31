@@ -40,6 +40,7 @@ var _needs: Node = null                  ## SurvivalNeeds (Hunger/Essen), kann n
 const CreativeHUDScript := preload("res://scripts/creative_hud.gd")
 ## Skill-XP (Fortschritt) - statisch, wird mitgespeichert (siehe to_save/from_save).
 const SkillsXPScript := preload("res://scripts/skills_xp.gd")
+const XpParticlesScript := preload("res://scripts/xp_particles.gd")
 var creative: Node
 ## Admin-Pruefung zentral (per preload, nicht ueber das Net-Autoload - das wird
 ## vom Auto-Updater nicht ersetzt, siehe admins.gd).
@@ -62,6 +63,15 @@ var _ctx_hint := ""
 ## Restzeit einer kurzen Meldung. Sie hat Vorrang vor dem Aufheben-Hinweis,
 ## sonst waere sie im naechsten Bild schon wieder ueberschrieben.
 var _notice_left := 0.0
+## Level-up-Erkennung: gemerkte Level je Skill; steigt eins, kommt ein Banner.
+const SKILL_NAMES := {
+	"woodcutting": "Oduncu", "mining": "Madenci", "fishing": "Balikci",
+	"cooking": "Asci", "smithing": "Demirci", "crafting": "Zanaat", "building": "Insaat",
+}
+var _last_levels: Dictionary = {}
+var _lvl_accum := 0.0
+var _lvl_alive := 0.0             ## Karenzzeit, damit der Save-Load kein Banner ausloest
+var _announce: Node = null
 ## Wie lange so eine Meldung stehen bleibt.
 @export var notice_seconds := 2.5
 
@@ -234,7 +244,35 @@ func from_save(data: Dictionary) -> void:
 ## Zeigt an, wenn ein Stein aufgehoben werden kann - sonst raet man, ob man
 ## nah genug steht. Die Platzieren-Vorschau hat Vorrang, die schreibt in
 ## denselben Hinweis.
+## Prueft ~alle 0.4s, ob ein Skill-Level gestiegen ist -> goldener Level-up-Banner
+## (derselbe wie der Morgen-Banner). Karenz am Anfang, damit der Save-Load beim
+## Login kein Banner ausloest.
+func _check_levelups(delta: float) -> void:
+	_lvl_alive += delta
+	_lvl_accum += delta
+	if _lvl_accum < 0.4:
+		return
+	_lvl_accum = 0.0
+	for skill in SKILL_NAMES:
+		var lv := SkillsXPScript.level_of(skill)
+		var prev := int(_last_levels.get(skill, lv))
+		if lv > prev and _lvl_alive > 3.0:
+			_show_levelup(String(SKILL_NAMES[skill]), lv)
+		_last_levels[skill] = lv
+
+
+func _show_levelup(sname: String, lvl: int) -> void:
+	if _announce == null or not is_instance_valid(_announce):
+		_announce = get_tree().get_first_node_in_group("announce")
+	if _announce != null and _announce.has_method("flash"):
+		_announce.flash("%s  Seviye %d!" % [sname, lvl], 2.4)
+	# Kleines Extra-Feedback: XP-Partikel-Puff zum Spieler.
+	if player != null and is_instance_valid(player):
+		XpParticlesScript.spawn(player.get_parent(), player.global_position, player, 10)
+
+
 func _process(delta: float) -> void:
+	_check_levelups(delta)
 	# Die Axt zaehlt nur, wenn sie in der Hotbar ausgewaehlt ist. Hier
 	# nachgefuehrt statt an jeder Stelle, die die Auswahl aendern kann -
 	# das sind Tastendruck, Klick und jedes Umlegen im Inventar.
