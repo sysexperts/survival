@@ -32,7 +32,7 @@ const LOAD_BUDGET := 1
 const WorldGenScript := preload("res://scripts/world_gen.gd")
 
 @export var world_path: NodePath = ^"../World"
-@export var world_seed: int = 1337
+@export var world_seed: int = 20260901
 ## Wie oft die Spielerposition geprüft wird. Jeden Frame wäre Verschwendung -
 ## der Spieler wechselt selten den Chunk.
 @export var update_interval := 0.2
