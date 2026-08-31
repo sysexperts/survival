@@ -86,10 +86,14 @@ func _init(world_seed: int = 1337) -> void:
 	_water.frequency = 0.028           # groessere, zusammenhaengende Seen/Teiche
 	_biome.seed = world_seed + 5000
 	_biome.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_biome.frequency = 0.004           # SEHR grosse Biom-Regionen (grossflaechig, blobbig)
+	_biome.frequency = 0.0008          # RIESIGE Biome (~4-5 Min zum Durchqueren)
+	# Domain-Warp -> organische, rundliche Blobs statt gerader Streifen/Kanten.
+	_biome.domain_warp_enabled = true
+	_biome.domain_warp_amplitude = 120.0
+	_biome.domain_warp_frequency = 0.004
 	_sea.seed = world_seed + 6000
 	_sea.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_sea.frequency = 0.006             # noch grossflaechiger -> gelegentliche Meere
+	_sea.frequency = 0.0015            # grosse Meere
 
 
 # --- Höhe ---------------------------------------------------------------
