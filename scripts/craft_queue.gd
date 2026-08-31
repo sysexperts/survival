@@ -1,6 +1,8 @@
 extends Node
 class_name CraftQueue
 
+const SkillsXPScript := preload("res://scripts/skills_xp.gd")
+
 ## Die Bauliste: was gerade gefertigt wird und was noch ansteht.
 ##
 ## Bauen dauert. Der Spieler gibt eine Stückzahl auf, die Zutaten sind
@@ -102,6 +104,7 @@ func _process(delta: float) -> void:
 		job["elapsed"] = float(job["elapsed"]) - secs
 		job["left"] = int(job["left"]) - 1
 		inventory.add(recipe["out"], amount)
+		SkillsXPScript.gain("crafting", 3.0)   # Zanaat-XP pro gecraftetem Stueck
 		done += 1
 	if int(job["left"]) <= 0:
 		jobs.pop_front()

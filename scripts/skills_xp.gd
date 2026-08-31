@@ -11,7 +11,12 @@ const Features := preload("res://scripts/features.gd")
 const XpParticles := preload("res://scripts/xp_particles.gd")
 
 ## Skill-Schlüssel -> XP (roh). Level = floor(sqrt(xp / 10)).
-static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0, "mining": 0.0, "cooking": 0.0, "smithing": 0.0}
+static var xp := {"woodcutting": 0.0, "crafting": 0.0, "building": 0.0, "mining": 0.0, "cooking": 0.0, "smithing": 0.0, "fishing": 0.0}
+
+
+## XP fuer einen Skill dazugeben (ungated - speist Skills-Anzeige + EXP-Leiste).
+static func gain(skill: String, amount: float) -> void:
+	xp[skill] = float(xp.get(skill, 0.0)) + amount
 
 const XP_PER_CHOP := 5.0
 const XP_PER_CRAFT := 8.0
@@ -88,6 +93,17 @@ static func award(skill: String, amount: float) -> void:
 
 static func level_of(skill: String) -> int:
 	return int(floor(sqrt(xp.get(skill, 0.0) / 10.0)))
+
+
+## Fortschritt 0..1 innerhalb des aktuellen Skill-Levels (fuer den XP-Balken).
+static func skill_progress(skill: String) -> float:
+	var x: float = float(xp.get(skill, 0.0))
+	var l := level_of(skill)
+	var base := 10.0 * float(l) * float(l)
+	var next := 10.0 * float(l + 1) * float(l + 1)
+	if next <= base:
+		return 0.0
+	return clampf((x - base) / (next - base), 0.0, 1.0)
 
 
 ## Gesamt-XP ueber alle Skills - Grundlage fuer das Spieler-Level (EXP-Leiste

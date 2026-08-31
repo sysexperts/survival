@@ -47,11 +47,13 @@ const AdminsScript := preload("res://scripts/admins.gd")
 const PlayerStatsScript := preload("res://scripts/player_stats.gd")
 const ChestHUDScript := preload("res://scripts/chest_hud.gd")
 const FurnaceHUDScript := preload("res://scripts/furnace_hud.gd")
+const SkillsHUDScript := preload("res://scripts/skills_hud.gd")
 const UIStateScript := preload("res://scripts/ui_state.gd")
 var chest_hud                             ## Lagertruhen-Fenster (online)
 var _chest_sync                           ## ChestSync-Node
 var furnace_hud                           ## Ofen-Fenster (online)
 var _furnace_sync                         ## FurnaceSync-Node
+var skills_hud                            ## Skills-Fenster (Taste K)
 var _is_admin := false
 var _drop: Node                          ## DropSync (fallengelassene Items), im MP
 ## Zuletzt gesetzter Kontext-Hinweis (Stein aufheben / Station oeffnen).
@@ -90,6 +92,10 @@ func _ready() -> void:
 	chest_hud = ChestHUDScript.new()
 	add_child(chest_hud)
 	chest_hud.setup(inventory, _chest_sync)
+	# Skills-Fenster (Taste K).
+	skills_hud = SkillsHUDScript.new()
+	add_child(skills_hud)
+	skills_hud.setup()
 	# Escape schliesst das oberste Fenster (zentral im Pause-Menue, siehe UIState).
 	UIStateScript.close_top = _close_windows
 
@@ -122,6 +128,9 @@ func _ready() -> void:
 	if player:
 		player.felled.connect(_on_felled)
 		player.stump_cleared.connect(_on_stump_cleared)
+		# Insaat-XP beim Setzen von Moebeln/Bauwerken/Lagerfeuer.
+		player.placed_furniture.connect(func(_id, _cell, _o): SkillsXPScript.gain("building", 8.0))
+		player.placed_campfire.connect(func(_top): SkillsXPScript.gain("building", 8.0))
 		# Ueber das Signal statt an der Aufruf-Stelle: so zaehlt jeder Weg,
 		# der einen Stein aufhebt - E genauso wie der Rechtsklick-Auftrag.
 		player.stone_collected.connect(_on_stone_collected)
@@ -388,6 +397,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _drop:
 			_drop.drop_selected()
 		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_K:
+		# Skills-Fenster auf/zu.
+		if skills_hud != null:
+			skills_hud.toggle()
+			get_viewport().set_input_as_handled()
 	elif event.keycode >= KEY_1 and event.keycode <= KEY_9:
 		hud.select(event.keycode - KEY_1)
 
@@ -565,6 +579,7 @@ func _grant(id: String, amount: int) -> void:
 func _any_window_open() -> bool:
 	return (chest_hud != null and chest_hud.is_open()) \
 		or (furnace_hud != null and furnace_hud.is_open()) \
+		or (skills_hud != null and skills_hud.is_open()) \
 		or _open_station() != null or crafting.is_open() or hud.bag_open() \
 		or (creative != null and creative.is_open())
 
@@ -607,6 +622,7 @@ func _try_fish() -> void:
 	# Einfache Angel: 50% Fangchance.
 	if randf() < 0.5:
 		_grant(ItemDB.random_raw_fish(), 1)
+		SkillsXPScript.gain("fishing", 5.0)   # Balikci-XP
 		_notice("Balik yakalandi!")
 	else:
 		_notice("Balik kacti")
@@ -676,6 +692,9 @@ func _close_windows() -> bool:
 		return true
 	if furnace_hud != null and furnace_hud.is_open():
 		furnace_hud.set_open(false)
+		return true
+	if skills_hud != null and skills_hud.is_open():
+		skills_hud.set_open(false)
 		return true
 	if creative != null and creative.is_open():
 		creative.set_open(false)
