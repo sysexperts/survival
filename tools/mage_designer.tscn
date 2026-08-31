@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b540cba8do5x2"]
+
+[ext_resource type="Script" path="res://tools/mage_designer.gd" id="1_designer"]
+
+[node name="Designer" type="Node2D" unique_id=1559356109]
+script = ExtResource("1_designer")

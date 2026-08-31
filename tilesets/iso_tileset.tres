@@ -42,6 +42,10 @@ texture_region_size = Vector2i(32, 32)
 4:4/0 = 0
 5:4/0 = 0
 6:4/0 = 0
+0:6/0 = 0
+1:6/0 = 0
+2:6/0 = 0
+3:6/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_props"]
 texture = ExtResource("2_baum")

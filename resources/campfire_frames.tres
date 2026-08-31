@@ -1,7 +1,23 @@
-[gd_resource type="SpriteFrames" load_steps=3 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://1rr5e27g2hqj"]
 
-[ext_resource type="Texture2D" path="res://assets/props/cooking_campfire_off.png" id="1"]
-[ext_resource type="Texture2D" path="res://assets/props/cooking_campfire_fire.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://c3qgw8vfmb3up" path="res://assets/props/cooking_campfire_off.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://b27y83xa6ja3x" path="res://assets/props/cooking_campfire_fire.png" id="2"]
 
 [resource]
-animations = [{"frames": [{"duration": 1.0, "texture": ExtResource("1")}], "loop": true, "name": &"aus", "speed": 5.0}, {"frames": [{"duration": 1.0, "texture": ExtResource("2")}], "loop": true, "name": &"brennt", "speed": 5.0}]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1")
+}],
+"loop": 1,
+"name": &"aus",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2")
+}],
+"loop": 1,
+"name": &"brennt",
+"speed": 5.0
+}]
