@@ -34,6 +34,7 @@ var _floor: Dictionary = {}           ## lokale Zelle -> Boden-Atlas
 var _walls: Dictionary = {}           ## lokale Zelle -> Wand-Atlas
 var _loaded := false
 var _fade: ColorRect = null
+var _exit_btn: Button = null
 
 
 func _ready() -> void:
@@ -90,6 +91,8 @@ func enter() -> void:
 			world.set_block(ORIGIN + c, lvl, _walls[c])
 			_stamped.append([ORIGIN + c, lvl])
 	_inside = true
+	if _exit_btn != null:
+		_exit_btn.visible = true
 	_transition(func(): p.teleport_to(world.cell_to_world(ORIGIN + _spawn_cell, 0)))
 
 
@@ -108,6 +111,8 @@ func _cleanup() -> void:
 		world.erase_block(e[0], e[1])
 	_stamped.clear()
 	_inside = false
+	if _exit_btn != null:
+		_exit_btn.visible = false
 
 
 ## Schwarzblende: ausblenden -> in der Mitte `mid` ausfuehren -> wieder aufblenden.
@@ -128,3 +133,16 @@ func _build_fade() -> void:
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cl.add_child(_fade)
+
+	# "Rausgehen"-Button unten links - nur im Innenraum sichtbar.
+	_exit_btn = Button.new()
+	_exit_btn.text = "  Disari Cik  "
+	_exit_btn.visible = false
+	_exit_btn.focus_mode = Control.FOCUS_NONE
+	_exit_btn.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_exit_btn.offset_left = 16
+	_exit_btn.offset_top = -56
+	_exit_btn.offset_bottom = -16
+	_exit_btn.add_theme_font_size_override("font_size", 16)
+	_exit_btn.pressed.connect(leave)
+	cl.add_child(_exit_btn)

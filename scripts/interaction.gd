@@ -106,6 +106,14 @@ func _process(_delta: float) -> void:
 	if st != null:
 		_highlight_structure(st)
 		return
+	# Fertige Baraka unter der Maus: weisser Rand - Zeichen, dass man
+	# reingehen kann (Rechtsklick oeffnet den Innenraum).
+	var bhit := world.pick_block(get_global_mouse_position())
+	if not bhit.is_empty():
+		var bnode = world.blocker_at(bhit[0])
+		if bnode != null and bnode.has_method("is_done") and bnode.is_done():
+			_highlight_structure(bnode)
+			return
 	# Ofen (Campfire) unter der Maus: weisser Rand wie bei Moebeln.
 	var cfhit := world.pick_block(get_global_mouse_position())
 	if not cfhit.is_empty() and world.blocker_at(cfhit[0]) is Campfire:
