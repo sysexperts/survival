@@ -64,6 +64,7 @@ var _clay := FastNoiseLite.new()
 var _water := FastNoiseLite.new()
 var _biome := FastNoiseLite.new()   ## grosse Regionen: Gras vs. Wueste
 var _sea := FastNoiseLite.new()     ## sehr grossflaechig: hier entstehen Meere
+var _rock := FastNoiseLite.new()    ## kleine Fels-Formationen in der Wueste
 
 
 func _init(world_seed: int = 1337) -> void:
@@ -94,6 +95,9 @@ func _init(world_seed: int = 1337) -> void:
 	_sea.seed = world_seed + 6000
 	_sea.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_sea.frequency = 0.0015            # grosse Meere
+	_rock.seed = world_seed + 7000
+	_rock.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_rock.frequency = 0.06             # kleine, kompakte Fels-Cluster
 
 
 # --- Höhe ---------------------------------------------------------------
@@ -125,6 +129,10 @@ func height_at(cell: Vector2i, edge_dist: int, edge_height: int) -> int:
 	if edge_dist < 0 and near_water(cell):
 		return 0
 	var h := noise_height(cell)
+	# Wuestenfelsen ragen als kleine Formationen aus dem flachen Sand.
+	var rb := desert_rock(cell)
+	if rb > h:
+		h = rb
 	if edge_dist < 0 or edge_dist >= EDGE_RING:
 		return h
 	var t := float(edge_dist) / float(EDGE_RING)
@@ -177,10 +185,28 @@ func biome_at(cell: Vector2i) -> String:
 	return BIOME_DESERT if _biome.get_noise_2d(cell.x, cell.y) > DESERT_THRESHOLD else BIOME_GRASS
 
 
+## Wuestenfelsen: kleine, aufgestapelte Formationen aus der dunklen Kachel (3,6).
+const DARK_ROCK := Vector2i(3, 6)
+const ROCK_THRESHOLD := 0.7    ## _rock-Noise darueber -> Fels (klein/selten, "ab und zu")
+const ROCK_MAX := 2            ## bis 2 Ebenen hoch (Huegel-Form: Rand 1, Mitte 2)
+
+## Fels-Bump-Hoehe in der Wueste: 0 = kein Fels, 1-2 = Formationshoehe.
+func desert_rock(cell: Vector2i) -> int:
+	if biome_at(cell) != BIOME_DESERT:
+		return 0
+	var rn := _rock.get_noise_2d(cell.x, cell.y)
+	if rn < ROCK_THRESHOLD:
+		return 0
+	var t := (rn - ROCK_THRESHOLD) / (1.0 - ROCK_THRESHOLD)   # 0..1 im Cluster
+	return clampi(int(ceil(t * float(ROCK_MAX))), 1, ROCK_MAX)
+
+
 ## Kachel fuer die UNTEREN Bloecke einer Saeule (die Seitenflaechen der Wuerfel).
-## In der Wueste Sand (sonst schaut gruenes Gras unter dem Sand hervor), sonst Gras.
+## Wueste: Fels-Formation -> dunkle Kachel, sonst Sand. Grasland: Gras.
 func fill_atlas(cell: Vector2i) -> Vector2i:
 	if biome_at(cell) == BIOME_DESERT:
+		if desert_rock(cell) > 0:
+			return DARK_ROCK
 		return SAND[_hash(cell, 41) % SAND.size()]
 	return GRASS[0]
 
@@ -223,8 +249,10 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 			return SAND[_hash(cell, 31) % SAND.size()]
 		if _hash(cell, 17) % 100 < SHORE_CLAY_PCT:
 			return IsoWorld.CLAY_ATLAS
-	# Wueste: Sandboden (4 Toene gemischt).
+	# Wueste: Fels-Formation (dunkle Kachel) oder Sandboden.
 	if b == BIOME_DESERT:
+		if desert_rock(cell) > 0:
+			return DARK_ROCK
 		return SAND[_hash(cell, 31) % SAND.size()]
 	# Grasland: Kil-Fleck, Erde, sonst Gras.
 	if is_clay(cell):
@@ -245,12 +273,9 @@ func ground_atlas(cell: Vector2i) -> Vector2i:
 func prop_at(cell: Vector2i) -> Dictionary:
 	if is_water(cell):
 		return {}                      # nichts waechst/liegt auf Wasser
-	# Wueste: KEINE Baeume, aber ab und zu ein (abbaubarer) kleiner Fels.
+	# Wueste: KEINE Baeume/Props. Die "Felsen" sind aufgestapelte Dark-Tile-
+	# Formationen im Terrain (siehe desert_rock / height_at / ground_atlas).
 	if biome_at(cell) == BIOME_DESERT:
-		if _rand(cell, 3) < P_ROCK_DESERT:
-			var dstate := RockDB.pick_state(_rand(cell, 5))
-			var dvariant := _hash(cell, 6) % RockDB.VARIANTS
-			return {"kind": "rock", "state": dstate, "variant": dvariant}
 		return {}
 	var dirt := is_dirt(cell)
 
