@@ -97,8 +97,11 @@ func noise_height(cell: Vector2i) -> int:
 ## Zellen in die Noise-Höhe geblendet - direkt am Rand (edge_dist 0) exakt
 ## bündig, damit dort weder eine Stufe noch eine Lücke entsteht.
 func height_at(cell: Vector2i, edge_dist: int, edge_height: int) -> int:
-	# Seen + direktes Ufer flach auf Hoehe 0 (nur fern der gemalten Karte, damit
-	# der Rand-Uebergang dort nicht bricht). So sind Wasserflaechen eben.
+	# REGEL: Wasser ist IMMER Ebene 0 und nie gestapelt (Einzel-Block auf Level 0).
+	if is_water(cell):
+		return 0
+	# Direktes Ufer ebenfalls flach auf Hoehe 0 (nur fern der gemalten Karte,
+	# damit der Rand-Uebergang dort nicht bricht).
 	if edge_dist < 0 and near_water(cell):
 		return 0
 	var h := noise_height(cell)
