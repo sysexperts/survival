@@ -199,6 +199,11 @@ func to_save() -> Dictionary:
 	# Position merken -> beim naechsten Login startet man wieder hier (Logout-Ort).
 	if player != null and is_instance_valid(player) and player.world != null:
 		var c: Vector2i = player.world.world_to_cell(player.global_position, player.level)
+		# Im Huetten-Innenraum? Dann den Eingangsort sichern, sonst spawnt man beim
+		# naechsten Login im ungestempelten Leeren (Innenraum wird nicht persistiert).
+		var interior := get_node_or_null(^"../Interior")
+		if interior != null and interior.is_inside():
+			c = interior.return_cell()
 		d["pos"] = {"x": c.x, "y": c.y}
 	return d
 
@@ -232,7 +237,14 @@ func from_save(data: Dictionary) -> void:
 	if data.has("pos") and typeof(data["pos"]) == TYPE_DICTIONARY \
 			and player != null and is_instance_valid(player):
 		var p: Dictionary = data["pos"]
-		player._snap_to_cell(Vector2i(int(p.get("x", 0)), int(p.get("y", 0))))
+		var cell := Vector2i(int(p.get("x", 0)), int(p.get("y", 0)))
+		# Rettungsnetz fuer kaputte Saves, die im Huetten-Innenraum (weit ostwaerts,
+		# ohne gestempelten Boden) gespeichert wurden: dort steht kein Boden ->
+		# stattdessen sicher am globalen Spawn starten. (Grenze wie
+		# chunk_manager.INTERIOR_X; grosszuegig ab x>=20000.)
+		if cell.x >= 20000:
+			cell = player.start_cell
+		player._snap_to_cell(cell)
 		# Steckt die gespeicherte Position in einem Baum? Sofort + verzoegert
 		# rausruecken (Props laden nach dem Snap evtl. erst nach).
 		player.ensure_unstuck()

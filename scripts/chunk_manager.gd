@@ -38,10 +38,11 @@ const WorldGenScript := preload("res://scripts/world_gen.gd")
 @export var world_path: NodePath = ^"../World"
 @export var world_seed: int = 20260901
 
-## Weit abgelegene Zone fuer betretbare Huetten-Innenraeume (interior.gd stempelt
-## dort hinein). Hier wird bewusst KEIN Gelaende generiert -> schwarzes Leeres
-## rundherum, damit sich der Innenraum wie eine eigene Karte anfuehlt.
-const INTERIOR_ZONE := Rect2i(960, 960, 120, 120)
+## Weit abgelegene Region fuer betretbare Huetten-Innenraeume (interior.gd
+## stempelt ab x=BASE.x=30000 hinein, pro Spieler ein Slot). Ostwaerts dieser
+## Grenze wird bewusst KEIN Gelaende generiert -> schwarzes Leeres rundherum
+## (eigene-Karte-Gefuehl) und niemand kann versehentlich in einen Raum stolpern.
+const INTERIOR_X := 29000
 ## Wie oft die Spielerposition geprüft wird. Jeden Frame wäre Verschwendung -
 ## der Spieler wechselt selten den Chunk.
 @export var update_interval := 0.2
@@ -152,9 +153,10 @@ func _enqueue_chunk(chunk: Vector2i) -> void:
 			# sonst klafft am unregelmäßigen Rand eine Lücke.
 			if world.is_authored(cell):
 				continue
-			# Huetten-Innenraum-Zone (weit weg): dort NICHTS generieren, damit
-			# der eingestempelte Innenraum wie eine eigene Karte im Leeren steht.
-			if INTERIOR_ZONE.has_point(cell):
+			# Huetten-Innenraum-Region (weit ostwaerts): dort NICHTS generieren,
+			# damit der eingestempelte Innenraum wie eine eigene Karte im Leeren
+			# steht und niemand hineinstolpern kann.
+			if cell.x >= INTERIOR_X:
 				continue
 			_queue.append(cell)
 

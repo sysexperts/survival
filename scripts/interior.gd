@@ -16,9 +16,14 @@ extends Node
 
 const INTERIOR_SCENE := preload("res://scenes/hut_interior.tscn")
 
-## Ecke, an der der Innenraum in die Welt gestempelt wird. Muss innerhalb der
-## chunk_manager.INTERIOR_ZONE liegen (Rect2i(960,960,120,120)).
-const ORIGIN := Vector2i(1000, 1000)
+## Innenraeume leben in einer weit abgelegenen Region derselben Welt (ostwaerts
+## ab x=INTERIOR_X, siehe chunk_manager: dort wird KEIN Gelaende generiert). So
+## weit weg, dass niemand hinlaeuft, aber noch im float-genauen Bereich.
+## Pro Spieler ein eigener Slot (per Netzwerk-ID versetzt), damit sich im MP
+## niemand denselben Raum teilt. Gestempelt wird nur LOKAL - andere Clients sehen
+## den Raum nicht.
+const BASE := Vector2i(30000, 30000)
+const SLOT_SPAN := 64         ## Felder Abstand zwischen zwei Spieler-Slots
 const WALL_HEIGHT := 3        ## Wandhoehe in Ebenen (>=2 = nicht uebersteigbar)
 const FADE := 0.35
 
@@ -26,6 +31,7 @@ var world: Node = null
 var player: Node = null
 
 var _inside := false
+var _origin := Vector2i.ZERO          ## aktueller Stempel-Ursprung (Spieler-Slot)
 var _return_pos := Vector2.ZERO
 var _stamped: Array = []              ## [[cell, level], ...] zum Aufraeumen
 var _spawn_cell := Vector2i.ZERO
@@ -54,9 +60,24 @@ func is_inside() -> bool:
 	return _inside
 
 
+## Zelle des Eingangsorts (fuer den Save: NICHT die Innenraum-Position sichern).
+func return_cell() -> Vector2i:
+	if world == null:
+		return Vector2i.ZERO
+	return world.world_to_cell(_return_pos, 0)
+
+
 ## Welt-Zelle des Tuer-Ausgangs (fuer den Rechtsklick-Test im Innenraum).
 func exit_world_cell() -> Vector2i:
-	return ORIGIN + _exit_cell
+	return _origin + _exit_cell
+
+
+## Eigener, weit abgelegener Stempel-Ursprung fuer diesen Spieler (Netzwerk-Slot).
+func _slot_origin() -> Vector2i:
+	var uid := 1
+	if multiplayer != null and multiplayer.has_multiplayer_peer():
+		uid = multiplayer.get_unique_id()
+	return BASE + Vector2i((uid % 512) * SLOT_SPAN, 0)
 
 
 ## Innenraum-Szene einmal auslesen: welche Zellen Boden, welche Wand sind, plus
@@ -81,19 +102,20 @@ func enter() -> void:
 	if _inside or not _loaded or world == null or p == null:
 		return
 	_return_pos = p.global_position
+	_origin = _slot_origin()
 	# Boden legen ...
 	for c in _floor:
-		world.set_block(ORIGIN + c, 0, _floor[c])
-		_stamped.append([ORIGIN + c, 0])
+		world.set_block(_origin + c, 0, _floor[c])
+		_stamped.append([_origin + c, 0])
 	# ... und Waende hochziehen (mehrere Ebenen = nicht uebersteigbar).
 	for c in _walls:
 		for lvl in range(WALL_HEIGHT):
-			world.set_block(ORIGIN + c, lvl, _walls[c])
-			_stamped.append([ORIGIN + c, lvl])
+			world.set_block(_origin + c, lvl, _walls[c])
+			_stamped.append([_origin + c, lvl])
 	_inside = true
 	if _exit_btn != null:
 		_exit_btn.visible = true
-	_transition(func(): p.teleport_to(world.cell_to_world(ORIGIN + _spawn_cell, 0)))
+	_transition(func(): p.teleport_to(world.cell_to_world(_origin + _spawn_cell, 0)))
 
 
 ## Innenraum verlassen: zurueck an die Eingangsstelle, Innenraum abraeumen.
