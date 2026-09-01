@@ -56,6 +56,10 @@ func _scatter() -> void:
 
 	var cursor := 0
 	for id in GatherDB.ids():
+		# Biom-gebundene Sorten (z. B. Wuesten-Flora) NICHT breit am Spawn streuen -
+		# die setzt world_gen gezielt im richtigen Biom.
+		if GatherDB.biome_of(id) != "":
+			continue
 		var wanted := int(round(cells.size() * GatherDB.density(id)))
 		var placed := 0
 		while placed < wanted and cursor < cells.size():

@@ -76,6 +76,31 @@ const KINDS := {
 		"anchor": "center",
 		"hint": "F  Tas al",
 	},
+	# Wuesten-Flora (col = coel/Wueste): Palmen, Saguaro-, Feigen-, Fasskakteen aus
+	# desert_trees.png. EIGENES Sheet + explizite Pixel-Regionen (kein 32er-Raster).
+	# Steht aufrecht (foot), gibt beim Aufsammeln Holz (drop_item). Nur in der
+	# Wueste - resource_scatter ueberspringt es (biome), gesetzt via world_gen.
+	"col": {
+		"name": "Col Bitkisi",
+		"sheet": "res://assets/game_assets/tiles/desert_trees.png",
+		"regions": [
+			Rect2i(1, 4, 29, 51), Rect2i(35, 4, 26, 52), Rect2i(100, 5, 23, 51),
+			Rect2i(65, 8, 29, 49), Rect2i(129, 13, 30, 44), Rect2i(161, 16, 30, 41),
+			Rect2i(197, 36, 22, 23), Rect2i(101, 68, 24, 52), Rect2i(33, 69, 29, 51),
+			Rect2i(2, 70, 29, 49), Rect2i(129, 70, 29, 51), Rect2i(65, 71, 30, 50),
+			Rect2i(166, 102, 20, 20), Rect2i(2, 132, 30, 51), Rect2i(34, 133, 29, 51),
+			Rect2i(102, 135, 24, 49), Rect2i(67, 138, 23, 46), Rect2i(130, 145, 29, 40),
+			Rect2i(166, 166, 19, 21),
+		],
+		"icon": Vector2i(0, 0),
+		"yield": [1, 4],
+		"density": 0.035,
+		"scale": 0.85,
+		"anchor": "foot",
+		"drop_item": "odun",
+		"biome": "desert",
+		"hint": "F  Odun topla",
+	},
 }
 
 
@@ -123,14 +148,55 @@ static func region(cell: Vector2i) -> Rect2i:
 	return Rect2i(cell.x * CELL.x, cell.y * CELL.y, CELL.x, CELL.y)
 
 
-## Ein zufälliges Prop-Bild dieser Sorte.
+## Kind-aware: Region fuer eine Sorte. Bei Regionen-Sorten (Wueste) ist
+## sheet_cell.x der Index in die explizite Rect-Liste; sonst 32er-Zelle.
+static func region_for(id: String, sheet_cell: Vector2i) -> Rect2i:
+	if KINDS.has(id) and KINDS[id].has("regions"):
+		var rs: Array = KINDS[id]["regions"]
+		return rs[clampi(sheet_cell.x, 0, rs.size() - 1)]
+	return region(sheet_cell)
+
+
+## Ein zufälliges Prop-Bild dieser Sorte. Bei Regionen-Sorten: Index in x.
 static func random_prop(id: String, rng: RandomNumberGenerator) -> Vector2i:
+	if KINDS.has(id) and KINDS[id].has("regions"):
+		return Vector2i(rng.randi() % int(KINDS[id]["regions"].size()), 0)
 	var list: Array = KINDS[id]["props"]
 	return list[rng.randi() % list.size()]
 
 
 static func sheet() -> Texture2D:
 	return load(SHEET)
+
+
+## Sheet einer Sorte (eigenes Sheet moeglich, sonst Standard prop1.png).
+static func sheet_of(id: String) -> Texture2D:
+	if KINDS.has(id) and KINDS[id].has("sheet"):
+		return load(KINDS[id]["sheet"])
+	return load(SHEET)
+
+
+static var _images: Dictionary = {}   ## sheet-Pfad -> Image (Alpha-Test-Cache)
+
+
+## Bild einer Sorte (fuer den Alpha-Treffertest), je Sheet einmal geladen.
+static func image_of(id: String) -> Image:
+	var path := String(KINDS[id]["sheet"]) if (KINDS.has(id) and KINDS[id].has("sheet")) else SHEET
+	if not _images.has(path):
+		_images[path] = load(path).get_image()
+	return _images[path]
+
+
+## Welches Item ein Aufsammeln gibt (Standard: die Sorte selbst).
+static func drop_item(id: String) -> String:
+	if KINDS.has(id) and KINDS[id].has("drop_item"):
+		return String(KINDS[id]["drop_item"])
+	return id
+
+
+## Nur in diesem Biom streuen (leer = ueberall). resource_scatter respektiert das.
+static func biome_of(id: String) -> String:
+	return String(KINDS[id].get("biome", "")) if KINDS.has(id) else ""
 
 
 static var _bounds: Dictionary = {}
@@ -142,6 +208,15 @@ static var _image: Image = null
 ## Die Icons sitzen unterschiedlich in ihren 32x32 - mal links, mal mittig.
 ## Wer die Kachel als Ganzes aufs Feld setzt, bekommt Props, die neben ihrer
 ## Zelle zu stehen scheinen. Darum wird hier der echte Umriss gesucht.
+## Kind-aware Umriss. Regionen-Sorten (Wueste) sind bereits eng zugeschnitten,
+## der sichtbare Bereich ist also die ganze Region.
+static func content_bounds_for(id: String, sheet_cell: Vector2i) -> Rect2:
+	if KINDS.has(id) and KINDS[id].has("regions"):
+		var r: Rect2i = region_for(id, sheet_cell)
+		return Rect2(0, 0, r.size.x, r.size.y)
+	return content_bounds(sheet_cell)
+
+
 static func content_bounds(sheet_cell: Vector2i) -> Rect2:
 	var key := "%d:%d" % [sheet_cell.x, sheet_cell.y]
 	if _bounds.has(key):

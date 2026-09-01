@@ -53,7 +53,8 @@ const CONFIG := {
 	"eritme_firini": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
 	# Mesale (Fackel): 32er-Objekt, 1:1. Der Basis-Sprite wird beim Setzen
 	# unsichtbar gemacht; ein animiertes Feuer-Kind uebernimmt die Anzeige.
-	"mesale": {"scale": 1.0, "offset": Vector2(-16, -30)},
+	# tileable: darf direkt neben andere Objekte gestellt werden (kein Abstand).
+	"mesale": {"scale": 1.0, "offset": Vector2(-16, -30), "tileable": true},
 }
 
 

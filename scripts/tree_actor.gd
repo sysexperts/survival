@@ -99,15 +99,15 @@ static func create_gather(p_cell: Vector2i, p_level: int, p_id: String,
 	a.gather_id = p_id
 
 	var tex := AtlasTexture.new()
-	tex.atlas = GatherDB.sheet()
-	tex.region = Rect2(GatherDB.region(p_sheet_cell))
+	tex.atlas = GatherDB.sheet_of(p_id)
+	tex.region = Rect2(GatherDB.region_for(p_id, p_sheet_cell))
 	tex.filter_clip = true
 	a.texture = tex
 	a.centered = false
 	# Nicht die 32x32-Kachel ausrichten, sondern das, was man davon sieht.
 	# Die Icons sitzen unterschiedlich in ihren Kacheln - wer die Kachel
 	# zentriert, bekommt Props, die neben ihrer Zelle zu liegen scheinen.
-	var b := GatherDB.content_bounds(p_sheet_cell)
+	var b := GatherDB.content_bounds_for(p_id, p_sheet_cell)
 	var s := GatherDB.scale_of(p_id)
 	var anchor := Vector2(b.position.x + b.size.x * 0.5, 0.0)
 	if GatherDB.anchor_of(p_id) == "foot":

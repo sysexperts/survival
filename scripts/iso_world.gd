@@ -787,9 +787,8 @@ func prop_alpha_at(cell: Vector2i, local: Vector2i) -> float:
 			_rock_image = (load(RockDB.SHEET) as Texture2D).get_image()
 		img = _rock_image
 	elif n.gather_id != "":
-		if _gather_image == null:
-			_gather_image = GatherDB.sheet().get_image()
-		img = _gather_image
+		# Kind-aware: Wuesten-Flora hat ein eigenes Sheet (GatherDB cached je Sheet).
+		img = GatherDB.image_of(n.gather_id)
 	else:
 		img = _source_image(n.source_id)
 	var px := Vector2i(tex.region.position) + local
@@ -1082,7 +1081,7 @@ func prop_content_rect(cell: Vector2i) -> Rect2:
 		return Rect2()
 	# Eingestreute Rohstoffe kommen nicht aus dem TileSet - ihre Atlas-Zelle
 	# waere in der TileSet-Quelle gar nicht vorhanden.
-	var b := _gather_bounds(n.atlas) if n.gather_id != "" else content_bounds(n.source_id, n.atlas)
+	var b := _gather_bounds(n.gather_id, n.atlas) if n.gather_id != "" else content_bounds(n.source_id, n.atlas)
 	return Rect2(n.global_position + (n.offset + b.position) * n.scale, b.size * n.scale)
 
 
@@ -1093,5 +1092,5 @@ const RockDB := preload("res://scripts/rock_db.gd")
 
 ## Undurchsichtiger Bereich einer Zelle im Rohstoff-Sheet, relativ zur
 ## Zellecke. Die GatherDB rechnet das ohnehin fuer die Ausrichtung aus.
-func _gather_bounds(sheet_cell: Vector2i) -> Rect2:
-	return GatherDB.content_bounds(sheet_cell)
+func _gather_bounds(id: String, sheet_cell: Vector2i) -> Rect2:
+	return GatherDB.content_bounds_for(id, sheet_cell)

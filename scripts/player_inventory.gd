@@ -500,7 +500,7 @@ func _wear_selected(amount: int) -> void:
 
 func _on_stone_collected(_cell: Vector2i, _level: int, gather_id: String) -> void:
 	if GatherDB.has(gather_id):
-		_grant(gather_id, GatherDB.amount(gather_id))
+		_grant(GatherDB.drop_item(gather_id), GatherDB.amount(gather_id))
 	else:
 		_grant("tas", stone_per_pickup)
 	_set_ctx_hint("")

@@ -53,6 +53,8 @@ const P_FASER := 0.018
 ## Felsen (abbaubar). Der Zustand (Stein/Eisen/Gold/Diamant) kommt aus RockDB.
 ## Bewusst sparsam - Felsen sollen etwas Besonderes sein, nicht ueberall liegen.
 const P_ROCK := 0.005
+## Wahrscheinlichkeit fuer Wuesten-Flora (Palmen/Kakteen) je Wuesten-Zelle.
+const DESERT_FLORA_P := 0.022
 
 const RockDB := preload("res://scripts/rock_db.gd")
 
@@ -298,6 +300,12 @@ func prop_at(cell: Vector2i) -> Dictionary:
 	# Formationen im Terrain (siehe desert_rock / height_at / ground_atlas).
 	var bm := biome_at(cell)
 	if bm == BIOME_DESERT:
+		# Auf erhoehten Felsformationen nichts; sonst vereinzelt Palmen/Kakteen
+		# (eigenes Sheet, gerendert ueber den Gather-Pfad, mit Hover + F-Ernte).
+		if desert_rock(cell) > 0:
+			return {}
+		if _rand(cell, 7) < DESERT_FLORA_P:
+			return {"kind": "col"}
 		return {}
 	# Baeume: Steppe nur ganz vereinzelt, Grasland ueber die Wald-Noise (Klumpen).
 	if bm == BIOME_STEPPE:
