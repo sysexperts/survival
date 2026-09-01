@@ -156,10 +156,11 @@ func _build() -> void:
 	# Aufhelfen-Ladeanzeige (unten mittig).
 	_revive = Control.new()
 	_revive.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_revive.offset_top = -140.0
+	# Hoeher setzen, damit der Ring NICHT in der XP-/Hotbar-Leiste unten liegt.
+	_revive.offset_top = -260.0
 	_revive.offset_left = -80.0
 	_revive.offset_right = 80.0
-	_revive.offset_bottom = -40.0
+	_revive.offset_bottom = -160.0
 	_revive.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_revive.visible = false
 	add_child(_revive)
