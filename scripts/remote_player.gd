@@ -31,6 +31,28 @@ const FOOTSTEP_ATTENUATION := 3.0
 var _sprite: AnimatedSprite2D
 var _plate: NamePlate
 var _zzz: Node = null   # SleepZzz - per preload, siehe player.gd
+var owner_id := 0       # Peer-ID dieses Mitspielers (von net_game gesetzt)
+
+
+## Ist dieser Mitspieler laut downed_sync gerade bewusstlos?
+func _owner_downed() -> bool:
+	var ds := get_tree().get_first_node_in_group("downed_sync")
+	return ds != null and ds.has_method("is_downed_owner") and ds.is_downed_owner(owner_id)
+
+
+## Aktuelle Frame-Textur (fuer den Hover-Rand beim Aufhelfen).
+func frame_texture() -> Texture2D:
+	if _sprite.sprite_frames != null and _sprite.sprite_frames.has_animation(_sprite.animation):
+		return _sprite.sprite_frames.get_frame_texture(_sprite.animation, _sprite.frame)
+	return null
+
+
+func sprite_flip() -> bool:
+	return _sprite.flip_h
+
+
+func sprite_offset() -> Vector2:
+	return _sprite.offset
 ## Schrittgeraeusch dieses Mitspielers - positionsabhaengig (2D), damit es mit
 ## der Entfernung leiser wird. Laeuft, solange seine Animation "walk_/run_" ist.
 var _footsteps: AudioStreamPlayer2D = null
@@ -128,7 +150,9 @@ func apply_state(pos: Vector2, anim: StringName, frame: int, tool: String = "", 
 	# synchron ueber das Netz - kein Positions-Vergleich noetig).
 	var a := String(anim)
 	_walking = a.begins_with("walk_") or a.begins_with("run_")
-	var sleeping := a.begins_with("sleep_")
+	# Liege-Pose UND nicht bewusstlos = echtes Schlafen -> Zzz. Bei Bewusstlosen
+	# (downed_sync) KEIN Zzz, denn die nutzen dieselbe Liege-Pose.
+	var sleeping := a.begins_with("sleep_") and not _owner_downed()
 	if sleeping and _zzz == null:
 		_zzz = SleepZzzScript.new()
 		add_child(_zzz)

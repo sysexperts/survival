@@ -206,6 +206,7 @@ func _spawn_avatar(id: int) -> RemotePlayer:
 	if _world == null or _world.props_root == null:
 		return null                  # Welt noch nicht bereit - naechstes Paket
 	var av: RemotePlayer = RemotePlayerScript.new()
+	av.owner_id = id
 	_world.props_root.add_child(av)
 	_avatars[id] = av
 	# Aussehen schon bekannt? Dann direkt anwenden.

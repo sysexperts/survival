@@ -12,8 +12,16 @@ extends CanvasLayer
 const PlayerStats := preload("res://scripts/player_stats.gd")
 const LOADING_TEX := preload("res://assets/UI/Cute_Fantasy_UI/UI/Loading_Icon.png")
 
+## Loading_Icon.png ist ein 256x64-Sheet mit 4 Frames a 64x64 (Spinner).
+const LOAD_FRAMES := 4
+const LOAD_FRAME := 64
+
 var _player: Node = null
 var _last_health := -1.0
+
+var _pulse_time := 0.0             ## solange > 0: Vignette pulst
+var _pulse_phase := 0.0
+var _strength := 0.0
 
 var _red: ColorRect
 var _overlay: Control
@@ -21,7 +29,7 @@ var _count: Label
 var _revive: Control
 var _revive_icon: TextureRect
 var _revive_label: Label
-var _revive_spin := 0.0
+var _revive_frame_t := 0.0
 
 
 func _ready() -> void:
@@ -41,22 +49,34 @@ func _hook() -> void:
 
 
 func _process(delta: float) -> void:
-	# Rote Vignette pulsen, sobald Leben gesunken ist.
+	# Rote Vignette: sobald Leben sinkt, fuer kurze Zeit rhythmisch PULSEN
+	# (nicht nur konstant rot). Bei Dauerschaden bleibt der Puls an.
 	var hp := float(PlayerStats.health)
 	if _last_health >= 0.0 and hp < _last_health - 0.01:
-		_pulse()
+		_pulse_time = 0.7
 	_last_health = hp
+	var mat := _red.material as ShaderMaterial
+	if mat != null:
+		if _pulse_time > 0.0:
+			_pulse_time -= delta
+			_pulse_phase += delta * PI * 3.2      # ~1.6 Pulse pro Sekunde
+			_strength = 0.10 + 0.45 * (0.5 + 0.5 * sin(_pulse_phase))
+		else:
+			_strength = move_toward(_strength, 0.0, delta * 1.6)
+		mat.set_shader_parameter("strength", _strength)
 
 	# Countdown aktualisieren, solange bewusstlos.
 	if _player != null and _player.has_method("is_downed") and _player.is_downed():
 		var left := int(ceil(float(_player.downed_time_left())))
 		_count.text = "%d sn icinde spawn" % maxi(left, 0)
 
-	# Aufhelfen-Ladekreis drehen.
+	# Aufhelfen-Spinner: 4 Frames des Sheets durchschalten.
 	if _revive.visible:
-		_revive_spin += delta * 4.0
-		_revive_icon.pivot_offset = _revive_icon.size * 0.5
-		_revive_icon.rotation = _revive_spin
+		_revive_frame_t += delta
+		var f := int(_revive_frame_t * 8.0) % LOAD_FRAMES
+		var at := _revive_icon.texture as AtlasTexture
+		if at != null:
+			at.region = Rect2(f * LOAD_FRAME, 0, LOAD_FRAME, LOAD_FRAME)
 
 
 # --- Aufhelfen (von interaction.gd gesteuert) --------------------------
@@ -79,15 +99,6 @@ func hide_revive() -> void:
 
 func _on_downed_changed(is_down: bool) -> void:
 	_overlay.visible = is_down
-
-
-func _pulse() -> void:
-	var mat := _red.material as ShaderMaterial
-	if mat == null:
-		return
-	mat.set_shader_parameter("strength", 0.55)
-	var tw := create_tween()
-	tw.tween_method(func(v): mat.set_shader_parameter("strength", v), 0.55, 0.0, 0.55)
 
 
 # --- Aufbau ------------------------------------------------------------
@@ -166,10 +177,15 @@ func _build() -> void:
 	add_child(_revive)
 
 	_revive_icon = TextureRect.new()
-	_revive_icon.texture = LOADING_TEX
+	# Nur EIN 64x64-Frame des Sheets zeigen (Rest schaltet _process durch).
+	var at := AtlasTexture.new()
+	at.atlas = LOADING_TEX
+	at.region = Rect2(0, 0, LOAD_FRAME, LOAD_FRAME)
+	_revive_icon.texture = at
 	_revive_icon.custom_minimum_size = Vector2(48, 48)
 	_revive_icon.size = Vector2(48, 48)
 	_revive_icon.position = Vector2(56, 0)
+	_revive_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_revive_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_revive_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_revive.add_child(_revive_icon)

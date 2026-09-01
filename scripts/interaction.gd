@@ -127,6 +127,13 @@ func _process(_delta: float) -> void:
 	if not cfhit.is_empty() and world.blocker_at(cfhit[0]) is Campfire:
 		_highlight_campfire(world.blocker_at(cfhit[0]))
 		return
+	# Bewusstloser Mitspieler unter der Maus: weisser Rand (Rechtsklick hilft auf).
+	var doid := _downed_under_mouse()
+	if doid != 0:
+		var dav = _net_game().avatar_node(doid)
+		if dav != null and dav.has_method("frame_texture"):
+			_highlight_avatar(dav)
+			return
 	# Sonst: mit Schaufel/Dirt die Bodenzelle unter der Maus hervorheben,
 	# damit man sieht, was man abbaut/aufschuettet.
 	if player != null and (player.held_tool == "Showel" or player.held_is_dirt):
@@ -316,8 +323,8 @@ func _unhandled_input(event: InputEvent) -> void:
 					_interior.enter()
 					get_viewport().set_input_as_handled()
 					return
-		# Bewusstlosen Mitspieler aufhelfen (Rechtsklick auf ihn, in Reichweite).
-		if _try_start_revive():
+		# Bewusstlosen Mitspieler aufhelfen: Rechtsklick fragt erst nach.
+		if _try_ask_revive():
 			get_viewport().set_input_as_handled()
 			return
 		# Shift+Rechtsklick auf ein platziertes Objekt (Möbel/Lagerfeuer) reißt
@@ -418,6 +425,7 @@ const CONFIRM_FONT := 11
 var _confirm: CanvasLayer
 var _confirm_label: Label
 var _pending_destroy := Vector2i(2147483647, 2147483647)
+var _confirm_yes := Callable()      ## was "Evet" ausloest (generisch)
 
 
 ## Fragt "Name yikilsin mi?" und reißt erst nach Bestätigung ab.
@@ -425,6 +433,7 @@ func _ask_destroy(cell: Vector2i) -> void:
 	if _confirm == null:
 		_build_confirm()
 	_pending_destroy = cell
+	_confirm_yes = _on_destroy_confirmed
 	_confirm_label.text = "%s yikilsin mi?" % _placed_name(cell)
 	_confirm.visible = true
 
@@ -469,7 +478,7 @@ func _build_confirm() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
-	row.add_child(_confirm_button("Evet", _on_destroy_confirmed))
+	row.add_child(_confirm_button("Evet", _confirm_accept))
 	row.add_child(_confirm_button("Hayir", _close_confirm))
 
 
@@ -484,8 +493,18 @@ func _confirm_button(text: String, on_press: Callable) -> Button:
 
 func _close_confirm() -> void:
 	_pending_destroy = Player.INVALID_CELL
+	_confirm_yes = Callable()
 	if _confirm != null:
 		_confirm.visible = false
+
+
+## "Evet" gedrueckt: Dialog schliessen und die hinterlegte Aktion ausfuehren.
+func _confirm_accept() -> void:
+	var cb := _confirm_yes
+	if _confirm != null:
+		_confirm.visible = false
+	if cb.is_valid():
+		cb.call()
 
 
 func _on_destroy_confirmed() -> void:
@@ -683,33 +702,69 @@ func _downed_hud() -> Node:
 	return get_tree().get_first_node_in_group("downed_hud")
 
 
-## Rechtsklick auf einen bewusstlosen Mitspieler in Reichweite -> Kanal starten.
-## Gibt true zurueck, wenn der Klick verbraucht wurde.
-func _try_start_revive() -> bool:
+## Owner-ID des bewusstlosen Mitspielers unter der Maus (oder 0).
+func _downed_under_mouse() -> int:
 	var net := _net_game()
 	var ds := _downed_sync()
-	if net == null or ds == null or player == null:
-		return false
-	if not net.has_method("avatar_owner_near"):
-		return false
+	if net == null or ds == null or not net.has_method("avatar_owner_near"):
+		return 0
 	var oid: int = net.avatar_owner_near(get_global_mouse_position(), 42.0)
-	if oid == 0 or not ds.is_downed_owner(oid):
+	if oid != 0 and ds.is_downed_owner(oid):
+		return oid
+	return 0
+
+
+## Rechtsklick auf einen bewusstlosen Mitspieler -> Rueckfrage "aufhelfen?".
+## Gibt true zurueck, wenn der Klick verbraucht wurde.
+func _try_ask_revive() -> bool:
+	var oid := _downed_under_mouse()
+	if oid == 0 or player == null:
 		return false
-	var av = net.avatar_node(oid)
+	var av = _net_game().avatar_node(oid)
 	if av == null:
 		return false
 	if player.global_position.distance_to(av.global_position) > REVIVE_RANGE:
-		var hud := _downed_hud()
-		if hud != null and hud.has_method("hide_revive"):
-			pass
-		return false   # zu weit - kein Kanal (der Spieler laeuft naeher heran)
-	_revive_owner = oid
+		if _inv != null and _inv.has_method("_notice"):
+			_inv._notice("Once yaklas")
+		return true
+	_ask_revive(oid)
+	return true
+
+
+## Rueckfrage-Dialog fuers Aufhelfen (nutzt den generischen Confirm).
+func _ask_revive(owner_id: int) -> void:
+	if _confirm == null:
+		_build_confirm()
+	_confirm_yes = func(): _begin_revive(owner_id)
+	_confirm_label.text = "Oyuncuyu kaldirmak istiyor musun?"
+	_confirm.visible = true
+
+
+## Aufhelfen-Kanal starten (nach Bestaetigung).
+func _begin_revive(owner_id: int) -> void:
+	if player == null:
+		return
+	_revive_owner = owner_id
 	_revive_t = 0.0
 	_revive_anchor = player.global_position
 	var h := _downed_hud()
 	if h != null and h.has_method("show_revive"):
 		h.show_revive("arkadas")
-	return true
+
+
+## Weisser Rand um einen (bewusstlosen) Mitspieler-Avatar beim Ueberfahren.
+func _highlight_avatar(av) -> void:
+	var tex: Texture2D = av.frame_texture()
+	if tex == null:
+		highlight.visible = false
+		return
+	highlight.region_enabled = false
+	highlight.texture = tex
+	highlight.flip_h = av.sprite_flip()
+	highlight.scale = Vector2.ONE
+	# _sprite ist zentriert -> Oben-Links = Pos + Offset - halbe Texturgroesse.
+	highlight.global_position = av.global_position + av.sprite_offset() - tex.get_size() * 0.5
+	highlight.visible = true
 
 
 ## Laeuft der Aufhelfen-Kanal, Fortschritt zaehlen und Abbruchgruende pruefen.
