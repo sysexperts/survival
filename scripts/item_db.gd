@@ -345,6 +345,15 @@ const FURNITURE := {
 	"uretim_masasi_v2": ["Üretim Masasi 2", Vector2i(0, 1)],
 	"ileri_uretim_masasi_v2": ["Ileri Üretim Masasi 2", Vector2i(0, 1)],
 	"ustun_uretim_masasi": ["Üstün Üretim Masasi", Vector2i(0, 1)],
+	# Mesale (Fackel): eigenes 32er-Objekt-Sheet (nicht das 64er Moebel-Sheet),
+	# Icon = statische Pose (Reihe 0). Zelle hier nur Platzhalter, wird von
+	# OBJ_ICON ueberstochen. Beim Setzen animiert (Feuer) - siehe furniture.gd.
+	"mesale": ["Mesale", Vector2i(0, 0)],
+}
+
+## Moebel-Ids mit EIGENEM Sheet statt dem 64er-Sheet (Icon-Override nach dem Fold).
+const OBJ_ICON := {
+	"mesale": {"sheet": "res://assets/game_assets/objects/torch.png", "region": Rect2i(0, 0, 32, 32)},
 }
 
 
@@ -486,13 +495,19 @@ static func dir_texture(id: String, orient: int) -> Texture2D:
 static func _fold_in_furniture() -> void:
 	for id in FURNITURE:
 		var entry: Array = FURNITURE[id]
-		ITEMS[id] = {
-			"name": entry[0],
-			"max_stack": 16,
-			"sheet": SHEET_FURNITURE,
-			"item_cell": entry[1],
-			"cell_size": FURNITURE_CELL,
-		}
+		if OBJ_ICON.has(id):
+			# Objekt mit eigenem Sheet (z. B. Fackel) - Region statt Sheet-Zelle.
+			var o: Dictionary = OBJ_ICON[id]
+			ITEMS[id] = {"name": entry[0], "max_stack": 16,
+				"sheet": o["sheet"], "region": o["region"]}
+		else:
+			ITEMS[id] = {
+				"name": entry[0],
+				"max_stack": 16,
+				"sheet": SHEET_FURNITURE,
+				"item_cell": entry[1],
+				"cell_size": FURNITURE_CELL,
+			}
 	# Gebaeude als gewoehnliche Items einreihen (fuers Rezept-/Inventar-Icon).
 	for id in BUILDINGS:
 		var info: Dictionary = BUILDINGS[id]

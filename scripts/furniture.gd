@@ -51,6 +51,9 @@ const CONFIG := {
 	"ileri_uretim_masasi_v2": {"scale": 1.45, "offset": Vector2(-12, -23)},
 	"ustun_uretim_masasi": {"scale": 1.45, "offset": Vector2(-12, -23)},
 	"eritme_firini": {"scale": ART_SCALE, "offset": Vector2(-34, -58)},
+	# Mesale (Fackel): 32er-Objekt, 1:1. Der Basis-Sprite wird beim Setzen
+	# unsichtbar gemacht; ein animiertes Feuer-Kind uebernimmt die Anzeige.
+	"mesale": {"scale": 1.0, "offset": Vector2(-16, -30)},
 }
 
 
@@ -106,6 +109,42 @@ func _ready() -> void:
 	# Als Geschwister (nicht als Kind), damit es die Möbel-Skalierung nicht erbt.
 	get_parent().add_child.call_deferred(
 		TerrainOcclusion.create(world, self, _footprint_cells))
+	if id == "mesale":
+		_make_torch()
+
+
+## Fackel: statisches Basis-Icon ausblenden, animiertes Feuer + Licht setzen.
+## Die 5 Feuer-Frames liegen in Reihe 1 des 160x64-Objekt-Sheets (je 32x32).
+func _make_torch() -> void:
+	self_modulate = Color(1, 1, 1, 0)          # Basis-Sprite unsichtbar (Schatten bleibt)
+	var sheet: Texture2D = load("res://assets/game_assets/objects/torch.png")
+	var sf := SpriteFrames.new()
+	sf.remove_animation("default")
+	sf.add_animation("burn")
+	sf.set_animation_speed("burn", 9.0)
+	sf.set_animation_loop("burn", true)
+	for c in range(5):
+		var at := AtlasTexture.new()
+		at.atlas = sheet
+		at.region = Rect2(c * 32, 32, 32, 32)
+		sf.add_frame("burn", at)
+	var flame := AnimatedSprite2D.new()
+	flame.sprite_frames = sf
+	flame.centered = false
+	flame.offset = Vector2(-16, -30)
+	flame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	flame.play("burn")
+	add_child(flame)
+	var light := PointLight2D.new()
+	light.texture = load("res://resources/light_gradient.tres")
+	light.color = Color(1, 0.66, 0.32)
+	light.texture_scale = 1.1
+	light.position = Vector2(0, -22)
+	light.set_script(load("res://scripts/flicker_light.gd"))
+	light.base_energy = 0.75
+	light.flicker_amount = 0.24
+	light.flicker_speed = 9.0
+	add_child(light)
 
 
 ## Die vom Möbel belegten Zellen - eine (1x1) oder zwei (1x2 Bett).

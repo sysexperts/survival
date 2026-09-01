@@ -59,7 +59,7 @@ const CAT_OF := {
 	"tahta": "malzeme", "halat": "malzeme", "ip": "malzeme", "kumas": "malzeme",
 	"kil": "malzeme", "demir": "malzeme", "islenmis_sopa": "malzeme",
 	"yatak": "mobilya", "portatif_yatak": "mobilya", "su_ficisi": "mobilya",
-	"sandik": "mobilya",
+	"sandik": "mobilya", "mesale": "mobilya",
 	"baraka": "yapi",
 }
 
@@ -116,6 +116,11 @@ const RECIPES := [
 	{
 		"out": "dokuma_tezgahi", "count": 1, "station": HAND, "seconds": 8.0,
 		"cost": {"tahta": 16, "halat": 16},
+	},
+	# Mesale (Fackel): einfach - 1 Holz + 1 Kohle, von Hand. Spendet Licht.
+	{
+		"out": "mesale", "count": 1, "station": HAND, "seconds": 2.0,
+		"cost": {"odun": 1, "komur": 1},
 	},
 	# Tas Balta (Steinaxt): wie die anderen Steinwerkzeuge aus Ast + Stein.
 	# Erst damit lassen sich Baeume faellen - Player.chop() verlangt eine Axt
