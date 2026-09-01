@@ -62,16 +62,14 @@ func drink(amount: float) -> void:
 	PlayerStats.thirst = clampf(PlayerStats.thirst + amount, 0.0, PlayerStats.thirst_max)
 
 
-## Tod durch Verhungern/Verdursten: Werte zuruecksetzen UND den Spieler an
-## seinen Wiederbelebungspunkt (Bett/Start) versetzen - dieselbe respawn()-Logik
-## wie beim Magier-Tod, damit Leben nicht bei 0 haengen bleibt (Bug B3).
+## 0 Leben durch Verhungern/Verdursten: der Spieler faellt in Bewusstlosigkeit
+## (go_down) - liegt am Boden, Respawn-Knopf + Countdown, Mitspieler koennen
+## aufhelfen. Kein sofortiger Respawn mehr (Bug B3 + Bewusstlos-System).
 func _die() -> void:
-	PlayerStats.health = PlayerStats.health_max
-	PlayerStats.hunger = PlayerStats.hunger_max
-	PlayerStats.thirst = PlayerStats.thirst_max
-	PlayerStats.stamina = PlayerStats.stamina_max
 	var p := _get_player()
-	if p != null and p.has_method("respawn"):
+	if p != null and p.has_method("go_down"):
+		p.go_down()
+	elif p != null and p.has_method("respawn"):
 		p.respawn()
 
 

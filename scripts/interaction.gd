@@ -19,6 +19,13 @@ var _furn_imgs: Dictionary = {}    ## Moebel-Sheets je Atlas, einmal geladen (Al
 var _hovered_crop = null           ## Crop-Node unter der Maus (oder null)
 var _inv: Node = null              ## player_inventory (fuer Giesskannen-Ladungen)
 var _interior: Node = null         ## Huetten-Innenraum (betreten/verlassen)
+
+## Aufhelfen eines bewusstlosen Mitspielers (10 Sek halten in Reichweite).
+const REVIVE_SECONDS := 10.0
+const REVIVE_RANGE := 72.0         ## max. Abstand Helfer <-> Ziel (px)
+var _revive_owner := 0             ## Peer-ID des Ziels (0 = keins)
+var _revive_t := 0.0
+var _revive_anchor := Vector2.ZERO ## Helfer-Position bei Start (Bewegung bricht ab)
 var preview: PlacementPreview
 var _struct_imgs: Dictionary = {}  ## Bauwerk-Bilder je Textur (Alpha-Test)
 var _sel_outline: Sprite2D         ## Dauerhafter weisser Rand am ausgewaehlten Bauwerk
@@ -75,6 +82,7 @@ func _build_highlight() -> void:
 
 
 func _process(_delta: float) -> void:
+	_tick_revive(_delta)
 	# Boden-Hover standardmaessig aus; nur _highlight_ground schaltet ihn ein.
 	_ground_hl.visible = false
 	# Waehrend des Platzierens kein Hover - sonst leuchten beide.
@@ -308,6 +316,10 @@ func _unhandled_input(event: InputEvent) -> void:
 					_interior.enter()
 					get_viewport().set_input_as_handled()
 					return
+		# Bewusstlosen Mitspieler aufhelfen (Rechtsklick auf ihn, in Reichweite).
+		if _try_start_revive():
+			get_viewport().set_input_as_handled()
+			return
 		# Shift+Rechtsklick auf ein platziertes Objekt (Möbel/Lagerfeuer) reißt
 		# es ab. Es kommt NICHT ins Inventar zurück.
 		if event.shift_pressed:
@@ -655,3 +667,80 @@ func _prop_under_mouse() -> Array:
 			return a[0][1] > b[0][1]
 		return a[1] > b[1])
 	return hits[0][0]
+
+
+# --- Aufhelfen eines bewusstlosen Mitspielers --------------------------
+
+func _net_game() -> Node:
+	return get_tree().get_first_node_in_group("net_game")
+
+
+func _downed_sync() -> Node:
+	return get_tree().get_first_node_in_group("downed_sync")
+
+
+func _downed_hud() -> Node:
+	return get_tree().get_first_node_in_group("downed_hud")
+
+
+## Rechtsklick auf einen bewusstlosen Mitspieler in Reichweite -> Kanal starten.
+## Gibt true zurueck, wenn der Klick verbraucht wurde.
+func _try_start_revive() -> bool:
+	var net := _net_game()
+	var ds := _downed_sync()
+	if net == null or ds == null or player == null:
+		return false
+	if not net.has_method("avatar_owner_near"):
+		return false
+	var oid: int = net.avatar_owner_near(get_global_mouse_position(), 42.0)
+	if oid == 0 or not ds.is_downed_owner(oid):
+		return false
+	var av = net.avatar_node(oid)
+	if av == null:
+		return false
+	if player.global_position.distance_to(av.global_position) > REVIVE_RANGE:
+		var hud := _downed_hud()
+		if hud != null and hud.has_method("hide_revive"):
+			pass
+		return false   # zu weit - kein Kanal (der Spieler laeuft naeher heran)
+	_revive_owner = oid
+	_revive_t = 0.0
+	_revive_anchor = player.global_position
+	var h := _downed_hud()
+	if h != null and h.has_method("show_revive"):
+		h.show_revive("arkadas")
+	return true
+
+
+## Laeuft der Aufhelfen-Kanal, Fortschritt zaehlen und Abbruchgruende pruefen.
+func _tick_revive(delta: float) -> void:
+	if _revive_owner == 0:
+		return
+	var net := _net_game()
+	var ds := _downed_sync()
+	if net == null or ds == null or player == null:
+		_cancel_revive()
+		return
+	var av = net.avatar_node(_revive_owner)
+	# Abbruch: Ziel weg/wach, Helfer bewegt sich, oder zu weit entfernt.
+	if av == null or not ds.is_downed_owner(_revive_owner) \
+			or player.global_position.distance_to(_revive_anchor) > 12.0 \
+			or player.global_position.distance_to(av.global_position) > REVIVE_RANGE + 12.0:
+		_cancel_revive()
+		return
+	_revive_t += delta
+	var h := _downed_hud()
+	if h != null and h.has_method("update_revive"):
+		h.update_revive(_revive_t / REVIVE_SECONDS)
+	if _revive_t >= REVIVE_SECONDS:
+		if ds.has_method("request_revive"):
+			ds.request_revive(_revive_owner)
+		_cancel_revive()
+
+
+func _cancel_revive() -> void:
+	_revive_owner = 0
+	_revive_t = 0.0
+	var h := _downed_hud()
+	if h != null and h.has_method("hide_revive"):
+		h.hide_revive()

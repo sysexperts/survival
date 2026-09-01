@@ -348,3 +348,24 @@ func _remove_avatar(id: int) -> void:
 		av.queue_free()
 	_avatars.erase(id)
 	_occupied_beds.erase(id)
+
+
+## Owner-ID (Peer) des naechsten Remote-Avatars innerhalb `radius` um `point`
+## (Weltkoordinaten), oder 0. Fuer das Aufhelfen eines bewusstlosen Mitspielers.
+func avatar_owner_near(point: Vector2, radius: float) -> int:
+	var best := 0
+	var best_d := radius
+	for oid in _avatars:
+		var av = _avatars[oid]
+		if av == null or not is_instance_valid(av):
+			continue
+		var d: float = av.global_position.distance_to(point)
+		if d <= best_d:
+			best_d = d
+			best = int(oid)
+	return best
+
+
+## Der Remote-Avatar zu einer Owner-ID (oder null).
+func avatar_node(owner_id: int):
+	return _avatars.get(owner_id)

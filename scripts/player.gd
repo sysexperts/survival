@@ -344,12 +344,73 @@ func respawn() -> void:
 	_play("idle")
 
 
+# --- Bewusstlos / Wiederbelebung ---------------------------------------
+## Bei 0 Leben faellt der Charakter in Bewusstlosigkeit statt sofort zu sterben:
+## er liegt am Boden, ein Respawn-Knopf + 99-Sek-Countdown erscheinen
+## (downed_hud), und andere Spieler koennen ihn in der Zeit aufhelfen
+## (10 Sek, downed_sync). Laeuft der Countdown ab oder drueckt man Respawn ->
+## zurueck zum Spawn.
+signal downed_changed(is_downed: bool)
+const DOWNED_SECONDS := 99.0
+const REVIVE_HEALTH := 40.0
+var _downed := false
+var _downed_left := 0.0
+
+
+func is_downed() -> bool:
+	return _downed
+
+
+func downed_time_left() -> float:
+	return _downed_left
+
+
+## In Bewusstlosigkeit fallen (0 Leben). Kein sofortiger Respawn mehr.
+func go_down() -> void:
+	if _downed:
+		return
+	_downed = true
+	_downed_left = DOWNED_SECONDS
+	_cancel_task()
+	PlayerStatsScript.health = 0.0
+	_play("sleep")            # Liege-/Bewusstlos-Pose (keine echte Death-Anim vorhanden)
+	downed_changed.emit(true)
+
+
+## Von einem Mitspieler aufgeholfen: aufstehen mit Teil-Leben, an Ort und Stelle.
+func revive_in_place() -> void:
+	if not _downed:
+		return
+	_downed = false
+	_downed_left = 0.0
+	PlayerStatsScript.health = clampf(REVIVE_HEALTH, 1.0, PlayerStatsScript.health_max)
+	_play("idle")
+	downed_changed.emit(false)
+
+
+## Respawn (Knopf oder Countdown abgelaufen): zum Spawn, Werte auffuellen.
+func respawn_from_downed() -> void:
+	if not _downed:
+		return
+	_downed = false
+	_downed_left = 0.0
+	PlayerStatsScript.health = PlayerStatsScript.health_max
+	PlayerStatsScript.hunger = maxf(PlayerStatsScript.hunger, PlayerStatsScript.hunger_max * 0.5)
+	downed_changed.emit(false)
+	respawn()
+
+
 ## Die Laterne brennt nur, wenn es dunkel genug ist.
 func _process(delta: float) -> void:
 	if _day_night and lantern.visible:
 		lantern.base_energy = lerpf(0.0, lantern_energy, _day_night.darkness())
 	_ease_step_lag(delta)
 	_update_footsteps(delta)
+	# Bewusstlos-Countdown: laeuft er ab, automatisch zum Spawn.
+	if _downed:
+		_downed_left -= delta
+		if _downed_left <= 0.0:
+			respawn_from_downed()
 
 
 ## Laufgeraeusch an die tatsaechliche Bewegung koppeln - so deckt es Tastatur
@@ -428,6 +489,9 @@ func _physics_process(delta: float) -> void:
 		return
 	# ESC-Menü offen? Keine Steuerung annehmen.
 	if UIState.pause_open:
+		return
+	# Bewusstlos: keine Steuerung (liegt am Boden, wartet auf Hilfe/Respawn).
+	if _downed:
 		return
 	var input := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
@@ -517,7 +581,8 @@ func _physics_process(delta: float) -> void:
 		_play("idle")
 		return
 
-	var running := Input.is_key_pressed(KEY_SHIFT)
+	# Sprint nur mit Hunger > 0 - wer verhungert, kann nicht mehr rennen.
+	var running := Input.is_key_pressed(KEY_SHIFT) and PlayerStatsScript.hunger > 0.0
 	facing = DIRS[_dir_index(input)]
 	_play("run" if running else "walk")
 
@@ -1125,15 +1190,14 @@ signal took_damage(amount: float)
 ## Der Spieler nimmt Schaden (z. B. von einer Magier-Kugel). Bei 0 Leben:
 ## Wiederbelebung am Spawnpunkt (Bett/Start), Werte zurueck.
 func take_damage(amount: float) -> void:
-	if _sleeping:
+	if _sleeping or _downed:
 		return
 	PlayerStatsScript.health = maxf(0.0, PlayerStatsScript.health - amount)
 	_shake(hit_shake)
 	_hit_flash()
 	took_damage.emit(amount)
 	if PlayerStatsScript.health <= 0.0:
-		PlayerStatsScript.health = PlayerStatsScript.health_max
-		respawn()
+		go_down()
 
 
 func _hit_flash() -> void:
