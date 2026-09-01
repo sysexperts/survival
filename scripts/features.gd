@@ -12,29 +12,36 @@ extends RefCounted
 ## Features.set_flag("x", true) im Debug).
 
 ## name -> [aktiv, Kurzbeschreibung]. Beschreibung nur zur Doku/Übersicht.
+##
+## WICHTIG (Stand v210): NUR diese Flags schalten wirklich Code (per
+## Features.on geprueft): "survival_needs", "thirst", "skills_xp". Alle anderen
+## Eintraege sind PLATZHALTER fuer eine kuenftige Gating-Moeglichkeit - das
+## jeweilige Feature ist bereits fest eingebaut und laeuft UNABHAENGIG vom Flag
+## (frueher stand hier faelschlich "false", obwohl das Feature live war). Ihren
+## Wert zu aendern hat daher KEINE Wirkung.
 static var FLAGS := {
-	# --- Überlebens-Grundbedürfnisse ---
-	"survival_needs":   [true,  "Hunger sinkt mit der Zeit; Essen füllt auf"],
-	"thirst":           [false, "Durst sinkt zusätzlich (braucht eine Trinkquelle) - vorerst aus"],
-	"health_regen":     [false, "Leben regeneriert langsam, solange Bedürfnisse gedeckt sind"],
-	"temperature":      [false, "Kälte nachts / fern vom Feuer, Wärme am Lagerfeuer"],
-	"fatigue":          [false, "Müdigkeit steigt; Schlafen setzt sie zurück"],
-	"disease":          [false, "Krankheit/Infektion mit Debuffs, heilbar"],
-	"death_respawn":    [false, "Bei 0 Leben: Tod + Wiedereinstieg am Bett/Startpunkt"],
-	# --- Fortschritt ---
-	"skills_xp":        [false, "Skill-XP/Level für Fällen, Handwerk, Bauen (Skills-Tab)"],
-	"stat_points":      [false, "Verteilbare Attributpunkte wirken aufs Gameplay (Tragkraft etc.)"],
-	# --- Welt & Umwelt ---
-	"weather":          [false, "Wetterwechsel: Regen/Schnee mit Effekten"],
-	"seasons":          [false, "Jahreszeiten beeinflussen Wachstum/Temperatur"],
-	"day_counter":      [false, "Tageszähler + Uhrzeit-Anzeige"],
-	# --- Aktivitäten ---
-	"fishing":          [false, "Angeln an Gewässern (Fisch-Animation ist vorhanden)"],
-	"farming_growth":   [false, "Angepflanztes wächst über Zeit und wird erntereif"],
-	"animal_taming":    [false, "Rehe/Tiere zähmen und halten"],
-	# --- Wirtschaft / Sozial ---
-	"currency":         [false, "Altin (Gold) als Währung, Handel"],
-	"quests":           [false, "Aufgaben/Ziele mit Belohnungen"],
+	# === VERDRAHTET (schalten echt Code) ================================
+	"survival_needs":   [true,  "VERDRAHTET: Hunger sinkt/Essen fuellt auf, 0 Leben -> bewusstlos"],
+	"thirst":           [false, "VERDRAHTET: zusaetzlich Durst (braucht Trinkquelle) - aus"],
+	"skills_xp":        [false, "VERDRAHTET: EXTRA Fael-XP pro Schwung + award(). Kern-Skill-XP laeuft ohnehin ungated - aus, damit nicht doppelt"],
+
+	# === UNGENUTZT (Feature laeuft ungated; Flag ohne Wirkung) ==========
+	"health_regen":     [true,  "LAEUFT (in survival_needs): Leben regeneriert wenn satt"],
+	"death_respawn":    [true,  "LAEUFT: 0 Leben -> bewusstlos + Respawn (downed-System)"],
+	"weather":          [true,  "LAEUFT: Regen (weather.gd, Admin /rain)"],
+	"fishing":          [true,  "LAEUFT: Angeln an Gewaessern"],
+	"farming_growth":   [true,  "LAEUFT: Angepflanztes waechst (crop.gd)"],
+	"day_counter":      [true,  "LAEUFT: Tag/Nacht-Zyklus (day_night.gd)"],
+
+	# === GEPLANT (noch nicht eingebaut) ================================
+	"temperature":      [false, "GEPLANT: Kaelte/Waerme"],
+	"fatigue":          [false, "GEPLANT: Muedigkeit"],
+	"disease":          [false, "GEPLANT: Krankheit/Debuffs"],
+	"stat_points":      [false, "GEPLANT: verteilbare Attributpunkte"],
+	"seasons":          [false, "GEPLANT: Jahreszeiten"],
+	"animal_taming":    [false, "GEPLANT: Tiere zaehmen"],
+	"currency":         [false, "GEPLANT: Altin als Waehrung/Handel"],
+	"quests":           [false, "GEPLANT: Aufgaben/Belohnungen"],
 }
 
 
