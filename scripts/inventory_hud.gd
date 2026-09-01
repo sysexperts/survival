@@ -680,6 +680,7 @@ func _refresh() -> void:
 		_refresh_slot(view)
 	var sel: Dictionary = inventory.slots[selected]
 	_name_label.text = ItemDB.display_name(sel["id"]) if not sel.is_empty() else ""
+	update_food_hint()
 
 
 ## Aktualisiert Icon/Anzahl/Dauerhaftigkeit eines Slots aus seinem aktuellen
@@ -753,6 +754,19 @@ func bag_open() -> bool:
 func select(index: int) -> void:
 	selected = clampi(index, 0, inventory.hotbar_size - 1)
 	_refresh()
+
+
+## Zeigt in der Hinweiszeile "F = Ye (+N Aclik)", wenn Essbares gewaehlt ist.
+## Sonst leert es den Hinweis (nur wenn er ein Ess-Hinweis war, sonst nicht
+## anfassen - z. B. Platzierungs-Hinweise nicht stoeren).
+func update_food_hint() -> void:
+	if _hint_label == null:
+		return
+	var slot: Dictionary = inventory.slots[selected]
+	if not slot.is_empty() and ItemDB.is_food(String(slot["id"])):
+		set_hint("F = Ye  (+%d Aclik)" % ItemDB.food_value(String(slot["id"])))
+	elif _hint_label != null and _hint_label.text.begins_with("F = Ye"):
+		set_hint("")
 
 
 func _on_slot_input(event: InputEvent, index: int) -> void:

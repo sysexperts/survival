@@ -569,7 +569,8 @@ func _eat_selected(id: String) -> void:
 		return
 	_needs.eat(float(ItemDB.food_value(id)))
 	inventory.remove(id, 1)
-	_notice("%s yedin" % ItemDB.display_name(id))
+	_notice("%s yedin  (+%d Aclik)" % [ItemDB.display_name(id), ItemDB.food_value(id)])
+	hud.update_food_hint()   # war es das letzte Stueck -> Hinweis ggf. ausblenden
 
 
 # --- Giesskanne (Sulama Kabi) -------------------------------------------

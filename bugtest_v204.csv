@@ -16,5 +16,5 @@ L6,Luecke,Interior,Ausloggen im Haus nicht persistiert,Wer im Haus ausloggt wird
 L7,Luecke,Bauwerk,Baraka blockiert alle 16 Felder,Physisch nicht begehbar; Tuer der Aussen-Grafik hat keine Funktion,Niedrig,offen
 L8,Luecke,Roadmap,Viele Systeme dormant,Durst/Temperatur/Muedigkeit/Krankheit/Jahreszeiten/Quests/Waehrung sind eingebaut aber aus,Info,offen
 L9,Luecke,Schmelzen,Schmelzkette unvollstaendig,Manche Erze/Barren nicht verhuettbar; Ton(kil)-Kette teils offen,Mittel,behoben v214 (Schmelzen war schon da; Griff fehlte)
-L10,Luecke,UX,Essen nur per F ohne Hinweis,Kein sichtbarer Hinweis wie man isst; Saettigungswert unklar,Niedrig,offen
+L10,Luecke,UX,Essen nur per F ohne Hinweis,Kein sichtbarer Hinweis wie man isst; Saettigungswert unklar,Niedrig,behoben v217 (F=Ye-Hinweis + Saettigungswert in Hinweiszeile L10,Luecke,UX,Essen nur per F ohne Hinweis,Kein sichtbarer Hinweis wie man isst; Saettigungswert unklar,Niedrig,offen Ess-Meldung)
 L11,Luecke,Client,Renderer/Bloom braucht Client-Neubau,game.pck aktualisiert Renderer nicht -> Grafik-Updates erst nach neuem Setup,Info,offen
