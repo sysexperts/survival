@@ -12,6 +12,10 @@ extends Node
 ##
 ## KEIN class_name (Auto-Updater) - Node in main.tscn.
 
+## Noch NICHT im Spiel: das Gegner-System ist fertig gebaut, aber auf Nutzerwunsch
+## deaktiviert. Auf true stellen, um es scharfzuschalten.
+const ENABLED := false
+
 const EnemyView := preload("res://scripts/enemy_view.gd")
 const OrbScript := preload("res://scripts/mage_orb.gd")
 
@@ -42,6 +46,8 @@ var _ready_done := false
 
 func _ready() -> void:
 	add_to_group("enemy_sync")
+	if not ENABLED:
+		return                     # Gegner-System deaktiviert (noch nicht im Spiel)
 	if not Net.active:
 		return                     # kein Server verbunden -> inaktiv
 	_boot.call_deferred()
