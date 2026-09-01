@@ -254,8 +254,8 @@ static var ITEMS := {
 	},
 
 	# --- Materialien: Gold (fuer Goldwerkzeuge, Üstün Üretim Masasi) ---------
-	# Wie "demir" ein Roh-/Barrenmaterial. Sammel-/Schmelzkette folgt spaeter,
-	# vorerst nur als Zutat definiert (Goldwerkzeuge damit noch nicht craftbar).
+	# Barren wie "demir": aus altin_cevheri im Schmelzofen (SMELT_OF). Zusammen
+	# mit islenmis_sopa an der Üstün-Bank zu Goldwerkzeugen - Kette ist komplett.
 	"altin": {
 		"name": "Altin", "max_stack": 64,
 		"texture": "res://assets/game_assets/items/gold.png",

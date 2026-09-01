@@ -209,10 +209,17 @@ const RECIPES := [
 	{"out": "ustun_uretim_masasi", "count": 1, "station": ILERI_WERKBANK, "seconds": 15.0,
 		"cost": {"tahta": 24, "demir": 8}},
 
+	# Werkzeug-Griff (Islenmis Sopa): aus 2 Brettern an der einfachen Werkbank.
+	# Das war das fehlende Glied - ohne Griff liessen sich weder Eisen- noch
+	# Goldwerkzeuge bauen. Demir/Altin (Barren) kommen aus dem Schmelzofen
+	# (Eritme Firini: demir_cevheri->demir, altin_cevheri->altin).
+	{"out": "islenmis_sopa", "count": 1, "station": WERKBANK, "seconds": 2.0,
+		"cost": {"tahta": 2}},
+
 	# --- Eisenwerkzeuge an der Ileri Üretim Masasi (Griff + Eisen) -------
-	# Islenmis Sopa und Demir haben noch keine Herstellkette (Outline-Notiz),
-	# daher aktuell nicht craftbar. Die Ileri-Bank kann zusaetzlich alles,
-	# was die einfache Werkbank kann (siehe for_station()).
+	# Griff = islenmis_sopa (Rezept oben), Demir = geschmolzenes demir_cevheri.
+	# Die Ileri-Bank kann zusaetzlich alles, was die einfache Werkbank kann
+	# (siehe for_station()).
 	{"out": "demir_balta", "count": 1, "station": ILERI_WERKBANK, "seconds": 6.0,
 		"cost": {"islenmis_sopa": 1, "demir": 4}},
 	{"out": "demir_kazma", "count": 1, "station": ILERI_WERKBANK, "seconds": 6.0,
@@ -227,10 +234,9 @@ const RECIPES := [
 		"cost": {"islenmis_sopa": 1, "demir": 4}},
 
 	# --- Goldwerkzeuge an der Üstün Üretim Masasi (Griff + Gold) ----------
-	# Wie die Eisenwerkzeuge, nur mit Gold (altin). Altin hat noch keine
-	# Sammel-/Schmelzkette (wie demir) - vorerst also noch nicht craftbar.
-	# Kein Hammer (nicht angefragt). Die Üstün-Bank kann zusaetzlich alles,
-	# was Ileri- und Basit-Bank koennen (siehe for_station()).
+	# Wie die Eisenwerkzeuge, nur mit Gold (altin, aus altin_cevheri geschmolzen).
+	# Griff = islenmis_sopa. Kein Hammer (nicht angefragt). Die Üstün-Bank kann
+	# zusaetzlich alles, was Ileri- und Basit-Bank koennen (siehe for_station()).
 	{"out": "altin_balta", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,
 		"cost": {"islenmis_sopa": 1, "altin": 4}},
 	{"out": "altin_kazma", "count": 1, "station": USTUN_WERKBANK, "seconds": 8.0,

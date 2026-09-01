@@ -9,12 +9,12 @@ B7,Bug,Gegner/MP,Magier nur lokal,Jeder Client hat eigenen Magier; Schaden und K
 B8,Bug,Interior,Waende im Editor nicht am Grid,Optik im Editor verrutscht (Ebenen-Stapelung fehlt in der Vorschau),Niedrig,kosmetisch (Editor-Vorschau; Gameplay korrekt)
 L1,Luecke,Gegner,Nur ein Magier ohne Respawn/Loot,Genau ein Magier nahe Spawn einmal toetbar dann weg; keine Beute -> kaum Gegner-Content,Mittel,System gebaut aber DEAKTIVIERT v213 (enemy_sync.ENABLED=false)
 L2,Luecke,Tiere,Rehe nicht jagdbar,Rehe haben keinen Schaden/Fleisch-Drop -> reine Deko,Mittel,offen
-L3,Luecke,Crafting,Gold-Werkzeuge nicht craftbar,altin-Sammel-/Schmelzkette unvollstaendig -> keine Gold-Tools,Mittel,offen
+L3,Luecke,Crafting,Gold-Werkzeuge nicht craftbar,altin-Sammel-/Schmelzkette unvollstaendig -> keine Gold-Tools,Mittel,behoben v214 (fehlender Griff islenmis_sopa craftbar -> ganze Kette komplett)
 L4,Luecke,Survival,Kein echtes Tod-System,Respawn ist nur Werte-Reset: kein Item-Verlust keine Strafe kein fester Ort,Mittel,offen
 L5,Luecke,Interior,Ein gemeinsames Innenraum-Layout,Alle Huetten teilen dasselbe Layout; keine Zuordnung Haus<->Raum keine Moebel/Truhe drin,Mittel,offen
 L6,Luecke,Interior,Ausloggen im Haus nicht persistiert,Wer im Haus ausloggt wird zum Spawn gerettet statt im Raum zu bleiben,Niedrig,offen
 L7,Luecke,Bauwerk,Baraka blockiert alle 16 Felder,Physisch nicht begehbar; Tuer der Aussen-Grafik hat keine Funktion,Niedrig,offen
 L8,Luecke,Roadmap,Viele Systeme dormant,Durst/Temperatur/Muedigkeit/Krankheit/Jahreszeiten/Quests/Waehrung sind eingebaut aber aus,Info,offen
-L9,Luecke,Schmelzen,Schmelzkette unvollstaendig,Manche Erze/Barren nicht verhuettbar; Ton(kil)-Kette teils offen,Mittel,offen
+L9,Luecke,Schmelzen,Schmelzkette unvollstaendig,Manche Erze/Barren nicht verhuettbar; Ton(kil)-Kette teils offen,Mittel,behoben v214 (Schmelzen war schon da; Griff fehlte)
 L10,Luecke,UX,Essen nur per F ohne Hinweis,Kein sichtbarer Hinweis wie man isst; Saettigungswert unklar,Niedrig,offen
 L11,Luecke,Client,Renderer/Bloom braucht Client-Neubau,game.pck aktualisiert Renderer nicht -> Grafik-Updates erst nach neuem Setup,Info,offen
