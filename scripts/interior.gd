@@ -49,6 +49,7 @@ var _exit_btn: Button = null
 
 
 func _ready() -> void:
+	add_to_group("interior")
 	world = get_node_or_null(^"../World")
 	_build_fade()
 	if world != null:

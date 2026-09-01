@@ -96,7 +96,12 @@ func _process(delta: float) -> void:
 
 	# Nah am aktiven Wegpunkt -> weich ausblenden.
 	var target := 1.0
-	if n > 0 and player != null and world != null:
+	# Im Huetten-Innenraum (weit weg) ergibt der Wegpunkt keinen Sinn -> ausblenden
+	# (sonst zeigt er absurde Entfernungen wie 50.000 m). Bug B1.
+	var interior := get_tree().get_first_node_in_group("interior")
+	if interior != null and interior.has_method("is_inside") and interior.is_inside():
+		target = 0.0
+	elif n > 0 and player != null and world != null:
 		var lvl: int = int(player.get("level")) if player.get("level") != null else 0
 		var pcell := world.world_to_cell(player.global_position, lvl)
 		if Vector2(wps[_index]["cell"] - pcell).length() <= FADE_RADIUS:

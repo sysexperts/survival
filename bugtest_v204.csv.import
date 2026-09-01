@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://jqfcec8i2k0k"
+
+[deps]
+
+files=["res://bugtest_v204.Typ.translation", "res://bugtest_v204.Bereich.translation", "res://bugtest_v204.Titel.translation", "res://bugtest_v204.Beschreibung.translation", "res://bugtest_v204.Schwere.translation", "res://bugtest_v204.Status.translation"]
+
+source_file="res://bugtest_v204.csv"
+dest_files=["res://bugtest_v204.Typ.translation", "res://bugtest_v204.Bereich.translation", "res://bugtest_v204.Titel.translation", "res://bugtest_v204.Beschreibung.translation", "res://bugtest_v204.Schwere.translation", "res://bugtest_v204.Status.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

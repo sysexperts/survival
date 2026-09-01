@@ -102,6 +102,7 @@ func _ready() -> void:
 	chest_hud = ChestHUDScript.new()
 	add_child(chest_hud)
 	chest_hud.setup(inventory, _chest_sync)
+	chest_hud.wants_notice.connect(_notice)
 	# Skills-Fenster (Taste K).
 	skills_hud = SkillsHUDScript.new()
 	add_child(skills_hud)

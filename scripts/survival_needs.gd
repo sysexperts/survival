@@ -37,17 +37,21 @@ func _process(delta: float) -> void:
 	if thirst_on:
 		PlayerStats.thirst = maxf(0.0, PlayerStats.thirst - THIRST_RATE * delta)
 
+	# Verhungern/Verdursten zieht Leben ab; satt regeneriert Leben langsam.
+	# Beides gehoert fest zum aktiven Survival-Loop (survival_needs an) - nicht
+	# mehr an die getrennten Dormant-Flags gekoppelt, sonst blieb Leben bei 0
+	# haengen bzw. erholte sich nie (Bugs B3/B4).
 	if PlayerStats.hunger <= 0.0 or (thirst_on and PlayerStats.thirst <= 0.0):
 		PlayerStats.health = maxf(0.0, PlayerStats.health - STARVE_DMG * delta)
-	elif Features.on("health_regen") and PlayerStats.health < PlayerStats.health_max:
+	elif PlayerStats.health < PlayerStats.health_max:
 		PlayerStats.health = minf(PlayerStats.health_max, PlayerStats.health + REGEN_RATE * delta)
 
 	# Stamina füllt sich im Ruhezustand wieder.
 	if PlayerStats.stamina < PlayerStats.stamina_max:
 		PlayerStats.stamina = minf(PlayerStats.stamina_max, PlayerStats.stamina + STAMINA_REGEN * delta)
 
-	if Features.on("death_respawn") and PlayerStats.health <= 0.0:
-		_respawn()
+	if PlayerStats.health <= 0.0:
+		_die()
 
 
 func eat(amount: float) -> void:
@@ -58,12 +62,23 @@ func drink(amount: float) -> void:
 	PlayerStats.thirst = clampf(PlayerStats.thirst + amount, 0.0, PlayerStats.thirst_max)
 
 
-func _respawn() -> void:
-	# Werte zurücksetzen; die eigentliche Positions-Logik übernähme der Player
-	# beim Aktivieren (hier bewusst schlicht gehalten).
+## Tod durch Verhungern/Verdursten: Werte zuruecksetzen UND den Spieler an
+## seinen Wiederbelebungspunkt (Bett/Start) versetzen - dieselbe respawn()-Logik
+## wie beim Magier-Tod, damit Leben nicht bei 0 haengen bleibt (Bug B3).
+func _die() -> void:
 	PlayerStats.health = PlayerStats.health_max
 	PlayerStats.hunger = PlayerStats.hunger_max
 	PlayerStats.thirst = PlayerStats.thirst_max
+	PlayerStats.stamina = PlayerStats.stamina_max
+	var p := _get_player()
+	if p != null and p.has_method("respawn"):
+		p.respawn()
+
+
+func _get_player() -> Node:
+	if _player == null or not is_instance_valid(_player):
+		_player = get_tree().get_first_node_in_group("player")
+	return _player
 
 
 ## Kleine Text-Anzeige, damit man das System beim Aktivieren sofort sieht.

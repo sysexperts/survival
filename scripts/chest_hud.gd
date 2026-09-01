@@ -15,7 +15,11 @@ var chest_inv: Inventory
 var chest_sync                    ## Node fuer Online-Sync
 var cell := Vector2i.ZERO
 var _open := false
+var _awaiting := false            ## MP: auf Server-Freigabe (Lock) wartend
 var _loading := false             ## gerade Server-Inhalt geladen -> nicht zuruecksenden
+
+## Bittet um eine kurze Bildschirm-Notiz (player_inventory zeigt sie an).
+signal wants_notice(text: String)
 
 var _dim: ColorRect
 var _panel: PanelContainer
@@ -33,6 +37,8 @@ func setup(p_player_inv: Inventory, p_chest_sync) -> void:
 	player_inv.changed.connect(_refresh)
 	if chest_sync != null and chest_sync.has_signal("chest_updated"):
 		chest_sync.chest_updated.connect(_on_chest_updated)
+	if chest_sync != null and chest_sync.has_signal("chest_denied"):
+		chest_sync.chest_denied.connect(_on_chest_denied)
 
 
 func is_open() -> bool:
@@ -45,25 +51,38 @@ func inv_of(src: String) -> Inventory:
 
 func open(p_cell: Vector2i) -> void:
 	cell = p_cell
-	_open = true
-	visible = true
-	_dim.visible = true
-	_panel.visible = true
-	# Truhe leeren und aktuellen Server-Stand anfordern.
+	# Truhe leeren.
 	_loading = true
 	for i in chest_inv.slots.size():
 		chest_inv.slots[i] = {}
 	_loading = false
-	if chest_sync != null:
+	var mp: bool = chest_sync != null and chest_sync.has_method("is_mp") and chest_sync.is_mp()
+	if mp:
+		# Erst Lock anfordern; das Fenster geht erst bei Freigabe (_recv) auf,
+		# oder es kommt eine Absage (_on_chest_denied). Kein Dupe mehr.
+		_awaiting = true
 		chest_sync.request(cell)
-	_refresh()
+	else:
+		# Einzelspieler: sofort oeffnen (kein Lock noetig).
+		_open = true
+		_show_panel(true)
+		_refresh()
 
 
-func set_open(o: bool) -> void:
-	_open = o
+func _show_panel(o: bool) -> void:
 	visible = o
 	_dim.visible = o
 	_panel.visible = o
+
+
+func set_open(o: bool) -> void:
+	# Beim Schliessen im MP den Lock wieder freigeben (server ignoriert Fremde).
+	if not o and chest_sync != null and chest_sync.has_method("release") \
+			and chest_sync.has_method("is_mp") and chest_sync.is_mp():
+		chest_sync.release(cell)
+	_open = o
+	_awaiting = false
+	_show_panel(o)
 
 
 # --- Umlegen zwischen Truhe und Spieler --------------------------------
@@ -114,13 +133,28 @@ func quick_move(src: String, i: int) -> void:
 # --- Online-Aktualisierung ---------------------------------------------
 
 func _on_chest_updated(p_cell: Vector2i, slots: Array) -> void:
-	if not _open or p_cell != cell:
+	if p_cell != cell or (not _open and not _awaiting):
 		return
+	# Freigabe im MP: jetzt erst das Fenster zeigen.
+	if _awaiting:
+		_awaiting = false
+		_open = true
+		_show_panel(true)
 	_loading = true
 	for i in chest_inv.slots.size():
 		chest_inv.slots[i] = slots[i].duplicate() if i < slots.size() and slots[i] is Dictionary else {}
 	_loading = false
 	_refresh()
+
+
+## Truhe ist von jemand anderem offen -> nicht oeffnen, kurze Notiz.
+func _on_chest_denied(p_cell: Vector2i) -> void:
+	if p_cell != cell:
+		return
+	_awaiting = false
+	_open = false
+	_show_panel(false)
+	wants_notice.emit("Sandik su an kullaniliyor")
 
 
 # --- Aufbau/Anzeige ----------------------------------------------------
