@@ -10,11 +10,7 @@ extends CanvasLayer
 ## KEIN class_name (Auto-Updater) - per preload eingebunden, setup() aufrufen.
 
 const PlayerStats := preload("res://scripts/player_stats.gd")
-const LOADING_TEX := preload("res://assets/UI/Cute_Fantasy_UI/UI/Loading_Icon.png")
-
-## Loading_Icon.png ist ein 256x64-Sheet mit 4 Frames a 64x64 (Spinner).
-const LOAD_FRAMES := 4
-const LOAD_FRAME := 64
+const ReviveRing := preload("res://scripts/revive_ring.gd")
 
 var _player: Node = null
 var _last_health := -1.0
@@ -27,9 +23,8 @@ var _red: ColorRect
 var _overlay: Control
 var _count: Label
 var _revive: Control
-var _revive_icon: TextureRect
+var _revive_ring: Control
 var _revive_label: Label
-var _revive_frame_t := 0.0
 
 
 func _ready() -> void:
@@ -59,10 +54,10 @@ func _process(delta: float) -> void:
 	if mat != null:
 		if _pulse_time > 0.0:
 			_pulse_time -= delta
-			_pulse_phase += delta * PI * 3.2      # ~1.6 Pulse pro Sekunde
-			_strength = 0.10 + 0.45 * (0.5 + 0.5 * sin(_pulse_phase))
+			_pulse_phase += delta * PI * 1.4      # langsam, ~0.7 Pulse pro Sekunde
+			_strength = 0.04 + 0.14 * (0.5 + 0.5 * sin(_pulse_phase))   # dezent
 		else:
-			_strength = move_toward(_strength, 0.0, delta * 1.6)
+			_strength = move_toward(_strength, 0.0, delta * 0.9)
 		mat.set_shader_parameter("strength", _strength)
 
 	# Countdown aktualisieren, solange bewusstlos.
@@ -70,24 +65,17 @@ func _process(delta: float) -> void:
 		var left := int(ceil(float(_player.downed_time_left())))
 		_count.text = "%d sn icinde spawn" % maxi(left, 0)
 
-	# Aufhelfen-Spinner: 4 Frames des Sheets durchschalten.
-	if _revive.visible:
-		_revive_frame_t += delta
-		var f := int(_revive_frame_t * 8.0) % LOAD_FRAMES
-		var at := _revive_icon.texture as AtlasTexture
-		if at != null:
-			at.region = Rect2(f * LOAD_FRAME, 0, LOAD_FRAME, LOAD_FRAME)
-
 
 # --- Aufhelfen (von interaction.gd gesteuert) --------------------------
 
-func show_revive(target_name: String) -> void:
-	_revive_label.text = "Kaldiriliyor: %s" % target_name
+func show_revive(_target_name: String) -> void:
+	_revive_ring.set_progress(0.0)
+	_revive_label.text = "Kaldiriliyor  0%"
 	_revive.visible = true
 
 
 func update_revive(t01: float) -> void:
-	# einfache Restzeit-Anzeige ueber der Ladeanimation
+	_revive_ring.set_progress(t01)
 	_revive_label.text = "Kaldiriliyor  %d%%" % int(clampf(t01, 0.0, 1.0) * 100.0)
 
 
@@ -176,19 +164,11 @@ func _build() -> void:
 	_revive.visible = false
 	add_child(_revive)
 
-	_revive_icon = TextureRect.new()
-	# Nur EIN 64x64-Frame des Sheets zeigen (Rest schaltet _process durch).
-	var at := AtlasTexture.new()
-	at.atlas = LOADING_TEX
-	at.region = Rect2(0, 0, LOAD_FRAME, LOAD_FRAME)
-	_revive_icon.texture = at
-	_revive_icon.custom_minimum_size = Vector2(48, 48)
-	_revive_icon.size = Vector2(48, 48)
-	_revive_icon.position = Vector2(56, 0)
-	_revive_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_revive_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_revive_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_revive.add_child(_revive_icon)
+	_revive_ring = ReviveRing.new()
+	_revive_ring.custom_minimum_size = Vector2(52, 52)
+	_revive_ring.size = Vector2(52, 52)
+	_revive_ring.position = Vector2(54, 0)
+	_revive.add_child(_revive_ring)
 
 	_revive_label = Label.new()
 	_revive_label.position = Vector2(0, 52)
