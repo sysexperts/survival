@@ -29,6 +29,7 @@
 [ext_resource type="Script" path="res://scripts/interior.gd" id="30_interior"]
 [ext_resource type="Script" path="res://scripts/downed_hud.gd" id="31_downedhud"]
 [ext_resource type="Script" path="res://scripts/downed_sync.gd" id="32_downedsync"]
+[ext_resource type="Script" path="res://scripts/enemy_sync.gd" id="33_enemysync"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -99,6 +100,9 @@ script = ExtResource("31_downedhud")
 
 [node name="DownedSync" type="Node" parent="."]
 script = ExtResource("32_downedsync")
+
+[node name="EnemySync" type="Node" parent="."]
+script = ExtResource("33_enemysync")
 
 [node name="Inventory" type="Node" parent="." unique_id=1106685324]
 script = ExtResource("8_inventory")

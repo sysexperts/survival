@@ -14,6 +14,17 @@ const LIFE := 5.0
 var _vel := Vector2.ZERO
 var _target                       ## Player-Node (Ziel/Trefferpruefung)
 var _life := LIFE
+var _visual := false              ## nur Anzeige (Schaden rechnet der Server)
+
+
+## Reiner Sicht-Orb (Client): fliegt von `from` Richtung `to`, macht keinen
+## Schaden - den wendet der Server nach der Flugzeit auf den Zielspieler an.
+func setup_visual(from: Vector2, to: Vector2) -> void:
+	global_position = from
+	_visual = true
+	_vel = (to - from).normalized() * SPEED
+	z_index = IsoWorld.TALL_Z_INDEX + 3
+	_life = from.distance_to(to) / SPEED + 0.15
 
 static var _glow: Texture2D
 
@@ -62,7 +73,13 @@ func _draw() -> void:
 func _process(delta: float) -> void:
 	global_position += _vel * delta
 	_life -= delta
-	if not is_instance_valid(_target) or _life <= 0.0:
+	if _life <= 0.0:
+		queue_free()
+		return
+	# Visual-Orb (Client): kein Schaden, nur fliegen bis die Lebenszeit endet.
+	if _visual:
+		return
+	if not is_instance_valid(_target):
 		queue_free()
 		return
 	if global_position.distance_to(_target.global_position) <= HIT_DIST:

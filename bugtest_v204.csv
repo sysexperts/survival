@@ -4,10 +4,10 @@ B2,Bug,Truhe/MP,Truhen-Inhalt client-autoritativ,Client pusht kompletten Slot-Ar
 B3,Bug,Survival,Verhungern fuehrt zu Leben=0 ohne Tod,Hunger 0 senkt Leben auf 0 aber death_respawn ist aus -> Leben bleibt bei 0 haengen (kein Tod/Respawn),Hoch,behoben v205
 B4,Bug,Survival,Keine Lebens-Regeneration,health_regen aus -> Magier-Schaden bleibt dauerhaft; Leben sinkt nur je,Mittel,behoben v205
 B5,Bug,Survival,Toter Respawn-Code,survival_needs._respawn() setzt nur Werte zurueck und teleportiert nicht (doppelt zu player.respawn),Niedrig,behoben v205
-B6,Bug,Wartung,Feature-Flags veraltet,fishing/farming_growth/weather/skills_xp stehen auf false laufen aber ungated -> irrefuehrend,Niedrig,offen
-B7,Bug,Gegner/MP,Magier nur lokal,Jeder Client hat eigenen Magier; Schaden und Kill werden nicht synchronisiert,Mittel,offen
-B8,Bug,Interior,Waende im Editor nicht am Grid,Optik im Editor verrutscht (Ebenen-Stapelung fehlt in der Vorschau),Niedrig,offen
-L1,Luecke,Gegner,Nur ein Magier ohne Respawn/Loot,Genau ein Magier nahe Spawn einmal toetbar dann weg; keine Beute -> kaum Gegner-Content,Mittel,offen
+B6,Bug,Wartung,Feature-Flags veraltet,fishing/farming_growth/weather/skills_xp stehen auf false laufen aber ungated -> irrefuehrend,Niedrig,behoben v211
+B7,Bug,Gegner/MP,Magier nur lokal,Jeder Client hat eigenen Magier; Schaden und Kill werden nicht synchronisiert,Mittel,ersetzt v212 (Gegner waren nur statisch; echtes server-autoritatives System gebaut)
+B8,Bug,Interior,Waende im Editor nicht am Grid,Optik im Editor verrutscht (Ebenen-Stapelung fehlt in der Vorschau),Niedrig,kosmetisch (Editor-Vorschau; Gameplay korrekt)
+L1,Luecke,Gegner,Nur ein Magier ohne Respawn/Loot,Genau ein Magier nahe Spawn einmal toetbar dann weg; keine Beute -> kaum Gegner-Content,Mittel,gebaut v212 (3 Magier-Posten, server-sim, Respawn 30s, Loot Gold+Diamant)
 L2,Luecke,Tiere,Rehe nicht jagdbar,Rehe haben keinen Schaden/Fleisch-Drop -> reine Deko,Mittel,offen
 L3,Luecke,Crafting,Gold-Werkzeuge nicht craftbar,altin-Sammel-/Schmelzkette unvollstaendig -> keine Gold-Tools,Mittel,offen
 L4,Luecke,Survival,Kein echtes Tod-System,Respawn ist nur Werte-Reset: kein Item-Verlust keine Strafe kein fester Ort,Mittel,offen

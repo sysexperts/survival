@@ -370,3 +370,14 @@ func avatar_owner_near(point: Vector2, radius: float) -> int:
 ## Der Remote-Avatar zu einer Owner-ID (oder null).
 func avatar_node(owner_id: int):
 	return _avatars.get(owner_id)
+
+
+## SERVER: Positionen aller verbundenen Spieler als [[owner_id, pos], ...].
+## Grundlage fuer die server-simulierten Gegner (Zielsuche).
+func player_positions() -> Array:
+	var out: Array = []
+	for oid in _server_states:
+		var s: Dictionary = _server_states[oid]
+		if s.has("pos"):
+			out.append([int(oid), s["pos"]])
+	return out
