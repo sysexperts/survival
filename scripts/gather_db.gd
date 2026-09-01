@@ -95,13 +95,19 @@ const KINDS := {
 		"icon": Vector2i(0, 0),
 		"yield": [1, 4],
 		"density": 0.035,
-		"scale": 0.85,
+		"scale": 1.5,
 		"anchor": "foot",
 		"drop_item": "odun",
 		"biome": "desert",
-		"hint": "F  Odun topla",
+		"harvestable": false,          # vorerst reine Deko: nur Hover, kein Ernten
+		"hint": "",
 	},
 }
+
+
+## Kann diese Sorte aufgesammelt/abgebaut werden? (Wuesten-Flora: nein = Deko.)
+static func harvestable(id: String) -> bool:
+	return not (KINDS.has(id) and KINDS[id].get("harvestable", true) == false)
 
 
 static func has(id: String) -> bool:

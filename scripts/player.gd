@@ -1652,6 +1652,9 @@ func stone_in_reach() -> Vector2i:
 	for entry in world.prop_placements():
 		if int(entry[3]) != IsoWorld.STONE_SOURCE_ID:
 			continue
+		# Nicht-erntbare Deko (z. B. Wuesten-Flora) ueberspringen - nur Hover.
+		if not GatherDB.harvestable(world.gather_id_at(entry[0])):
+			continue
 		var to_stone := world.cell_to_world(entry[0], entry[1]) - global_position
 		var d := Vector2(to_stone.x / IsoWorld.TILE_SIZE.x,
 			to_stone.y / IsoWorld.TILE_SIZE.y).length()
@@ -1667,6 +1670,8 @@ func fetch_stone(cell: Vector2i) -> bool:
 	_cancel_task()
 	if not world.has_stone(cell):
 		return false
+	if not GatherDB.harvestable(world.gather_id_at(cell)):
+		return false                 # Deko-Flora nicht aufsammeln
 	if stone_in_reach() == cell:
 		return collect_stone(cell)
 	var here := world.world_to_cell(global_position, level)
@@ -1680,6 +1685,8 @@ func fetch_stone(cell: Vector2i) -> bool:
 
 ## Hebt den Stein auf dieser Zelle auf. false, wenn dort keiner (mehr) liegt.
 func collect_stone(cell: Vector2i) -> bool:
+	if not GatherDB.harvestable(world.gather_id_at(cell)):
+		return false                 # Deko-Flora nicht aufsammeln
 	var lvl := world.stone_level(cell)
 	if lvl < 0:
 		return false
