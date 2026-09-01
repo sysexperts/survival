@@ -21,6 +21,11 @@ const ROW_OF := {
 
 const LOOPING := ["idle", "walk", "run", "sleep"]
 const FPS := {"idle": 8.0, "walk": 10.0, "run": 12.0, "fish": 8.0}
+## Zustaende, die als EINZELBILD (statisch) gebaut werden. Seit die Frames per
+## Nearest geschaerft sind (v215), verschieben sich bei fast gleichen Idle-Frames
+## einzelne Umriss-Pixel um ganze Pixel = sichtbares Flackern. Idle daher als
+## ruhiges Standbild; Laufen/Rennen (echte Bewegung) bleiben animiert.
+const STATIC_STATES := ["idle", "idle_hold"]
 ## Angel-Layer (aus dem "Fish"-Zustand) - immer gezeigt, wenn geangelt wird.
 const FISH_POLE := "Wood"
 const DEFAULT_FPS := 10.0
@@ -84,7 +89,9 @@ static func build(look: Dictionary, tool: String = "", metal: String = "") -> Sp
 			sf.add_animation(anim)
 			sf.set_animation_speed(anim, FPS.get(state, DEFAULT_FPS))
 			sf.set_animation_loop(anim, _loops(state))
-			for col in range(cols):
+			# Statische Zustaende (Idle): nur das erste Bild -> kein Pixel-Flackern.
+			var frames: int = 1 if String(state) in STATIC_STATES else cols
+			for col in range(frames):
 				var at := AtlasTexture.new()
 				at.atlas = tex
 				at.region = Rect2(col * cell, row * cell, cell, cell)
