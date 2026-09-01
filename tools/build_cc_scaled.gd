@@ -72,18 +72,20 @@ func _init() -> void:
 
 
 func _scale_one(src: String, dst: String, cols: int, src_start: int = 0) -> void:
-	if FileAccess.file_exists(ProjectSettings.globalize_path(dst)):
-		return  # schon gebaut - Wiederaufnahme nach Abbruch
 	var img := Image.load_from_file(ProjectSettings.globalize_path(src))
 	if img == null:
 		push_warning("Bild nicht ladbar: " + src)
 		return
 	# Jede Zelle einzeln verkleinern, damit keine Farbe über Zellgrenzen blutet.
+	# NEAREST statt Lanczos: harte Pixelkanten (kein weiches Anti-Aliasing), damit
+	# die Figur zum scharfen Pixel-Art-Tileset passt (kein "verpixelt/matschig"
+	# beim 2.5x-Zoom mehr). Danach Alpha haerten -> keine halbtransparenten
+	# Randpixel, die beim Hochzoomen als Halo auffallen.
 	var out := Image.create(cols * CELL_DST, ROWS * CELL_DST, false, Image.FORMAT_RGBA8)
 	for row in range(ROWS):
 		for col in range(cols):
 			var cell := img.get_region(Rect2i((src_start + col) * CELL_SRC, row * CELL_SRC, CELL_SRC, CELL_SRC))
-			cell.resize(CELL_DST, CELL_DST, Image.INTERPOLATE_LANCZOS)
+			cell.resize(CELL_DST, CELL_DST, Image.INTERPOLATE_NEAREST)
 			out.blit_rect(cell, Rect2i(0, 0, CELL_DST, CELL_DST),
 				Vector2i(col * CELL_DST, row * CELL_DST))
 	out.save_png(ProjectSettings.globalize_path(dst))
