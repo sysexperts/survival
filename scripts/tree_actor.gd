@@ -108,7 +108,7 @@ static func create_gather(p_cell: Vector2i, p_level: int, p_id: String,
 	# Die Icons sitzen unterschiedlich in ihren Kacheln - wer die Kachel
 	# zentriert, bekommt Props, die neben ihrer Zelle zu liegen scheinen.
 	var b := GatherDB.content_bounds_for(p_id, p_sheet_cell)
-	var s := GatherDB.scale_of(p_id)
+	var s := GatherDB.scale_for(p_id, p_sheet_cell)
 	var anchor := Vector2(b.position.x + b.size.x * 0.5, 0.0)
 	if GatherDB.anchor_of(p_id) == "foot":
 		# Aufrechte Pflanze: unterer Rand auf die Mitte des Diamanten.

@@ -96,6 +96,12 @@ const KINDS := {
 		"yield": [1, 4],
 		"density": 0.035,
 		"scale": 1.5,
+		# Groesse je Pflanze: Palmen gross (1.5), Kakteen kleiner (0.85).
+		# Reihenfolge = regions oben (Index 0..18).
+		"region_scales": [
+			1.5, 1.5, 0.85, 1.5, 0.85, 0.85, 0.85, 0.85, 1.5, 1.5,
+			0.85, 1.5, 0.85, 1.5, 1.5, 0.85, 0.85, 0.85, 0.85,
+		],
 		"anchor": "foot",
 		"drop_item": "odun",
 		"biome": "desert",
@@ -137,6 +143,15 @@ static func scale_of(id: String) -> float:
 	if KINDS.has(id) and KINDS[id].has("scale"):
 		return float(KINDS[id]["scale"])
 	return DEFAULT_SCALE
+
+
+## Groesse eines einzelnen Props (Regionen-Sorten koennen je Region skalieren).
+static func scale_for(id: String, sheet_cell: Vector2i) -> float:
+	if KINDS.has(id) and KINDS[id].has("region_scales"):
+		var rs: Array = KINDS[id]["region_scales"]
+		var i := clampi(sheet_cell.x, 0, rs.size() - 1)
+		return float(rs[i])
+	return scale_of(id)
 
 
 static func anchor_of(id: String) -> String:
