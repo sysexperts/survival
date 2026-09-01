@@ -214,8 +214,31 @@ func _run_command(sender: String, sender_id: int, text: String) -> void:
 			_sys_to(sender_id, "Gece yapildi.")
 		"/tp":
 			_cmd_tp(sender, sender_id, parts)
+		"/hunger":
+			_cmd_hunger(sender_id, parts)
 		_:
 			_sys_to(sender_id, "Bilinmeyen komut: %s" % cmd)
+
+
+## /hunger <0-100> - setzt den EIGENEN Hunger in Prozent (Test des Verhungerns).
+## Laeuft auf dem Server; der Wert wird an den Client des Absenders geschickt,
+## denn PlayerStats liegt pro Client vor.
+func _cmd_hunger(sender_id: int, parts: PackedStringArray) -> void:
+	if parts.size() < 2:
+		_sys_to(sender_id, "Kullanim: /hunger <0-100>")
+		return
+	var pct := clampf(float(String(parts[1])), 0.0, 100.0)
+	_apply_hunger.rpc_id(sender_id, pct)
+	_sys_to(sender_id, "Aclik %d%% yapildi." % int(round(pct)))
+
+
+const PlayerStatsScript := preload("res://scripts/player_stats.gd")
+
+
+## Server -> Absender-Client: eigenen Hunger auf `pct` Prozent setzen.
+@rpc("authority", "reliable")
+func _apply_hunger(pct: float) -> void:
+	PlayerStatsScript.hunger = PlayerStatsScript.hunger_max * pct / 100.0
 
 
 ## /tp to <isim>  ODER  /tp <isim> to <isim2>
