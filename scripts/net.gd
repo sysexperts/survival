@@ -27,6 +27,9 @@ var active := false
 ## Clients untereinander weiter.
 var is_dedicated := false
 var player_name := "Oyuncu"
+## Kennung des verbundenen Servers (Host/IP). "" = Singleplayer. Scoped die
+## privaten Waypoints pro Server (siehe minimap.gd).
+var server_id := ""
 ## true, solange die Chat-Eingabe offen ist - der Player pausiert dann.
 var chat_open := false
 
@@ -89,6 +92,9 @@ func join(ip: String) -> String:
 	ip = ip.strip_edges()
 	if ip == "":
 		ip = DEFAULT_HOST
+	# Server-Kennung (fuer server-eigene, private Waypoints) - der eingegebene
+	# Host/IP vor der Aufloesung.
+	server_id = ip
 	# ENet erwartet eine IP - Hostnamen wie "survival.vapur-it.de" erst aufloesen.
 	if not ip.is_valid_ip_address():
 		var resolved := IP.resolve_hostname(ip, IP.TYPE_IPV4)
@@ -121,5 +127,6 @@ func _on_failed() -> void:
 ## Startet das Spiel ohne Netzwerk - alles laeuft wie im alten Einzelspieler.
 func singleplayer() -> void:
 	active = false
+	server_id = ""                    # Singleplayer: kein Server -> keine Waypoints
 	multiplayer.multiplayer_peer = null
 	get_tree().change_scene_to_file(GAME_SCENE)

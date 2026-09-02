@@ -27,7 +27,8 @@ const FULL_PAD := Vector2(70, 90)
 const PAD_CELLS := 4              ## Zusatzrand der Textur, damit beim Scrollen keine Lücke am Rand entsteht
 
 const IDLE_REFRESH := 0.6
-const WP_FILE := "user://waypoints.json"
+# Waypoints liegen jetzt PRO SERVER + Spieler (siehe _wp_path); frueher eine
+# globale Datei user://waypoints.json - die wird nicht mehr geladen.
 const METERS_PER_CELL := 1.0
 
 const C_FRAME := Color(0.85, 0.83, 0.72)
@@ -505,7 +506,26 @@ func _build_editor() -> void:
 
 # --- Speichern / Laden --------------------------------------------------
 
+## Waypoint-Datei PRO SERVER + Spieler (privat, nicht geteilt). Im Singleplayer
+## ("" = nicht verbunden) gibt es KEINE Waypoints - dann leerer Pfad.
+func _wp_path() -> String:
+	if not Net.active:
+		return ""
+	var srv := Net.server_id if Net.server_id != "" else "online"
+	return "user://wp_%s_%s.json" % [_safe(srv), _safe(Net.player_name)]
+
+
+func _safe(s: String) -> String:
+	var out := ""
+	for c in s.to_lower():
+		out += c if (c.is_valid_int() or (c >= "a" and c <= "z")) else "_"
+	return out
+
+
 func _save_waypoints() -> void:
+	var path := _wp_path()
+	if path == "":
+		return                          # Singleplayer: nicht speichern
 	var arr: Array = []
 	for w in _waypoints:
 		var col: Color = w["color"]
@@ -513,16 +533,17 @@ func _save_waypoints() -> void:
 			"x": w["cell"].x, "y": w["cell"].y, "name": w["name"],
 			"color": [col.r, col.g, col.b],
 		})
-	var f := FileAccess.open(WP_FILE, FileAccess.WRITE)
+	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(arr))
 		f.close()
 
 
 func _load_waypoints() -> void:
-	if not FileAccess.file_exists(WP_FILE):
-		return
-	var f := FileAccess.open(WP_FILE, FileAccess.READ)
+	var path := _wp_path()
+	if path == "" or not FileAccess.file_exists(path):
+		return                          # Singleplayer oder noch keine Datei
+	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return
 	var data = JSON.parse_string(f.get_as_text())
