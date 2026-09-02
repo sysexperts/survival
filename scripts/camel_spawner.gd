@@ -50,6 +50,7 @@ func _config(c) -> void:
 	c.flee_radius = 0.0            # Kamele fliehen nicht
 	c.avoid_water = true
 	c.sprite_offset = Vector2(0, -18)
+	c.solid = true                # mitwandernde Hitbox (nicht durchlaufbar)
 
 
 func _assign_host() -> void:
@@ -196,6 +197,7 @@ func _camel_state(id: int, pos: Vector2, anim: StringName, lvl: int) -> void:
 		c = AnimalScript.new()
 		c.remote = true
 		_config(c)
+		c.world = world               # Remote-Kamel braucht world fuer die Hitbox
 		world.props_root.add_child(c)
 		_remote[id] = c
 	c.apply_state(pos, anim, lvl)

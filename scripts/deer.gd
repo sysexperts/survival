@@ -53,6 +53,9 @@ var flee_speed := FLEE_SPEED
 var flee_radius := FLEE_RADIUS
 var sprite_offset := SPRITE_OFFSET
 var avoid_water := false                  ## true = geht nicht ins Wasser (Kamel)
+## true = blockiert seine aktuelle Zelle (mitwandernde Hitbox, z. B. Kamel).
+var solid := false
+var _blk := Vector2i(2147483647, 2147483647)
 
 var world: IsoWorld
 var level := 0
@@ -96,6 +99,10 @@ func _ready() -> void:
 	add_child(_sprite)
 	_play("idle")
 	_idle_left = randf_range(0.5, 1.5)
+	if solid:
+		tree_exiting.connect(func():
+			if _blk.x != 2147483647 and world != null:
+				world.unblock_cell(_blk))
 
 
 ## Remote-Reh: einen ueber das Netz empfangenen Zustand uebernehmen.
@@ -115,7 +122,25 @@ func anim_name() -> StringName:
 	return _sprite.animation if _sprite else &"idle_south"
 
 
+## Mitwandernde Hitbox: die aktuelle Zelle blockieren, beim Zellwechsel umziehen.
+func _update_block() -> void:
+	if not solid or world == null:
+		return
+	var cell := world.world_to_cell(global_position, level)
+	if cell == _blk:
+		return
+	if _blk.x != 2147483647:
+		world.unblock_cell(_blk)
+	# Nur blocken, wenn dort nicht schon etwas anderes sitzt.
+	if world.blocker_at(cell) == null:
+		world.block_cell(cell, self)
+		_blk = cell
+	else:
+		_blk = Vector2i(2147483647, 2147483647)
+
+
 func _process(delta: float) -> void:
+	_update_block()
 	if remote:
 		# Nur weich zur empfangenen Zielposition gleiten - keine eigene KI.
 		if _has_rt:
