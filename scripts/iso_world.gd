@@ -732,6 +732,10 @@ func spawn_gather(cell: Vector2i, level: int, id: String, sheet_cell: Vector2i) 
 	props_root.add_child(node)
 	node.global_position = cell_to_world(cell, level)
 	_prop_nodes[cell] = node
+	# Solide Sorten (Wuesten-Flora) blockieren die Zelle - man laeuft nicht durch.
+	if GatherDB.solid(id):
+		block_cell(cell, node)
+		node.tree_exiting.connect(func(): unblock_cell(cell))
 	invalidate_props()
 	return true
 

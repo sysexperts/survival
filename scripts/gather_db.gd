@@ -106,6 +106,9 @@ const KINDS := {
 		"drop_item": "odun",
 		"biome": "desert",
 		"harvestable": false,          # vorerst reine Deko: nur Hover, kein Ernten
+		"solid": true,                 # blockiert - man laeuft nicht hindurch
+		# Kaktus-Regionen (nicht Palmen): tun Schaden beim Hineinlaufen.
+		"hurt_regions": [2, 4, 5, 6, 7, 10, 12, 15, 16, 17, 18],
 		"hint": "",
 	},
 }
@@ -114,6 +117,45 @@ const KINDS := {
 ## Kann diese Sorte aufgesammelt/abgebaut werden? (Wuesten-Flora: nein = Deko.)
 static func harvestable(id: String) -> bool:
 	return not (KINDS.has(id) and KINDS[id].get("harvestable", true) == false)
+
+
+## Blockiert diese Sorte die Zelle (nicht begehbar)?
+static func solid(id: String) -> bool:
+	return KINDS.has(id) and bool(KINDS[id].get("solid", false))
+
+
+## Tut dieses Prop Schaden beim Hineinlaufen (Kaktus)?
+static func hurts(id: String, sheet_cell: Vector2i) -> bool:
+	return KINDS.has(id) and KINDS[id].has("hurt_regions") \
+		and int(sheet_cell.x) in KINDS[id]["hurt_regions"]
+
+
+static var _footc: Dictionary = {}
+
+
+## Waagerechte Fuss-/Stamm-Mitte eines Props (untere ~18 % der Region), damit
+## asymmetrische Pflanzen (gebogene Palme, breiter Kaktus) mittig auf der Zelle
+## stehen statt nach der Bounding-Box-Mitte versetzt. Fallback: Bild-Mitte.
+static func foot_center_for(id: String, sheet_cell: Vector2i) -> float:
+	if not (KINDS.has(id) and KINDS[id].has("regions")):
+		var cb := content_bounds(sheet_cell)
+		return cb.position.x + cb.size.x * 0.5
+	var key := "%s:%d" % [id, sheet_cell.x]
+	if _footc.has(key):
+		return _footc[key]
+	var r := region_for(id, sheet_cell)
+	var img := image_of(id)
+	var band := maxi(3, int(r.size.y * 0.18))
+	var sum := 0.0
+	var n := 0
+	for y in range(r.size.y - band, r.size.y):
+		for x in range(r.size.x):
+			if img.get_pixel(r.position.x + x, r.position.y + y).a > 0.3:
+				sum += x
+				n += 1
+	var c := (sum / n) if n > 0 else r.size.x * 0.5
+	_footc[key] = c
+	return c
 
 
 static func has(id: String) -> bool:

@@ -406,6 +406,8 @@ func _process(delta: float) -> void:
 		lantern.base_energy = lerpf(0.0, lantern_energy, _day_night.darkness())
 	_ease_step_lag(delta)
 	_update_footsteps(delta)
+	if _cactus_cd > 0.0:
+		_cactus_cd -= delta
 	# Bewusstlos-Countdown: laeuft er ab, automatisch zum Spawn.
 	if _downed:
 		_downed_left -= delta
@@ -608,6 +610,7 @@ func _try_move(delta_pos: Vector2) -> void:
 	var target := global_position + delta_pos
 	var cell := world.world_to_cell(target, level)
 	if world.has_prop(cell):
+		_maybe_cactus_hurt(cell)
 		return                                  # Baum o. ae. im Weg
 	if world.is_water(cell):
 		return                                  # Wasser nicht betretbar
@@ -627,6 +630,23 @@ func _try_move(delta_pos: Vector2) -> void:
 		level = top
 		_reparent_to_level()
 	global_position = target
+
+
+## Schaden, wenn man in einen Kaktus laeuft (kurzer Cooldown gegen Dauerschaden).
+const CACTUS_DMG := 4.0
+const CACTUS_HURT_CD := 1.0
+var _cactus_cd := 0.0
+
+
+func _maybe_cactus_hurt(cell: Vector2i) -> void:
+	if _cactus_cd > 0.0:
+		return
+	var n = world.prop_node(cell)
+	if n == null or not is_instance_valid(n):
+		return
+	if n.gather_id == "col" and GatherDB.hurts("col", n.atlas):
+		_cactus_cd = CACTUS_HURT_CD
+		take_damage(CACTUS_DMG)
 
 
 ## der Charakter gehoert in denselben y-sortierten Container wie die Props. Nur so
