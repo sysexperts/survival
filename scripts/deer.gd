@@ -44,6 +44,16 @@ var _getup_time := 0.0
 var _got_up_scared := false
 var spawner: Node                        ## liefert die Spielerpositionen (Flucht)
 
+## Ueberschreibbar je Tierart - dasselbe Skript treibt auch das Kamel, nur mit
+## anderen Frames/Werten (siehe camel_spawner.gd). Standard = Reh.
+var frames: SpriteFrames = FRAMES
+var art_scale := ART_SCALE
+var move_speed := SPEED
+var flee_speed := FLEE_SPEED
+var flee_radius := FLEE_RADIUS
+var sprite_offset := SPRITE_OFFSET
+var avoid_water := false                  ## true = geht nicht ins Wasser (Kamel)
+
 var world: IsoWorld
 var level := 0
 var facing := "south"
@@ -79,9 +89,9 @@ func _ready() -> void:
 	add_child(shadow)
 
 	_sprite = AnimatedSprite2D.new()
-	_sprite.sprite_frames = FRAMES
-	_sprite.offset = SPRITE_OFFSET
-	var s := ART_SCALE * (0.5 if is_baby else 1.0)
+	_sprite.sprite_frames = frames
+	_sprite.offset = sprite_offset
+	var s := art_scale * (0.5 if is_baby else 1.0)
 	_sprite.scale = Vector2(s, s)
 	add_child(_sprite)
 	_play("idle")
@@ -115,7 +125,7 @@ func _process(delta: float) -> void:
 		return
 
 	var np: Dictionary = spawner.nearest_player(global_position) if spawner else {"found": false, "dist": INF, "pos": Vector2.ZERO}
-	var scared: bool = bool(np["found"]) and float(np["dist"]) < FLEE_RADIUS
+	var scared: bool = flee_radius > 0.0 and bool(np["found"]) and float(np["dist"]) < flee_radius
 
 	match _state:
 		"laying":
@@ -173,7 +183,7 @@ func _wander(delta: float) -> void:
 		return
 	facing = DIRS[_dir_index(Vector2(to.x, to.y / Y_SQUASH))]
 	_play("walk")
-	var step := to.normalized() * SPEED * delta
+	var step := to.normalized() * move_speed * delta
 	if step.length() > to.length():
 		step = to
 	global_position += step
@@ -201,7 +211,7 @@ func _flee_step(delta: float, from_player: Vector2) -> void:
 	var to := _target - global_position
 	facing = DIRS[_dir_index(Vector2(to.x, to.y / Y_SQUASH))]
 	_play("walk")
-	var step := to.normalized() * FLEE_SPEED * delta
+	var step := to.normalized() * flee_speed * delta
 	if step.length() > to.length():
 		step = to
 	global_position += step
@@ -269,6 +279,8 @@ func _cell_towards(cell: Vector2i, di: int) -> Vector2i:
 
 
 func _walkable(from: Vector2i, to: Vector2i) -> bool:
+	if avoid_water and world.is_water(to):
+		return false
 	return world.top_level_at(to) >= 0 and not world.has_prop(to) \
 		and world.blocker_at(to) == null and world.can_step(from, to, 1)
 

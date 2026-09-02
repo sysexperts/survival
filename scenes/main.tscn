@@ -30,6 +30,7 @@
 [ext_resource type="Script" path="res://scripts/downed_hud.gd" id="31_downedhud"]
 [ext_resource type="Script" path="res://scripts/downed_sync.gd" id="32_downedsync"]
 [ext_resource type="Script" path="res://scripts/enemy_sync.gd" id="33_enemysync"]
+[ext_resource type="Script" path="res://scripts/camel_spawner.gd" id="34_camel"]
 
 [sub_resource type="Environment" id="Environment_look"]
 background_mode = 3
@@ -124,6 +125,9 @@ script = ExtResource("19_drop")
 
 [node name="DeerSpawner" type="Node" parent="." unique_id=1564797178]
 script = ExtResource("20_deer")
+
+[node name="CamelSpawner" type="Node" parent="."]
+script = ExtResource("34_camel")
 
 [node name="FurnaceSync" type="Node" parent="."]
 script = ExtResource("28_furnace")
