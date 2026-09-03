@@ -38,6 +38,17 @@ const R_TOGGLE_OFF := Rect2(1780, 1178, 144, 67)
 const R_BAR_EMPTY := Rect2(145, 1607, 397, 47)     # heller Balken (Slider-Spur)
 const R_KNOB := Rect2(1600, 1698, 44, 45)
 
+# Button-Hintergruende OHNE Icon (verzerren beim Strecken nicht).
+const R_BG_ORANGE := Rect2(1348, 203, 203, 111)
+const R_BG_TAN := Rect2(1351, 346, 204, 112)
+# Icon-Ausschnitte AUS den fertigen Knoepfen (gleicher Untergrund -> nahtlos
+# ueber dem passenden Hintergrund). Werden seitenrichtig (KEEP_ASPECT) gezeigt,
+# also nicht verzerrt.
+const IC_NONE := Rect2(0, 0, 0, 0)
+const IC_FIRE := Rect2(1183, 213, 96, 96)
+const IC_BACKPACK := Rect2(1185, 356, 92, 96)
+const IC_SIGN := Rect2(1184, 651, 94, 98)
+
 var _atlas_img: Image
 
 var _name_edit: LineEdit
@@ -99,12 +110,15 @@ func _icon(region: Rect2, height: float) -> TextureRect:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return t
 
-func _heading(text: String, size: int, color := Color(0.24, 0.18, 0.12)) -> Label:
+func _heading(text: String, size: int, color := Color(0.22, 0.15, 0.09),
+		outline := Color(0.98, 0.94, 0.84, 0.9)) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", load(FONT))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", outline)
+	l.add_theme_constant_override("outline_size", max(3, size / 6))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return l
 
@@ -181,7 +195,8 @@ func _build_panel() -> void:
 	banner.patch_margin_top = 20
 	banner.patch_margin_bottom = 20
 	banner.custom_minimum_size = Vector2(0, 46)
-	var bl := _heading("COK OYUNCU HAYATTA KALMA", 15, Color(0.96, 0.94, 0.86))
+	var bl := _heading("COK OYUNCU HAYATTA KALMA", 17,
+		Color(0.98, 0.96, 0.88), Color(0.16, 0.22, 0.10, 0.95))
 	bl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	banner.add_child(bl)
@@ -213,9 +228,9 @@ func _build_menu_page() -> void:
 	_menu_page.add_theme_constant_override("separation", 12)
 	_pages.add_child(_menu_page)
 
-	_menu_page.add_child(_menu_button(R_PLAY, "OYNA", _on_play, true))
-	_menu_page.add_child(_menu_button(R_OPTIONS, "AYARLAR", _on_options))
-	_menu_page.add_child(_menu_button(R_QUIT, "CIKIS", _on_quit))
+	_menu_page.add_child(_menu_button(R_BG_ORANGE, IC_FIRE, "OYNA", _on_play, true))
+	_menu_page.add_child(_menu_button(R_BG_TAN, IC_BACKPACK, "AYARLAR", _on_options))
+	_menu_page.add_child(_menu_button(R_BG_TAN, IC_SIGN, "CIKIS", _on_quit))
 
 
 func _build_play_page() -> void:
@@ -235,44 +250,61 @@ func _build_play_page() -> void:
 	_play_page.add_child(_ip_edit)
 
 	_play_page.add_child(_spacer(4))
-	_play_page.add_child(_menu_button(R_PLAY, "KATIL", _on_join, true, 62))
-	_play_page.add_child(_menu_button(R_TAN, "TEK OYUNCU", _on_solo, false, 62))
-	_play_page.add_child(_menu_button(R_TAN, "GERI", _show_menu, false, 58))
+	_play_page.add_child(_menu_button(R_BG_ORANGE, IC_FIRE, "KATIL", _on_join, true, 64))
+	_play_page.add_child(_menu_button(R_BG_TAN, IC_NONE, "TEK OYUNCU", _on_solo, false, 62))
+	_play_page.add_child(_menu_button(R_BG_TAN, IC_NONE, "GERI", _show_menu, false, 58))
 
 	_status = _heading("", 14, Color(0.7, 0.2, 0.15))
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_play_page.add_child(_status)
 
 
-## Ribbon-Knopf mit eingebackenem Icon links, Text daneben.
-func _menu_button(region: Rect2, text: String, cb: Callable,
+## Ribbon-Knopf: glatter Hintergrund (verzerrt nicht) + optionales Icon-Overlay
+## (seitenrichtig) links + gut lesbarer Text mit Outline.
+func _menu_button(bg: Rect2, icon: Rect2, text: String, cb: Callable,
 		primary := false, height := 74) -> Button:
 	var b := Button.new()
 	b.text = text
+	b.clip_contents = false
 	b.custom_minimum_size = Vector2(0, height)
 	b.add_theme_font_override("font", load(FONT))
-	b.add_theme_font_size_override("font_size", 24)
-	var fg := Color(0.24, 0.17, 0.11)
-	if region == R_PLAY:
-		fg = Color(0.99, 0.95, 0.85)          # helle Schrift auf Orange
-	b.add_theme_color_override("font_color", fg)
-	b.add_theme_color_override("font_hover_color", fg)
-	b.add_theme_color_override("font_pressed_color", fg)
-	b.add_theme_color_override("font_focus_color", fg)
-	# Icon sitzt links (in der Textur) -> Text nach rechts einruecken.
-	var has_icon := region in [R_PLAY, R_OPTIONS, R_QUIT]
-	var pad_left := 170.0 if has_icon else 40.0
-	var normal := _sb(region, 78, 34, 30, 34)
+	b.add_theme_font_size_override("font_size", 28)
+	var fg := Color(0.99, 0.95, 0.85) if primary else Color(0.22, 0.15, 0.09)
+	var ol := Color(0.35, 0.13, 0.05, 0.85) if primary else Color(0.98, 0.94, 0.84, 0.9)
+	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		b.add_theme_color_override(st, fg)
+	b.add_theme_color_override("font_outline_color", ol)
+	b.add_theme_constant_override("outline_size", 4)
+
+	var has_icon := icon.size.x > 0
+	var icon_zone := height * 0.9
+	var pad_left := (icon_zone + 26.0) if has_icon else 24.0
+	var normal := _sb(bg, 46, 46, 30, 34)
 	normal.content_margin_left = pad_left
-	normal.content_margin_right = 20
-	var hover := _sb(region, 78, 34, 30, 34, Color(1.12, 1.12, 1.12))
+	normal.content_margin_right = 24
+	var hover := _sb(bg, 46, 46, 30, 34, Color(1.1, 1.1, 1.1))
 	hover.content_margin_left = pad_left
-	hover.content_margin_right = 20
+	hover.content_margin_right = 24
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", hover)
 	b.add_theme_stylebox_override("focus", hover if primary else normal)
 	b.pressed.connect(cb)
+
+	if has_icon:
+		var ic := TextureRect.new()
+		ic.texture = _tex(icon)
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ic.anchor_top = 0.5
+		ic.anchor_bottom = 0.5
+		ic.grow_vertical = Control.GROW_DIRECTION_BOTH
+		ic.offset_left = 22
+		ic.offset_right = 22 + icon_zone
+		ic.offset_top = -icon_zone * 0.5
+		ic.offset_bottom = icon_zone * 0.5
+		b.add_child(ic)
 	return b
 
 
@@ -348,7 +380,7 @@ func _build_options() -> void:
 	col.add_child(fs_row)
 
 	col.add_child(_spacer(10))
-	col.add_child(_menu_button(R_TAN, "GERI", _close_options))
+	col.add_child(_menu_button(R_BG_TAN, IC_NONE, "GERI", _close_options))
 
 
 func _make_slider() -> HSlider:
