@@ -61,6 +61,7 @@ var _options: Control        # Ayarlar-Overlay
 var _vol_slider: HSlider
 var _fs_toggle: Button
 var _ver: Label
+var _logo: Control
 
 
 func _ready() -> void:
@@ -209,6 +210,7 @@ func _build_panel() -> void:
 	logo.add_child(_icon(R_TREE, 74))
 	logo.add_child(_icon(R_TENT, 66))
 	col.add_child(logo)
+	_logo = logo
 
 	col.add_child(_heading("SerdarsGame", 40))
 
@@ -440,11 +442,13 @@ func _show_menu() -> void:
 	_menu_page.visible = true
 	_play_page.visible = false
 	_ver.visible = true
+	_logo.visible = true
 
 func _show_play() -> void:
 	_menu_page.visible = false
 	_play_page.visible = true
 	_ver.visible = false
+	_logo.visible = false
 
 func _on_options() -> void:
 	_options.visible = true
