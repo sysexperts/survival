@@ -12,7 +12,7 @@ extends Control
 
 const BG_IMAGE := "res://assets/UI/landscape2.jpg"
 const ATLAS := "res://assets/UI/Cute_Fantasy_UI/UI/login_screen.png"
-const FONT := "res://assets/UI/Cute_Fantasy_UI/Fonts/CuteFantasy-5x9.ttf"
+const FONT := "res://assets/fonts/notosans.ttf"
 const SETTINGS_PATH := "user://settings.cfg"
 
 const UiCursor := preload("res://scripts/ui_cursor.gd")
@@ -45,9 +45,9 @@ const R_BG_TAN := Rect2(1351, 346, 204, 112)
 # ueber dem passenden Hintergrund). Werden seitenrichtig (KEEP_ASPECT) gezeigt,
 # also nicht verzerrt.
 const IC_NONE := Rect2(0, 0, 0, 0)
-const IC_FIRE := Rect2(1183, 213, 96, 96)
-const IC_BACKPACK := Rect2(1185, 356, 92, 96)
-const IC_SIGN := Rect2(1184, 651, 94, 98)
+const IC_FIRE := Rect2(1183, 214, 96, 92)
+const IC_BACKPACK := Rect2(1185, 358, 92, 90)
+const IC_SIGN := Rect2(1184, 653, 94, 92)
 
 var _atlas_img: Image
 
@@ -60,6 +60,7 @@ var _play_page: Control
 var _options: Control        # Ayarlar-Overlay
 var _vol_slider: HSlider
 var _fs_toggle: Button
+var _ver: Label
 
 
 func _ready() -> void:
@@ -110,17 +111,41 @@ func _icon(region: Rect2, height: float) -> TextureRect:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return t
 
-func _heading(text: String, size: int, color := Color(0.22, 0.15, 0.09),
-		outline := Color(0.98, 0.94, 0.84, 0.9)) -> Label:
+func _heading(text: String, size: int, color := Color(0.20, 0.13, 0.07),
+		shadow := Color(1.0, 0.97, 0.88, 0.75)) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", load(FONT))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
-	l.add_theme_color_override("font_outline_color", outline)
-	l.add_theme_constant_override("outline_size", max(3, size / 6))
+	l.add_theme_color_override("font_shadow_color", shadow)
+	l.add_theme_constant_override("shadow_offset_x", 1)
+	l.add_theme_constant_override("shadow_offset_y", 2)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return l
+
+## Icon als transparente Silhouette aus dem Atlas keyen: der Knopf-Untergrund
+## (Orange bzw. Tan) wird durchsichtig, nur das Symbol bleibt -> KEIN Kasten.
+##   mode "light" = helles Symbol behalten (Lagerfeuer auf Orange)
+##   mode "dark"  = dunkles Symbol behalten (Rucksack/Wegweiser auf Tan)
+func _icon_tex(region: Rect2, mode: String) -> ImageTexture:
+	var sub := _atlas_img.get_region(Rect2i(region))
+	sub.convert(Image.FORMAT_RGBA8)
+	var w := sub.get_width()
+	var h := sub.get_height()
+	for y in h:
+		for x in w:
+			var c := sub.get_pixel(x, y)
+			var lum := (c.r + c.g + c.b) / 3.0
+			var a := 0.0
+			if mode == "light":
+				# Creme-Symbol: in allen Kanaelen hell; Orange hat wenig Blau.
+				a = clampf((c.b - 0.45) / 0.2, 0.0, 1.0)
+			else:
+				# Dunkles Symbol auf hellem Pergament.
+				a = clampf((0.5 - lum) / 0.18, 0.0, 1.0)
+			sub.set_pixel(x, y, Color(c.r, c.g, c.b, a))
+	return ImageTexture.create_from_image(sub)
 
 
 # --- Hintergrund ---------------------------------------------------------
@@ -212,14 +237,14 @@ func _build_panel() -> void:
 	_build_play_page()
 
 	# Versionszeile fest am unteren Panelrand (nicht im Fluss -> kein Ueberlappen).
-	var ver := _heading("v%s" % Net.version_name(_read_version()), 14,
+	_ver = _heading("v%s" % Net.version_name(_read_version()), 14,
 		Color(0.34, 0.26, 0.18))
-	ver.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	ver.anchor_top = 1.0
-	ver.offset_top = -46
-	ver.offset_bottom = -22
-	ver.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(ver)
+	_ver.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_ver.anchor_top = 1.0
+	_ver.offset_top = -46
+	_ver.offset_bottom = -22
+	_ver.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(_ver)
 
 
 func _build_menu_page() -> void:
@@ -268,13 +293,11 @@ func _menu_button(bg: Rect2, icon: Rect2, text: String, cb: Callable,
 	b.clip_contents = false
 	b.custom_minimum_size = Vector2(0, height)
 	b.add_theme_font_override("font", load(FONT))
-	b.add_theme_font_size_override("font_size", 28)
-	var fg := Color(0.99, 0.95, 0.85) if primary else Color(0.22, 0.15, 0.09)
-	var ol := Color(0.35, 0.13, 0.05, 0.85) if primary else Color(0.98, 0.94, 0.84, 0.9)
+	b.add_theme_font_size_override("font_size", 26)
+	var fg := Color(1.0, 0.97, 0.88) if primary else Color(0.20, 0.13, 0.07)
 	for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		b.add_theme_color_override(st, fg)
-	b.add_theme_color_override("font_outline_color", ol)
-	b.add_theme_constant_override("outline_size", 4)
+	b.add_theme_constant_override("outline_size", 0)
 
 	var has_icon := icon.size.x > 0
 	var icon_zone := height * 0.9
@@ -293,7 +316,7 @@ func _menu_button(bg: Rect2, icon: Rect2, text: String, cb: Callable,
 
 	if has_icon:
 		var ic := TextureRect.new()
-		ic.texture = _tex(icon)
+		ic.texture = _icon_tex(icon, "light" if icon == IC_FIRE else "dark")
 		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -416,10 +439,12 @@ func _make_toggle() -> Button:
 func _show_menu() -> void:
 	_menu_page.visible = true
 	_play_page.visible = false
+	_ver.visible = true
 
 func _show_play() -> void:
 	_menu_page.visible = false
 	_play_page.visible = true
+	_ver.visible = false
 
 func _on_options() -> void:
 	_options.visible = true
